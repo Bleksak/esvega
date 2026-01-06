@@ -1,4 +1,4 @@
-use crate::{Element, element::ElementChildren};
+use crate::Element;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReferrerPolicy {

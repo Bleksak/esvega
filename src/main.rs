@@ -1,5 +1,6 @@
 mod element;
 mod lexer;
+mod parser;
 mod token;
 
 use std::{convert::Infallible, fs, str::FromStr};
@@ -17,10 +18,8 @@ impl FromStr for Svg {
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let mut lexer = lexer::Lexer::new(lexer::Input::new(input.as_bytes()));
-
-        while let Some(token) = lexer.advance() {
-            dbg!(&token);
-        }
+        let mut parser = parser::Parser::new(lexer);
+        let ast = parser.parse();
 
         Ok(Svg { children: vec![] })
     }

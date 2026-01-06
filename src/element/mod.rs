@@ -1,6 +1,13 @@
-use crate::element::hyperlink::HyperlinkElement;
+use circle::CircleElement;
+use hyperlink::HyperlinkElement;
+use rect::RectElement;
+use svg::SVGElement;
 
+mod circle;
 mod hyperlink;
+mod rect;
+mod svg;
+mod types;
 
 #[derive(Clone, Debug)]
 pub enum Element {
@@ -12,12 +19,12 @@ pub enum Element {
     Set,
 
     // Basic Shapes
-    Circle,
+    Circle(CircleElement),
     Ellipse,
     Line,
     Polygon,
     PolyLine,
-    Rect,
+    Rect(RectElement),
 
     // Container Elements
     A(HyperlinkElement),
@@ -26,7 +33,7 @@ pub enum Element {
     Marker,
     Mask,
     Pattern,
-    Svg,
+    Svg(SVGElement),
     Switch,
     Symbol,
 
@@ -109,20 +116,20 @@ impl Element {
     pub fn is_shape(&self) -> bool {
         matches!(
             self,
-            Element::Circle
+            Element::Circle(_)
                 | Element::Ellipse
                 | Element::Line
                 | Element::Path
                 | Element::Polygon
                 | Element::PolyLine
-                | Element::Rect
+                | Element::Rect(_)
         )
     }
 
     pub fn is_structural(&self) -> bool {
         matches!(
             self,
-            Element::Defs | Element::G | Element::Svg | Element::Symbol | Element::Use
+            Element::Defs | Element::G | Element::Svg(_) | Element::Symbol | Element::Use
         )
     }
 
@@ -179,13 +186,13 @@ impl Element {
             Element::AnimateTransform => element.is_descriptive(),
             Element::MPath => element.is_descriptive(),
             Element::Set => element.is_descriptive(),
-            Element::Circle => element.is_animation() || element.is_descriptive(),
+            Element::Circle(_) => element.is_animation() || element.is_descriptive(),
             Element::Ellipse => element.is_animation() || element.is_descriptive(),
             Element::Line => element.is_animation() || element.is_descriptive(),
             Element::Polygon => element.is_animation() || element.is_descriptive(),
             Element::PolyLine => element.is_animation() || element.is_descriptive(),
-            Element::Rect => element.is_animation() || element.is_descriptive(),
-            Element::A(hyperlink) => {
+            Element::Rect(_) => element.is_animation() || element.is_descriptive(),
+            Element::A(_) => {
                 element.is_animation()
                     || element.is_descriptive()
                     || element.is_shape()
@@ -323,7 +330,7 @@ impl Element {
                             | Element::View
                     )
             }
-            Element::Svg => {
+            Element::Svg(_) => {
                 element.is_animation()
                     || element.is_descriptive()
                     || element.is_shape()
@@ -356,7 +363,7 @@ impl Element {
                             | Element::ForeignObject
                             | Element::G
                             | Element::Image
-                            | Element::Svg
+                            | Element::Svg(_)
                             | Element::Switch
                             | Element::Text
                             | Element::Use
@@ -501,7 +508,6 @@ impl Element {
                         Element::Animate
                             | Element::AnimateMotion
                             | Element::AnimateTransform
-                            | Element::Script
                             | Element::Script
                             | Element::Style
                     )
