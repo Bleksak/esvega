@@ -262,6 +262,7 @@ impl<'input> Lexer<'input> {
                     if self.input.is_at(b"<", false) {
                         self.mode = LexerMode::Markup;
                         self.input.consume(1);
+
                         return Some(
                             self.token(TokenKind::LessThan, token_start..self.input.offset),
                         );
@@ -286,7 +287,7 @@ impl<'input> Lexer<'input> {
 
         Token {
             kind,
-            value: Box::new(string),
+            value: string,
             span: span,
         }
     }
