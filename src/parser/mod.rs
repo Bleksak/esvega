@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    Element,
-    token::{Token, TokenKind},
-};
+use crate::token::{Token, TokenKind};
 
 mod ast;
 
@@ -44,11 +41,16 @@ impl TemporaryElement {
 }
 
 #[derive(Debug, Default)]
+struct TemporaryDocument {
+    pub children: Vec<TemporaryElement>,
+}
+
+#[derive(Debug, Default)]
 struct StateMachine {
     current_state: State,
     element_stack: Vec<TemporaryElement>,
     current_attribute: Option<String>,
-    pub temp_ast: Option<TemporaryElement>,
+    pub temp_ast: TemporaryDocument,
 }
 
 impl StateMachine {
@@ -108,20 +110,19 @@ impl StateMachine {
                 // here we are in a <tagname/>
                 // TODO: we can produce a self closing element
                 self.current_state = State::Text;
-                if let Some(element) = self.temp_ast.take() {
-                    self.element_stack
-                        .last_mut()
-                        .unwrap()
-                        .children
-                        .push(element);
+
+                let element = self.element_stack.pop().unwrap();
+                if let Some(last_element) = self.element_stack.last_mut() {
+                    last_element.children.push(element);
+                } else {
+                    self.temp_ast.children.push(element);
                 }
-                self.temp_ast = Some(self.element_stack.pop().unwrap());
             }
             (State::Text, TokenKind::LessThanSlash) => {
                 self.current_state = State::TagClose;
             }
             (State::TagClose, TokenKind::Identifier) => {
-                let Some(mut element) = self.element_stack.pop() else {
+                let Some(element) = self.element_stack.pop() else {
                     // TODO: error
                     panic!("Element stack is empty");
                 };
@@ -134,11 +135,12 @@ impl StateMachine {
                     );
                 }
 
-                if let Some(ast_element) = self.temp_ast.take() {
-                    element.children.push(ast_element);
+                if let Some(last_element) = self.element_stack.last_mut() {
+                    last_element.children.push(element);
+                } else {
+                    self.temp_ast.children.push(element);
                 }
 
-                self.temp_ast = Some(element);
                 self.current_state = State::TagCloseName;
             }
             (State::TagCloseName, TokenKind::GreaterThan) => {
@@ -219,6 +221,9 @@ impl<'input> Parser<'input> {
         while let Some(token) = self.lexer.advance() {
             state_machine.consume(token);
         }
+
+        // TODO: make this an actual error
+        assert_eq!(state_machine.element_stack.len(), 0);
 
         dbg!(&state_machine.temp_ast);
 
