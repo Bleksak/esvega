@@ -1,13 +1,20 @@
-use circle::CircleElement;
-use hyperlink::HyperlinkElement;
-use rect::RectElement;
-use svg::SVGElement;
+pub use svg::SVGElement;
+pub use svg::Svg;
 
-mod circle;
-mod hyperlink;
-mod rect;
-mod svg;
-mod types;
+pub use rect::Rect;
+pub use rect::RectElement;
+
+pub use circle::Circle;
+pub use circle::CircleElement;
+
+pub use hyperlink::Hyperlink;
+pub use hyperlink::HyperlinkElement;
+
+pub mod circle;
+pub mod hyperlink;
+pub mod rect;
+pub mod svg;
+pub mod types;
 
 #[derive(Clone, Debug)]
 pub enum Element {
@@ -557,6 +564,74 @@ impl Element {
             }
             Element::ForeignObject => true,
             Element::View => element.is_descriptive(),
+        }
+    }
+
+    pub fn children_mut(&mut self) -> &mut Vec<Element> {
+        match self {
+            Element::Animate => todo!(),
+            Element::AnimateMotion => todo!(),
+            Element::AnimateTransform => todo!(),
+            Element::MPath => todo!(),
+            Element::Set => todo!(),
+            Element::Circle(circle_element) => &mut circle_element.children,
+            Element::Ellipse => todo!(),
+            Element::Line => todo!(),
+            Element::Polygon => todo!(),
+            Element::PolyLine => todo!(),
+            Element::Rect(rect_element) => rect_element.children.as_mut(),
+            Element::A(hyperlink_element) => hyperlink_element.children.as_mut(),
+            Element::Defs => todo!(),
+            Element::G => todo!(),
+            Element::Marker => todo!(),
+            Element::Mask => todo!(),
+            Element::Pattern => todo!(),
+            Element::Svg(svg_element) => svg_element.children.as_mut(),
+            Element::Switch => todo!(),
+            Element::Symbol => todo!(),
+            Element::Desc => todo!(),
+            Element::Metadata => todo!(),
+            Element::Title => todo!(),
+            Element::FeBlend => todo!(),
+            Element::FeColorMatrix => todo!(),
+            Element::FeComponentTransfer => todo!(),
+            Element::FeComposite => todo!(),
+            Element::FeConvolveMatrix => todo!(),
+            Element::FeDiffuseLightning => todo!(),
+            Element::FeDisplacementMap => todo!(),
+            Element::FeDropShadow => todo!(),
+            Element::FeFlood => todo!(),
+            Element::FeFuncA => todo!(),
+            Element::FeFuncB => todo!(),
+            Element::FeFuncG => todo!(),
+            Element::FeFuncR => todo!(),
+            Element::FeGaussianBlur => todo!(),
+            Element::FeImage => todo!(),
+            Element::FeMerge => todo!(),
+            Element::FeMergeNode => todo!(),
+            Element::FeMorphology => todo!(),
+            Element::FeOffset => todo!(),
+            Element::FeSpecularLighting => todo!(),
+            Element::FeTile => todo!(),
+            Element::FeTurbulence => todo!(),
+            Element::LinearGradient => todo!(),
+            Element::RadialGradient => todo!(),
+            Element::Stop => todo!(),
+            Element::Image => todo!(),
+            Element::Path => todo!(),
+            Element::Text => todo!(),
+            Element::Use => todo!(),
+            Element::FeDistantLight => todo!(),
+            Element::FePointLight => todo!(),
+            Element::FeSpotLight => todo!(),
+            Element::ClipPath => todo!(),
+            Element::Script => todo!(),
+            Element::Style => todo!(),
+            Element::TextPath => todo!(),
+            Element::TSpan => todo!(),
+            Element::Filter => todo!(),
+            Element::ForeignObject => todo!(),
+            Element::View => todo!(),
         }
     }
 }

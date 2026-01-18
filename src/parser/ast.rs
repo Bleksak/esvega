@@ -1,6 +1,7 @@
 use crate::Element;
 
+#[derive(Debug, Default)]
 pub struct AST {
-    pub root: Element
+    pub children: Vec<Element>,
 }
 

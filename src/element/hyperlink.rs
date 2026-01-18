@@ -12,6 +12,24 @@ pub enum ReferrerPolicy {
     UnsafeUrl,
 }
 
+impl TryFrom<&str> for ReferrerPolicy {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "no-referrer" => Ok(Self::NoReferrer),
+            "no-referrer-when-downgrade" => Ok(Self::NoReferrerWhenDowngrade),
+            "same-origin" => Ok(Self::SameOrigin),
+            "origin" => Ok(Self::Origin),
+            "strict-origin" => Ok(Self::StrictOrigin),
+            "origin-when-cross-origin" => Ok(Self::OriginWhenCrossOrigin),
+            "strict-origin-when-cross-origin" => Ok(Self::StrictOriginWhenCrossOrigin),
+            "unsafe-url" => Ok(Self::UnsafeUrl),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum Target {
     #[default]
@@ -19,6 +37,20 @@ pub enum Target {
     Parent,
     Top,
     Blank,
+}
+
+impl TryFrom<&str> for Target {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "_self" => Ok(Self::Self_),
+            "_parent" => Ok(Self::Parent),
+            "_top" => Ok(Self::Top),
+            "_blank" => Ok(Self::Blank),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
