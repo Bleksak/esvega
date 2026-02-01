@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     Element,
-    element::{
-        Circle, CircleElement, Hyperlink, HyperlinkElement, Rect, RectElement, SVGElement, Svg,
-    },
+    element::{ElementType, attributes::Attribute},
     token::{Token, TokenKind},
 };
 
@@ -14,7 +12,7 @@ pub struct Parser<'input> {
     lexer: crate::lexer::Lexer<'input>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 enum State {
     #[default]
     Text, // outside of any tag
@@ -69,25 +67,42 @@ impl StateMachine {
                 self.current_state = State::TagName;
                 self.element_stack.push(TemporaryElement::new(token.value));
             }
-            (
-                State::TagName | State::AttributeValueClosingQuote | State::AttributeName,
-                TokenKind::Identifier,
-            ) => {
+            (State::TagName | State::AttributeValueClosingQuote, TokenKind::Identifier) => {
                 self.current_attribute = Some(token.value);
                 self.current_state = State::AttributeName;
             }
             (State::AttributeName, TokenKind::Equals) => {
                 self.current_state = State::AttributeEquals;
             }
+            (State::AttributeName, TokenKind::Identifier) => {
+                self.element_stack
+                    .last_mut()
+                    .unwrap()
+                    .attributes
+                    .insert(self.current_attribute.take().unwrap(), "".to_string());
+
+                self.current_state = State::AttributeName;
+                self.current_attribute = Some(token.value);
+            }
+            (State::AttributeName, TokenKind::GreaterThan) => {
+                self.element_stack
+                    .last_mut()
+                    .unwrap()
+                    .attributes
+                    .insert(self.current_attribute.take().unwrap(), "".to_string());
+                self.current_state = State::Text;
+            }
             (State::AttributeEquals, TokenKind::Quote) => {
                 self.current_state = State::AttributeValueOpeningQuote;
             }
             (State::AttributeValueOpeningQuote, TokenKind::Quote) => {
                 // TODO: set attribute value to empty string
+                // not sure if this is still relevant?
                 self.current_state = State::AttributeValueClosingQuote;
             }
             (State::AttributeValueOpeningQuote, TokenKind::Literal) => {
                 // TODO: set attribute value to token.value
+                // not sure if this is still relevant?
                 self.current_state = State::AttributeValue;
 
                 self.element_stack
@@ -101,10 +116,7 @@ impl StateMachine {
             (State::AttributeValue, TokenKind::Quote) => {
                 self.current_state = State::AttributeValueClosingQuote;
             }
-            (
-                State::TagName | State::AttributeValueClosingQuote | State::AttributeName,
-                TokenKind::GreaterThan,
-            ) => {
+            (State::TagName | State::AttributeValueClosingQuote, TokenKind::GreaterThan) => {
                 // here we are in a <tagname>
                 self.current_state = State::Text;
             }
@@ -114,7 +126,14 @@ impl StateMachine {
                 TokenKind::SlashGreaterThan,
             ) => {
                 // here we are in a <tagname/>
-                // TODO: we can produce a self closing element
+                if self.current_state == State::AttributeName {
+                    self.element_stack
+                        .last_mut()
+                        .unwrap()
+                        .attributes
+                        .insert(self.current_attribute.take().unwrap(), "".to_string());
+                }
+
                 self.current_state = State::Text;
 
                 let element = self.element_stack.pop().unwrap();
@@ -221,300 +240,32 @@ impl<'input> Parser<'input> {
         Self { lexer }
     }
 
-    fn construct_element(temporary_element: &TemporaryElement) -> Element {
-        match temporary_element.name.as_str() {
-            "svg" => Element::Svg(SVGElement {
-                svg: Svg {
-                    base_profile: temporary_element.attributes.get("baseProfile").cloned(),
-                    height: temporary_element
-                        .attributes
-                        .get("height")
-                        .map(|h| h.as_str().try_into().ok())
-                        .flatten(),
-                    preserve_aspect_ratio: temporary_element
-                        .attributes
-                        .get("preserveAspectRatio")
-                        .map(|aspect_ratio| aspect_ratio.as_str().try_into().ok())
-                        .flatten(),
-                    version: temporary_element
-                        .attributes
-                        .get("version")
-                        .map(|v| v.as_str().parse().ok())
-                        .flatten(),
-                    view_box: temporary_element
-                        .attributes
-                        .get("viewBox")
-                        .and_then(|view_box| {
-                            let mut iter = view_box
-                                .as_str()
-                                .split_whitespace()
-                                .map(|s| s.parse::<f64>().ok());
+    fn construct_element(temporary_element: &TemporaryElement) -> Option<Element> {
+        let element_type: ElementType = temporary_element.name.as_str().parse().ok()?;
 
-                            Some([iter.next()??, iter.next()??, iter.next()??, iter.next()??])
-                        }),
-                    width: temporary_element
-                        .attributes
-                        .get("width")
-                        .map(|w| w.as_str().try_into().ok())
-                        .flatten(),
-                    x: temporary_element
-                        .attributes
-                        .get("x")
-                        .map(|x| x.as_str().try_into().ok())
-                        .flatten(),
-                    y: temporary_element
-                        .attributes
-                        .get("y")
-                        .map(|y| y.as_str().try_into().ok())
-                        .flatten(),
-                    xmlns: temporary_element
-                        .attributes
-                        .get("xmlns")
-                        .map(|xmlns| xmlns.to_string()),
-                },
-                children: vec![],
-            }),
-            "circle" => Element::Circle(CircleElement {
-                circle: Circle {
-                    cx: temporary_element
-                        .attributes
-                        .get("cx")
-                        .map(|cx| cx.as_str().try_into().ok())
-                        .flatten(),
-                    cy: temporary_element
-                        .attributes
-                        .get("cy")
-                        .map(|cy| cy.as_str().try_into().ok())
-                        .flatten(),
-                    r: temporary_element
-                        .attributes
-                        .get("r")
-                        .map(|r| r.as_str().try_into().ok())
-                        .flatten(),
-                    path_length: temporary_element
-                        .attributes
-                        .get("pathLength")
-                        .map(|path_length| path_length.as_str().parse().ok())
-                        .flatten(),
-                    stroke: temporary_element
-                        .attributes
-                        .get("stroke")
-                        .map(|stroke| stroke.as_str().parse().ok())
-                        .flatten(),
-                    stroke_opacity: temporary_element
-                        .attributes
-                        .get("strokeOpacity")
-                        .map(|stroke_opacity| stroke_opacity.as_str().parse().ok())
-                        .flatten(),
-                    stroke_width: temporary_element
-                        .attributes
-                        .get("strokeWidth")
-                        .map(|stroke_width| stroke_width.as_str().parse().ok())
-                        .flatten(),
-                    stroke_linecap: temporary_element
-                        .attributes
-                        .get("strokeLinecap")
-                        .map(|stroke_linecap| stroke_linecap.as_str().parse().ok())
-                        .flatten(),
-                    stroke_linejoin: temporary_element
-                        .attributes
-                        .get("strokeLinejoin")
-                        .map(|stroke_linejoin| stroke_linejoin.as_str().parse().ok())
-                        .flatten(),
-                    stroke_miterlimit: temporary_element
-                        .attributes
-                        .get("strokeMiterlimit")
-                        .map(|stroke_miterlimit| stroke_miterlimit.as_str().parse().ok())
-                        .flatten(),
-                    stroke_dasharray: temporary_element
-                        .attributes
-                        .get("strokeDasharray")
-                        .map(|stroke_dasharray| stroke_dasharray.as_str().parse().ok())
-                        .flatten(),
-                    stroke_dashoffset: temporary_element
-                        .attributes
-                        .get("strokeDashoffset")
-                        .map(|stroke_dashoffset| stroke_dashoffset.as_str().parse().ok())
-                        .flatten(),
-                    fill: temporary_element
-                        .attributes
-                        .get("fill")
-                        .map(|fill| fill.as_str().parse().ok())
-                        .flatten(),
-                    fill_opacity: temporary_element
-                        .attributes
-                        .get("fillOpacity")
-                        .map(|fill_opacity| fill_opacity.as_str().parse().ok())
-                        .flatten(),
-                    fill_rule: temporary_element
-                        .attributes
-                        .get("fillRule")
-                        .map(|fill_rule| fill_rule.as_str().parse().ok())
-                        .flatten(),
-                    vector_effect: temporary_element
-                        .attributes
-                        .get("vectorEffect")
-                        .map(|vector_effect| vector_effect.as_str().parse().ok())
-                        .flatten(),
-                },
-                children: vec![],
-            }),
-            "rect" => Element::Rect(RectElement {
-                rect: Rect {
-                    x: temporary_element
-                        .attributes
-                        .get("x")
-                        .map(|x| x.as_str().try_into().ok())
-                        .flatten(),
-                    y: temporary_element
-                        .attributes
-                        .get("y")
-                        .map(|y| y.as_str().try_into().ok())
-                        .flatten(),
-                    width: temporary_element
-                        .attributes
-                        .get("width")
-                        .map(|width| width.as_str().try_into().ok())
-                        .flatten(),
-                    height: temporary_element
-                        .attributes
-                        .get("height")
-                        .map(|height| height.as_str().try_into().ok())
-                        .flatten(),
-                    rx: temporary_element
-                        .attributes
-                        .get("rx")
-                        .map(|rx| rx.as_str().try_into().ok())
-                        .flatten(),
-                    ry: temporary_element
-                        .attributes
-                        .get("ry")
-                        .map(|ry| ry.as_str().try_into().ok())
-                        .flatten(),
-                    path_length: temporary_element
-                        .attributes
-                        .get("pathLength")
-                        .map(|path_length| path_length.as_str().parse().ok())
-                        .flatten(),
-                    stroke: temporary_element
-                        .attributes
-                        .get("stroke")
-                        .map(|stroke| stroke.as_str().parse().ok())
-                        .flatten(),
-                    stroke_opacity: temporary_element
-                        .attributes
-                        .get("strokeOpacity")
-                        .map(|stroke_opacity| stroke_opacity.as_str().parse().ok())
-                        .flatten(),
-                    stroke_width: temporary_element
-                        .attributes
-                        .get("strokeWidth")
-                        .map(|stroke_width| stroke_width.as_str().parse().ok())
-                        .flatten(),
-                    stroke_linecap: temporary_element
-                        .attributes
-                        .get("strokeLinecap")
-                        .map(|stroke_linecap| stroke_linecap.as_str().parse().ok())
-                        .flatten(),
-                    stroke_linejoin: temporary_element
-                        .attributes
-                        .get("strokeLinejoin")
-                        .map(|stroke_linejoin| stroke_linejoin.as_str().parse().ok())
-                        .flatten(),
-                    stroke_miterlimit: temporary_element
-                        .attributes
-                        .get("strokeMiterlimit")
-                        .map(|stroke_miterlimit| stroke_miterlimit.as_str().parse().ok())
-                        .flatten(),
-                    stroke_dasharray: temporary_element
-                        .attributes
-                        .get("strokeDasharray")
-                        .map(|stroke_dasharray| stroke_dasharray.as_str().parse().ok())
-                        .flatten(),
-                    stroke_dashoffset: temporary_element
-                        .attributes
-                        .get("strokeDashoffset")
-                        .map(|stroke_dashoffset| stroke_dashoffset.as_str().parse().ok())
-                        .flatten(),
-                    fill: temporary_element
-                        .attributes
-                        .get("fill")
-                        .map(|fill| fill.as_str().parse().ok())
-                        .flatten(),
-                    fill_opacity: temporary_element
-                        .attributes
-                        .get("fillOpacity")
-                        .map(|fill_opacity| fill_opacity.as_str().parse().ok())
-                        .flatten(),
-                    fill_rule: temporary_element
-                        .attributes
-                        .get("fillRule")
-                        .map(|fill_rule| fill_rule.as_str().parse().ok())
-                        .flatten(),
-                    vector_effect: temporary_element
-                        .attributes
-                        .get("vectorEffect")
-                        .map(|vector_effect| vector_effect.as_str().parse().ok())
-                        .flatten(),
-                },
-                children: vec![],
-            }),
-            "a" => Element::A(HyperlinkElement {
-                hyperlink: Hyperlink {
-                    download: temporary_element
-                        .attributes
-                        .get("download")
-                        .map(|download| {
-                            if download.is_empty() {
-                                None
-                            } else {
-                                Some(download.to_string())
-                            }
-                        }),
-                    href: temporary_element
-                        .attributes
-                        .get("href")
-                        .map(|href| href.to_string())
-                        .unwrap_or_default(),
-                    hreflang: temporary_element
-                        .attributes
-                        .get("hreflang")
-                        .map(|hreflang| hreflang.to_string()),
-                    interestfor: temporary_element
-                        .attributes
-                        .get("interestFor")
-                        .map(|interest_for| interest_for.to_string()),
-                    ping: temporary_element
-                        .attributes
-                        .get("ping")
-                        .map(|ping| ping.to_string()),
-                    referrerpolicy: temporary_element
-                        .attributes
-                        .get("referrerPolicy")
-                        .map(|referrer_policy| referrer_policy.as_str().try_into().ok())
-                        .flatten(),
-                    rel: temporary_element
-                        .attributes
-                        .get("rel")
-                        .map(|rel| rel.to_string()),
-                    target: temporary_element
-                        .attributes
-                        .get("target")
-                        .map(|target| target.as_str().try_into().ok())
-                        .flatten(),
-                    type_: temporary_element
-                        .attributes
-                        .get("type")
-                        .map(|type_| type_.to_string()),
-                    xlink_href: temporary_element
-                        .attributes
-                        .get("xlink:href")
-                        .map(|xlink_href| xlink_href.to_string()),
-                },
-                children: vec![],
-            }),
-            _ => todo!(),
+        let mut element = Element {
+            element_type,
+            attributes: vec![],
+            children: vec![],
+        };
+
+        for (key, value) in &temporary_element.attributes {
+            let Some(attribute): Option<Attribute> = (key, value).try_into().ok() else {
+                continue;
+            };
+
+            if !attribute.allowed_in_element(element.element_type, &element) {
+                // TODO: make this an actual error
+                panic!(
+                    "Attribute {:#?} is not allowed in element {:#?}",
+                    attribute, element
+                );
+            }
+
+            element.attributes.push(attribute);
         }
+
+        Some(element)
     }
 
     fn construct_ast(temp_ast: TemporaryDocument) -> Option<ast::AST> {
@@ -530,14 +281,17 @@ impl<'input> Parser<'input> {
             let mut parent = None;
 
             for idx in path.iter() {
-                parent_children = parent_children[*idx].children_mut();
+                parent_children = &mut parent_children[*idx].children;
                 parent = parent_children.get(*idx);
             }
 
-            let element = Self::construct_element(temporary_element);
+            let element = Self::construct_element(temporary_element)?;
 
             if let Some(parent) = parent {
-                if !element.is_allowed_as_child(&parent) {
+                if !element
+                    .element_type
+                    .is_allowed_as_child(&parent.element_type)
+                {
                     println!(
                         "Element {:#?} is not allowed as child of {:#?}",
                         element, parent

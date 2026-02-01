@@ -124,6 +124,7 @@ pub struct Lexer<'input> {
     pub mode: LexerMode,
 }
 
+// TODO: The lexer does not produce attributes like autofocus that do not need a value
 impl<'input> Lexer<'input> {
     pub fn new(input: Input<'input>) -> Self {
         Self {
@@ -191,7 +192,7 @@ impl<'input> Lexer<'input> {
                         self.input.consume_until(b">", false);
 
                         if !self.input.is_at(b">", false) {
-                            // TODO: Error
+                            // TODO: Error - we're at something like "<div /x
                             return None;
                         }
                         self.input.consume(1);

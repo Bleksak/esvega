@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RelativeLength {
     Cap(f64),
     Em(f64),
@@ -11,7 +11,22 @@ pub enum RelativeLength {
     Lh(f64),
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for RelativeLength {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("cap") => Ok(Self::Cap(1.0)),
+            _ if s.eq_ignore_ascii_case("em") => Ok(Self::Em(1.0)),
+            _ if s.eq_ignore_ascii_case("ex") => Ok(Self::Ex(1.0)),
+            _ if s.eq_ignore_ascii_case("ic") => Ok(Self::Ic(1.0)),
+            _ if s.eq_ignore_ascii_case("lh") => Ok(Self::Lh(1.0)),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum RelativeLengthBasedOnRoot {
     Rcap(f64),
     Rch(f64),
@@ -21,7 +36,23 @@ pub enum RelativeLengthBasedOnRoot {
     Rlh(f64),
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for RelativeLengthBasedOnRoot {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("rcap") => Ok(Self::Rcap(1.0)),
+            _ if s.eq_ignore_ascii_case("rch") => Ok(Self::Rch(1.0)),
+            _ if s.eq_ignore_ascii_case("rem") => Ok(Self::Rem(1.0)),
+            _ if s.eq_ignore_ascii_case("rex") => Ok(Self::Rex(1.0)),
+            _ if s.eq_ignore_ascii_case("ric") => Ok(Self::Ric(1.0)),
+            _ if s.eq_ignore_ascii_case("rlh") => Ok(Self::Rlh(1.0)),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum AbsoluteLength {
     Px(f64), // for print 1px = 1/96th of an inch
     Cm(f64), // 1cm = 96px / 2.54
@@ -32,22 +63,96 @@ pub enum AbsoluteLength {
     Pc(f64), // 1pc = 1/6th of an inch
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for AbsoluteLength {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("px") => Ok(Self::Px(1.0)),
+            _ if s.eq_ignore_ascii_case("cm") => Ok(Self::Cm(1.0)),
+            _ if s.eq_ignore_ascii_case("q") => Ok(Self::Q(1.0)),
+            _ if s.eq_ignore_ascii_case("in") => Ok(Self::In(1.0)),
+            _ if s.eq_ignore_ascii_case("mm") => Ok(Self::Mm(1.0)),
+            _ if s.eq_ignore_ascii_case("pt") => Ok(Self::Pt(1.0)),
+            _ if s.eq_ignore_ascii_case("pc") => Ok(Self::Pc(1.0)),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum RelativeLengths {
     RelativeLength(RelativeLength),
     RelativeLengthBasedOnRoot(RelativeLengthBasedOnRoot),
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for RelativeLengths {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(relative) = RelativeLength::from_str(s) {
+            return Ok(RelativeLengths::RelativeLength(relative));
+        }
+
+        if let Ok(relative) = RelativeLengthBasedOnRoot::from_str(s) {
+            return Ok(RelativeLengths::RelativeLengthBasedOnRoot(relative));
+        }
+
+        return Err(());
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Length {
     Absolute(AbsoluteLength),
     Relative(RelativeLengths),
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for Length {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(absolute) = AbsoluteLength::from_str(s) {
+            return Ok(Length::Absolute(absolute));
+        }
+
+        if let Ok(relative) = RelativeLengths::from_str(s) {
+            return Ok(Length::Relative(relative));
+        }
+
+        return Err(());
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Percentage(pub f64);
+
+impl FromStr for Percentage {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.ends_with('%') {
+            let (value, rhs) = s.split_once('%').ok_or(())?;
+
+            if rhs.is_empty() {
+                return Ok(Percentage(value.parse::<f64>().map_err(|_| ())?));
+            }
+        }
+
+        Err(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum LengthOrPercentage {
     Length(Length),
-    Percentage(f64),
+    Percentage(Percentage),
+}
+
+impl Default for LengthOrPercentage {
+    fn default() -> Self {
+        LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0)))
+    }
 }
 
 impl FromStr for LengthOrPercentage {
@@ -231,14 +336,8 @@ impl TryFrom<&str> for LengthOrPercentage {
             return Ok(LengthOrPercentage::Length(length));
         }
 
-        if s.ends_with('%') {
-            let (value, rhs) = s.split_once('%').ok_or(())?;
-
-            if rhs.is_empty() {
-                return Ok(LengthOrPercentage::Percentage(
-                    value.parse::<f64>().map_err(|_| ())?,
-                ));
-            }
+        if let Ok(percentage) = s.parse() {
+            return Ok(LengthOrPercentage::Percentage(percentage));
         }
 
         if s.chars().all(|c| c.is_ascii_digit()) {
@@ -849,7 +948,24 @@ pub enum Url {
     Id(String),
 }
 
-#[derive(Clone, Debug)]
+impl FromStr for Url {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: The following is incorrect if the url is in any other casing than "url"
+        if s.starts_with("url(") && s.ends_with(")") {
+            return Ok(Self::Url(s[4..s.len() - 1].to_string()));
+        }
+
+        if s.starts_with("url(#") && s.ends_with(")") {
+            return Ok(Self::Id(s[5..s.len() - 1].to_string()));
+        }
+
+        Ok(Self::Id(s.to_string()))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Color {
     Hex(String),
     Rgb(u8, u8, u8),
@@ -857,21 +973,12 @@ pub enum Color {
     Hsl(f64, f64, f64),
     Hsla(f64, f64, f64, f64),
     Literal(ColorLiteral),
-    Url(Url),
 }
 
 impl FromStr for Color {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("url(#") && s.ends_with(")") {
-            return Ok(Self::Url(Url::Id(s[5..s.len() - 1].to_string())));
-        }
-
-        if s.starts_with("url(") && s.ends_with(")") {
-            return Ok(Self::Url(Url::Url(s[4..s.len() - 1].to_string())));
-        }
-
         if s.starts_with("#") {
             return Ok(Self::Hex(s[1..].to_string()));
         }
@@ -942,5 +1049,105 @@ impl FromStr for Color {
         }
 
         Ok(Self::Literal(s.parse()?))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum Paint {
+    #[default]
+    None,
+    Color(Color),
+    Url(Url),
+    ContextFill,
+    ContextStroke,
+}
+
+impl FromStr for Paint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("none") => Ok(Self::None),
+            _ if s.eq_ignore_ascii_case("context-fill") => Ok(Self::ContextFill),
+            _ if s.eq_ignore_ascii_case("context-stroke") => Ok(Self::ContextStroke),
+            _ => {
+                if let Ok(url) = s.parse::<Url>() {
+                    return Ok(Self::Url(url));
+                }
+
+                Ok(Self::Color(s.parse()?))
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AbsoluteSize {
+    XXSmall,
+    XSmall,
+    Small,
+    Medium,
+    Large,
+    XLarge,
+    XXLarge,
+    XXXLarge,
+}
+
+impl FromStr for AbsoluteSize {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("xx-small") => Ok(Self::XXSmall),
+            _ if s.eq_ignore_ascii_case("x-small") => Ok(Self::XSmall),
+            _ if s.eq_ignore_ascii_case("small") => Ok(Self::Small),
+            _ if s.eq_ignore_ascii_case("medium") => Ok(Self::Medium),
+            _ if s.eq_ignore_ascii_case("large") => Ok(Self::Large),
+            _ if s.eq_ignore_ascii_case("x-large") => Ok(Self::XLarge),
+            _ if s.eq_ignore_ascii_case("xx-large") => Ok(Self::XXLarge),
+            _ if s.eq_ignore_ascii_case("xxx-large") => Ok(Self::XXXLarge),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum RelativeSize {
+    Larger,
+    Smaller,
+}
+
+impl FromStr for RelativeSize {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("larger") => Ok(Self::Larger),
+            _ if s.eq_ignore_ascii_case("smaller") => Ok(Self::Smaller),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontWeight {
+    Normal,
+    Bold,
+    Bolder,
+    Lighter,
+    Number(f64),
+}
+
+impl FromStr for FontWeight {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            _ if s.eq_ignore_ascii_case("normal") => Ok(Self::Normal),
+            _ if s.eq_ignore_ascii_case("bold") => Ok(Self::Bold),
+            _ if s.eq_ignore_ascii_case("bolder") => Ok(Self::Bolder),
+            _ if s.eq_ignore_ascii_case("lighter") => Ok(Self::Lighter),
+            _ => Ok(Self::Number(s.parse().map_err(|_| ())?)),
+        }
     }
 }
