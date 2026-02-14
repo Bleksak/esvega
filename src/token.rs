@@ -18,5 +18,6 @@ pub enum TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,
+    #[allow(dead_code)]
     pub span: Range<usize>,
 }

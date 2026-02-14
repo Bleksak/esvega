@@ -33,12 +33,6 @@ impl<'a> Input<'a> {
         self.offset = (self.offset + n).min(self.length);
     }
 
-    pub fn next(&mut self) {
-        if !self.has_reached_eof() {
-            self.offset += 1;
-        }
-    }
-
     const fn calculate_bound(&self, n: usize) -> (usize, usize) {
         if self.has_reached_eof() {
             return (self.length, self.length);
@@ -59,17 +53,6 @@ impl<'a> Input<'a> {
         self.skip(n);
 
         &self.bytes[from..until]
-    }
-
-    pub fn consume_remaining(&mut self) -> &'a [u8] {
-        if self.has_reached_eof() {
-            return &[];
-        }
-
-        let from = self.offset;
-        self.offset = self.length;
-
-        &self.bytes[from..]
     }
 
     pub fn consume_whitespace(&mut self) {

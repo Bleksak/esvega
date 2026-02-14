@@ -3496,6 +3496,7 @@ pub enum Attribute {
 
     FilterUnits(FilterUnits),
     PrimitiveUnits(PrimitiveUnits),
+    Version(f64),
 }
 
 impl TryFrom<(&String, &String)> for Attribute {
@@ -3504,6 +3505,7 @@ impl TryFrom<(&String, &String)> for Attribute {
     fn try_from((key, value): (&String, &String)) -> Result<Self, Self::Error> {
         match key.as_str() {
             "xmlns" => Ok(Attribute::Xmlns(value.clone())),
+            "version" => Ok(Attribute::Version(value.parse().map_err(|_| ())?)),
             "autofocus" => {
                 if value.is_empty() || value.eq_ignore_ascii_case("autofocus") {
                     Ok(Attribute::Autofocus(true))
@@ -3976,6 +3978,7 @@ impl Attribute {
             Attribute::StartOffset(_) => "startOffset",
             Attribute::FilterUnits(_) => "filterUnits",
             Attribute::PrimitiveUnits(_) => "primitiveUnits",
+            Attribute::Version(_) => "version",
         }
     }
 
@@ -4153,7 +4156,7 @@ impl Attribute {
         )
     }
 
-    pub fn allowed_in_element(&self, element_type: ElementType, element: &Element) -> bool {
+    pub fn allowed_in_element(&self, element_type: ElementType, _element: &Element) -> bool {
         match element_type {
             ElementType::Animate => self.is_global(),
             ElementType::AnimateMotion => {
@@ -4947,6 +4950,7 @@ impl Attribute {
             }
             Attribute::FilterUnits(filter_units) => Some(filter_units.to_string()),
             Attribute::PrimitiveUnits(primitive_units) => Some(primitive_units.to_string()),
+            Attribute::Version(version) => Some(version.to_string()),
         }
     }
 

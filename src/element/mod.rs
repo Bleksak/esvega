@@ -1,23 +1,20 @@
+use crate::parser::ast::{AST, NodeId};
 use std::{fmt::Display, str::FromStr};
 
 use crate::element::attributes::Attribute;
 
-pub mod animate;
 pub mod attributes;
-pub mod circle;
-pub mod rect;
-pub mod svg;
 pub mod types;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Element {
     pub element_type: ElementType,
     pub attributes: Vec<Attribute>,
-    pub children: Vec<Element>,
+    pub children: Vec<NodeId>,
 }
 
 impl Element {
-    pub fn to_svg(&self, current_indent: usize) -> String {
+    pub fn to_svg(&self, ast: &AST, current_indent: usize) -> String {
         let mut svg = String::new();
 
         for _ in 0..current_indent {
@@ -54,8 +51,12 @@ impl Element {
         // NOTE(@bleksak): If this crashes some day, we need to rewrite it without recursion
         let mut children = self.children.iter().peekable();
 
-        while let Some(child) = children.next() {
-            svg.push_str(&child.to_svg(current_indent + 1));
+        while let Some(child_node) = children.next() {
+            let Some(child) = ast.nodes.get(*child_node) else {
+                continue;
+            };
+
+            svg.push_str(&child.to_svg(ast, current_indent + 1));
 
             if let Some(_) = children.peek() {
                 svg.push('\n');
@@ -648,6 +649,74 @@ impl ElementType {
             ElementType::View => element.is_descriptive(),
         }
     }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Animate => "animate",
+            Self::AnimateMotion => "animatemotion",
+            Self::AnimateTransform => "animatetransform",
+            Self::MPath => "mpath",
+            Self::Set => "set",
+            Self::Circle => "circle",
+            Self::Ellipse => "ellipse",
+            Self::Line => "line",
+            Self::Polygon => "polygon",
+            Self::PolyLine => "polyline",
+            Self::Rect => "rect",
+            Self::A => "a",
+            Self::Defs => "defs",
+            Self::G => "g",
+            Self::Marker => "marker",
+            Self::Mask => "mask",
+            Self::Pattern => "pattern",
+            Self::Svg => "svg",
+            Self::Switch => "switch",
+            Self::Symbol => "symbol",
+            Self::Desc => "desc",
+            Self::Metadata => "metadata",
+            Self::Title => "title",
+            Self::FeBlend => "feBlend",
+            Self::FeColorMatrix => "feColorMatrix",
+            Self::FeComponentTransfer => "feComponentTransfer",
+            Self::FeComposite => "feComposite",
+            Self::FeConvolveMatrix => "feConvolveMatrix",
+            Self::FeDiffuseLightning => "feDiffuseLightning",
+            Self::FeDisplacementMap => "feDisplacementMap",
+            Self::FeDropShadow => "feDropShadow",
+            Self::FeFlood => "feFlood",
+            Self::FeFuncA => "feFuncA",
+            Self::FeFuncB => "feFuncB",
+            Self::FeFuncG => "feFuncG",
+            Self::FeFuncR => "feFuncR",
+            Self::FeGaussianBlur => "feGaussianBlur",
+            Self::FeImage => "feImage",
+            Self::FeMerge => "feMerge",
+            Self::FeMergeNode => "feMergeNode",
+            Self::FeMorphology => "feMorphology",
+            Self::FeOffset => "feOffset",
+            Self::FeSpecularLighting => "feSpecularLighting",
+            Self::FeTile => "feTile",
+            Self::FeTurbulence => "feTurbulence",
+            Self::LinearGradient => "linearGradient",
+            Self::RadialGradient => "radialGradient",
+            Self::Stop => "stop",
+            Self::Image => "image",
+            Self::Path => "path",
+            Self::Text => "text",
+            Self::Use => "use",
+            Self::FeDistantLight => "feDistantLight",
+            Self::FePointLight => "fePointLight",
+            Self::FeSpotLight => "feSpotLight",
+            Self::ClipPath => "clipPath",
+            Self::Script => "script",
+            Self::Style => "style",
+            Self::TextPath => "textPath",
+            Self::TSpan => "tspan",
+            Self::Filter => "filter",
+            Self::ForeignObject => "foreignObject",
+            Self::View => "view",
+        }
+    }
 }
 
 impl FromStr for ElementType {
@@ -725,74 +794,6 @@ impl FromStr for ElementType {
 
 impl Display for ElementType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Animate => "animate",
-                Self::AnimateMotion => "animatemotion",
-                Self::AnimateTransform => "animatetransform",
-                Self::MPath => "mpath",
-                Self::Set => "set",
-                Self::Circle => "circle",
-                Self::Ellipse => "ellipse",
-                Self::Line => "line",
-                Self::Polygon => "polygon",
-                Self::PolyLine => "polyline",
-                Self::Rect => "rect",
-                Self::A => "a",
-                Self::Defs => "defs",
-                Self::G => "g",
-                Self::Marker => "marker",
-                Self::Mask => "mask",
-                Self::Pattern => "pattern",
-                Self::Svg => "svg",
-                Self::Switch => "switch",
-                Self::Symbol => "symbol",
-                Self::Desc => "desc",
-                Self::Metadata => "metadata",
-                Self::Title => "title",
-                Self::FeBlend => "feBlend",
-                Self::FeColorMatrix => "feColorMatrix",
-                Self::FeComponentTransfer => "feComponentTransfer",
-                Self::FeComposite => "feComposite",
-                Self::FeConvolveMatrix => "feConvolveMatrix",
-                Self::FeDiffuseLightning => "feDiffuseLightning",
-                Self::FeDisplacementMap => "feDisplacementMap",
-                Self::FeDropShadow => "feDropShadow",
-                Self::FeFlood => "feFlood",
-                Self::FeFuncA => "feFuncA",
-                Self::FeFuncB => "feFuncB",
-                Self::FeFuncG => "feFuncG",
-                Self::FeFuncR => "feFuncR",
-                Self::FeGaussianBlur => "feGaussianBlur",
-                Self::FeImage => "feImage",
-                Self::FeMerge => "feMerge",
-                Self::FeMergeNode => "feMergeNode",
-                Self::FeMorphology => "feMorphology",
-                Self::FeOffset => "feOffset",
-                Self::FeSpecularLighting => "feSpecularLighting",
-                Self::FeTile => "feTile",
-                Self::FeTurbulence => "feTurbulence",
-                Self::LinearGradient => "linearGradient",
-                Self::RadialGradient => "radialGradient",
-                Self::Stop => "stop",
-                Self::Image => "image",
-                Self::Path => "path",
-                Self::Text => "text",
-                Self::Use => "use",
-                Self::FeDistantLight => "feDistantLight",
-                Self::FePointLight => "fePointLight",
-                Self::FeSpotLight => "feSpotLight",
-                Self::ClipPath => "clipPath",
-                Self::Script => "script",
-                Self::Style => "style",
-                Self::TextPath => "textPath",
-                Self::TSpan => "tspan",
-                Self::Filter => "filter",
-                Self::ForeignObject => "foreignObject",
-                Self::View => "view",
-            }
-        )
+        write!(f, "{}", self.as_str())
     }
 }
