@@ -13,4 +13,8 @@ fn main() {
     let lexer = lexer::Lexer::new(lexer::Input::new(content.as_bytes()));
     let mut parser = parser::Parser::new(lexer);
     let ast = parser.parse();
+
+    if let Some(ast) = ast {
+        print!("{}", ast.to_svg());
+    }
 }

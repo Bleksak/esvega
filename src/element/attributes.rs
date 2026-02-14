@@ -33,6 +33,28 @@ pub enum AlignmentBaseline {
     Bottom,
 }
 
+impl AlignmentBaseline {
+    fn as_str(&self) -> &str {
+        match self {
+            AlignmentBaseline::Auto => "auto",
+            AlignmentBaseline::Baseline => "baseline",
+            AlignmentBaseline::BeforeEdge => "before-edge",
+            AlignmentBaseline::TextBeforeEdge => "text-before-edge",
+            AlignmentBaseline::Middle => "middle",
+            AlignmentBaseline::Central => "central",
+            AlignmentBaseline::AfterEdge => "after-edge",
+            AlignmentBaseline::TextAfterEdge => "text-after-edge",
+            AlignmentBaseline::Ideographic => "ideographic",
+            AlignmentBaseline::Alphabetic => "alphabetic",
+            AlignmentBaseline::Hanging => "hanging",
+            AlignmentBaseline::Mathematical => "mathematical",
+            AlignmentBaseline::Top => "top",
+            AlignmentBaseline::Center => "center",
+            AlignmentBaseline::Bottom => "bottom",
+        }
+    }
+}
+
 impl FromStr for AlignmentBaseline {
     type Err = ();
 
@@ -65,6 +87,18 @@ pub enum BaselineShift {
     Super,
 }
 
+impl BaselineShift {
+    pub fn to_string(&self) -> String {
+        match self {
+            BaselineShift::LengthOrPercentage(length_or_percentage) => {
+                length_or_percentage.to_string()
+            }
+            BaselineShift::Sub => "sub".into(),
+            BaselineShift::Super => "super".into(),
+        }
+    }
+}
+
 impl Default for BaselineShift {
     fn default() -> Self {
         BaselineShift::LengthOrPercentage(LengthOrPercentage::default())
@@ -93,6 +127,16 @@ pub enum ClipRule {
     Inherit,
 }
 
+impl ClipRule {
+    fn as_str(&self) -> &str {
+        match self {
+            ClipRule::NonZero => "nonzero",
+            ClipRule::EvenOdd => "evenodd",
+            ClipRule::Inherit => "inherit",
+        }
+    }
+}
+
 impl FromStr for ClipRule {
     type Err = ();
 
@@ -111,6 +155,16 @@ pub enum ColorInterpolation {
     #[default]
     SRGB,
     LinearRGB,
+}
+
+impl ColorInterpolation {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ColorInterpolation::Auto => "auto",
+            ColorInterpolation::SRGB => "sRGB",
+            ColorInterpolation::LinearRGB => "linearRGB",
+        }
+    }
 }
 
 impl FromStr for ColorInterpolation {
@@ -132,6 +186,16 @@ pub enum ColorInterpolationFilter {
     SRGB,
     #[default]
     LinearRGB,
+}
+
+impl ColorInterpolationFilter {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ColorInterpolationFilter::Auto => "auto",
+            ColorInterpolationFilter::SRGB => "sRGB",
+            ColorInterpolationFilter::LinearRGB => "linearRGB",
+        }
+    }
 }
 
 impl FromStr for ColorInterpolationFilter {
@@ -170,6 +234,31 @@ pub enum Cursor {
     // TODO: add FuncURI, not sure what that is at the moment
 }
 
+impl ToString for Cursor {
+    fn to_string(&self) -> String {
+        match self {
+            Cursor::Auto => "auto",
+            Cursor::Crosshair => "crosshair",
+            Cursor::Default => "default",
+            Cursor::Pointer => "pointer",
+            Cursor::Move => "move",
+            Cursor::EResize => "e-resize",
+            Cursor::NEResize => "ne-resize",
+            Cursor::NWResize => "nw-resize",
+            Cursor::NResize => "n-resize",
+            Cursor::SEResize => "se-resize",
+            Cursor::SWResize => "sw-resize",
+            Cursor::SResize => "s-resize",
+            Cursor::WResize => "w-resize",
+            Cursor::Text => "text",
+            Cursor::Wait => "wait",
+            Cursor::Help => "help",
+            Cursor::Inherit => "inherit",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for Cursor {
     type Err = ();
 
@@ -203,6 +292,15 @@ pub enum MoveTo {
     Relative((LengthOrPercentage, LengthOrPercentage)), // m dx dy
 }
 
+impl ToString for MoveTo {
+    fn to_string(&self) -> String {
+        match self {
+            MoveTo::Absolute((x, y)) => format!("M {} {}", x.to_string(), y.to_string()),
+            MoveTo::Relative((dx, dy)) => format!("m {} {}", dx.to_string(), dy.to_string()),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum LineTo {
     XYAbsolute(Vec<LengthOrPercentage>),         // L (x y)+
@@ -211,6 +309,55 @@ pub enum LineTo {
     HorizontalRelative(Vec<LengthOrPercentage>), // h (dx)+
     VerticalAbsolute(Vec<LengthOrPercentage>),   // V (y)+
     VerticalRelative(Vec<LengthOrPercentage>),   // v (dy)+
+}
+
+impl ToString for LineTo {
+    fn to_string(&self) -> String {
+        match self {
+            LineTo::XYAbsolute(v) => format!(
+                "L {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            LineTo::XYRelative(v) => format!(
+                "l {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            LineTo::HorizontalAbsolute(v) => format!(
+                "H {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            LineTo::HorizontalRelative(v) => format!(
+                "h {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            LineTo::VerticalAbsolute(v) => format!(
+                "V {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            LineTo::VerticalRelative(v) => format!(
+                "v {}",
+                v.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -223,12 +370,38 @@ pub struct CubicBezierCurvePoint {
     pub y: LengthOrPercentage,
 }
 
+impl ToString for CubicBezierCurvePoint {
+    fn to_string(&self) -> String {
+        format!(
+            "{} {} {} {} {} {}",
+            self.x1.to_string(),
+            self.y1.to_string(),
+            self.x2.to_string(),
+            self.y2.to_string(),
+            self.x.to_string(),
+            self.y.to_string(),
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct SmoothCubicBezierCurvePoint {
     pub x2: LengthOrPercentage,
     pub y2: LengthOrPercentage,
     pub x: LengthOrPercentage,
     pub y: LengthOrPercentage,
+}
+
+impl ToString for SmoothCubicBezierCurvePoint {
+    fn to_string(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.x2.to_string(),
+            self.y2.to_string(),
+            self.x.to_string(),
+            self.y.to_string()
+        )
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -239,6 +412,53 @@ pub enum CubicBezierCurve {
     SmoothRelative(Vec<SmoothCubicBezierCurvePoint>), // s (x2 y2 x y)+
 }
 
+impl ToString for CubicBezierCurve {
+    fn to_string(&self) -> String {
+        match self {
+            CubicBezierCurve::Absolute(cubic_bezier_curve_points) => format!(
+                "C {}",
+                cubic_bezier_curve_points
+                    .iter()
+                    .map(|cubic_bezier_curve_point| cubic_bezier_curve_point.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            CubicBezierCurve::Relative(cubic_bezier_curve_points) => format!(
+                "c {}",
+                cubic_bezier_curve_points
+                    .iter()
+                    .map(|cubic_bezier_curve_point| cubic_bezier_curve_point.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            ),
+            CubicBezierCurve::SmoothAbsolute(smooth_cubic_bezier_curve_points) => {
+                format!(
+                    "S {}",
+                    smooth_cubic_bezier_curve_points
+                        .iter()
+                        .map(|smooth_cubic_bezier_curve_point| {
+                            smooth_cubic_bezier_curve_point.to_string()
+                        })
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                )
+            }
+            CubicBezierCurve::SmoothRelative(smooth_cubic_bezier_curve_points) => {
+                format!(
+                    "s {}",
+                    smooth_cubic_bezier_curve_points
+                        .iter()
+                        .map(|smooth_cubic_bezier_curve_point| {
+                            smooth_cubic_bezier_curve_point.to_string()
+                        })
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                )
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct QuadraticBezierCurvePoint {
     pub x1: LengthOrPercentage,
@@ -247,10 +467,28 @@ pub struct QuadraticBezierCurvePoint {
     pub y: LengthOrPercentage,
 }
 
+impl ToString for QuadraticBezierCurvePoint {
+    fn to_string(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.x1.to_string(),
+            self.y1.to_string(),
+            self.x.to_string(),
+            self.y.to_string()
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Point {
     pub x: LengthOrPercentage,
     pub y: LengthOrPercentage,
+}
+
+impl ToString for Point {
+    fn to_string(&self) -> String {
+        format!("{} {}", self.x.to_string(), self.y.to_string())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -259,6 +497,49 @@ pub enum QuadraticBezierCurve {
     Relative(Vec<QuadraticBezierCurvePoint>), // q (x1 y1 x y)+
     SmoothAbsolute(Vec<Point>),               // T (x y)+
     SmoothRelative(Vec<Point>),               // t (x y)+
+}
+
+impl ToString for QuadraticBezierCurve {
+    fn to_string(&self) -> String {
+        match self {
+            QuadraticBezierCurve::Absolute(quadratic_bezier_curve_points) => {
+                format!(
+                    "Q {}",
+                    quadratic_bezier_curve_points
+                        .iter()
+                        .map(|point| point.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                )
+            }
+            QuadraticBezierCurve::Relative(quadratic_bezier_curve_points) => {
+                format!(
+                    "q {}",
+                    quadratic_bezier_curve_points
+                        .iter()
+                        .map(|point| point.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                )
+            }
+            QuadraticBezierCurve::SmoothAbsolute(points) => format!(
+                "T {}",
+                points
+                    .iter()
+                    .map(|point| point.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
+            QuadraticBezierCurve::SmoothRelative(points) => format!(
+                "t {}",
+                points
+                    .iter()
+                    .map(|point| point.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -272,10 +553,48 @@ pub struct EllipticalArcPoint {
     pub y: LengthOrPercentage,
 }
 
+impl ToString for EllipticalArcPoint {
+    fn to_string(&self) -> String {
+        format!(
+            "{} {} {} {} {} {} {}",
+            self.rx.to_string(),
+            self.ry.to_string(),
+            self.angle,
+            self.large_arc_flag as u8,
+            self.sweep_flag as u8,
+            self.x.to_string(),
+            self.y.to_string(),
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum EllipticalArcCurve {
     Absolute(Vec<EllipticalArcPoint>), // A (rx ry angle large-arc-flag sweep-flag x y)+
     Relative(Vec<EllipticalArcPoint>), // a (rx ry angle large-arc-flag sweep-flag dx dy)+
+}
+
+impl ToString for EllipticalArcCurve {
+    fn to_string(&self) -> String {
+        match self {
+            EllipticalArcCurve::Absolute(elliptical_arc_points) => format!(
+                "A {}",
+                elliptical_arc_points
+                    .iter()
+                    .map(|point| point.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
+            EllipticalArcCurve::Relative(elliptical_arc_points) => format!(
+                "a {}",
+                elliptical_arc_points
+                    .iter()
+                    .map(|point| point.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -286,6 +605,21 @@ pub enum Path {
     QuadraticBezierCurve(QuadraticBezierCurve), // Q q T t
     EllipticalArcCurve(EllipticalArcCurve),     // A a
     ClosePath,                                  // Z z
+}
+
+impl ToString for Path {
+    fn to_string(&self) -> String {
+        match self {
+            Path::MoveTo(move_to) => move_to.to_string(),
+            Path::LineTo(line_to) => line_to.to_string(),
+            Path::CubicBezierCurve(cubic_bezier_curve) => cubic_bezier_curve.to_string(),
+            Path::QuadraticBezierCurve(quadratic_bezier_curve) => {
+                quadratic_bezier_curve.to_string()
+            }
+            Path::EllipticalArcCurve(elliptical_arc_curve) => elliptical_arc_curve.to_string(),
+            Path::ClosePath => "Z".to_string(),
+        }
+    }
 }
 
 impl FromStr for Path {
@@ -543,6 +877,15 @@ pub enum TextDirection {
     Rtl,
 }
 
+impl ToString for TextDirection {
+    fn to_string(&self) -> String {
+        match self {
+            TextDirection::Ltr => "ltr".to_string(),
+            TextDirection::Rtl => "rtl".to_string(),
+        }
+    }
+}
+
 impl FromStr for TextDirection {
     type Err = ();
 
@@ -586,6 +929,42 @@ pub enum Display {
     InlineTable,
     InlineFlex,
     InlineGrid,
+}
+
+impl ToString for Display {
+    fn to_string(&self) -> String {
+        match self {
+            Display::Inline => "inline",
+            Display::Block => "block",
+            Display::RunIn => "run-in",
+            Display::Flow => "flow",
+            Display::FlowRoot => "flow-root",
+            Display::Table => "table",
+            Display::Flex => "flex",
+            Display::Grid => "grid",
+            Display::Ruby => "ruby",
+            Display::ListItem => "list-item",
+            Display::TableRowGroup => "table-row-group",
+            Display::TableHeaderGroup => "table-header-group",
+            Display::TableFooterGroup => "table-footer-group",
+            Display::TableRow => "table-row",
+            Display::TableCell => "table-cell",
+            Display::TableColumnGroup => "table-column-group",
+            Display::TableColumn => "table-column",
+            Display::TableCaption => "table-caption",
+            Display::RubyBase => "ruby-base",
+            Display::RubyText => "ruby-text",
+            Display::RubyBaseContainer => "ruby-base-container",
+            Display::RubyTextContainer => "ruby-text-container",
+            Display::Contents => "contents",
+            Display::None => "none",
+            Display::InlineBlock => "inline-block",
+            Display::InlineTable => "inline-table",
+            Display::InlineFlex => "inline-flex",
+            Display::InlineGrid => "inline-grid",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for Display {
@@ -640,6 +1019,23 @@ pub enum DominantBaseline {
     TextTop,
 }
 
+impl ToString for DominantBaseline {
+    fn to_string(&self) -> String {
+        match self {
+            DominantBaseline::Auto => "auto",
+            DominantBaseline::TextBottom => "text-bottom",
+            DominantBaseline::Alphabetic => "alphabetic",
+            DominantBaseline::Ideographic => "ideographic",
+            DominantBaseline::Middle => "middle",
+            DominantBaseline::Central => "central",
+            DominantBaseline::Mathematical => "mathematical",
+            DominantBaseline::Hanging => "hanging",
+            DominantBaseline::TextTop => "text-top",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for DominantBaseline {
     type Err = ();
 
@@ -666,6 +1062,16 @@ pub enum Fill {
     Remove,
 }
 
+impl ToString for Fill {
+    fn to_string(&self) -> String {
+        match self {
+            Fill::Paint(paint) => paint.to_string(),
+            Fill::Freeze => "freeze".to_string(),
+            Fill::Remove => "remove".to_string(),
+        }
+    }
+}
+
 impl FromStr for Fill {
     type Err = ();
 
@@ -683,6 +1089,15 @@ pub enum FillRule {
     #[default]
     NonZero,
     EvenOdd,
+}
+
+impl ToString for FillRule {
+    fn to_string(&self) -> String {
+        match self {
+            FillRule::NonZero => "nonzero".to_string(),
+            FillRule::EvenOdd => "evenodd".to_string(),
+        }
+    }
 }
 
 impl FromStr for FillRule {
@@ -703,6 +1118,17 @@ pub enum FontSize {
     Relative(RelativeSize),
     Length(Length),
     Percentage(Percentage),
+}
+
+impl ToString for FontSize {
+    fn to_string(&self) -> String {
+        match self {
+            FontSize::Absolute(absolute_size) => absolute_size.to_string(),
+            FontSize::Relative(relative_size) => relative_size.to_string(),
+            FontSize::Length(length) => length.to_string(),
+            FontSize::Percentage(percentage) => percentage.to_string(),
+        }
+    }
 }
 
 impl FromStr for FontSize {
@@ -735,6 +1161,15 @@ pub enum FontSizeAdjust {
     Number(f64),
 }
 
+impl ToString for FontSizeAdjust {
+    fn to_string(&self) -> String {
+        match self {
+            FontSizeAdjust::None => "none".to_string(),
+            FontSizeAdjust::Number(number) => number.to_string(),
+        }
+    }
+}
+
 impl FromStr for FontSizeAdjust {
     type Err = ();
 
@@ -752,6 +1187,16 @@ pub enum FontStyle {
     Normal,
     Italic,
     Oblique,
+}
+
+impl ToString for FontStyle {
+    fn to_string(&self) -> String {
+        match self {
+            FontStyle::Normal => "normal".to_string(),
+            FontStyle::Italic => "italic".to_string(),
+            FontStyle::Oblique => "oblique".to_string(),
+        }
+    }
 }
 
 impl FromStr for FontStyle {
@@ -775,6 +1220,17 @@ pub enum ImageRendering {
     OptimizeQuality,
 }
 
+impl ToString for ImageRendering {
+    fn to_string(&self) -> String {
+        match self {
+            ImageRendering::Auto => "auto",
+            ImageRendering::OptimizeSpeed => "optimizeSpeed",
+            ImageRendering::OptimizeQuality => "optimizeQuality",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for ImageRendering {
     type Err = ();
 
@@ -793,6 +1249,15 @@ pub enum LetterSpacing {
     #[default]
     Normal,
     Length(Length),
+}
+
+impl ToString for LetterSpacing {
+    fn to_string(&self) -> String {
+        match self {
+            LetterSpacing::Normal => "normal".to_string(),
+            LetterSpacing::Length(length) => length.to_string(),
+        }
+    }
 }
 
 impl FromStr for LetterSpacing {
@@ -829,6 +1294,15 @@ pub enum Marker {
     Url(Url), // TODO: Is this correct?
 }
 
+impl ToString for Marker {
+    fn to_string(&self) -> String {
+        match self {
+            Marker::None => "none".to_string(),
+            Marker::Url(_) => todo!(),
+        }
+    }
+}
+
 impl FromStr for Marker {
     type Err = ();
 
@@ -848,6 +1322,15 @@ pub enum MaskType {
     Luminance,
 }
 
+impl ToString for MaskType {
+    fn to_string(&self) -> String {
+        match self {
+            MaskType::Alpha => "alpha".to_string(),
+            MaskType::Luminance => "luminance".to_string(),
+        }
+    }
+}
+
 impl FromStr for MaskType {
     type Err = ();
 
@@ -862,6 +1345,12 @@ impl FromStr for MaskType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Opacity(pub f64);
+
+impl ToString for Opacity {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
 
 impl FromStr for Opacity {
     type Err = ();
@@ -884,6 +1373,17 @@ pub enum Overflow {
     Hidden,
     Scroll,
     Auto,
+}
+
+impl ToString for Overflow {
+    fn to_string(&self) -> String {
+        match self {
+            Overflow::Visible => "visible".to_string(),
+            Overflow::Hidden => "hidden".to_string(),
+            Overflow::Scroll => "scroll".to_string(),
+            Overflow::Auto => "auto".to_string(),
+        }
+    }
 }
 
 impl FromStr for Overflow {
@@ -915,6 +1415,23 @@ pub enum PointerEvents {
     None,
 }
 
+impl ToString for PointerEvents {
+    fn to_string(&self) -> String {
+        match self {
+            PointerEvents::BoundingBox => "bounding-box".to_string(),
+            PointerEvents::VisiblePainted => "visiblePainted".to_string(),
+            PointerEvents::VisibleFill => "visibleFill".to_string(),
+            PointerEvents::VisibleStroke => "visibleStroke".to_string(),
+            PointerEvents::Visible => "visible".to_string(),
+            PointerEvents::Painted => "painted".to_string(),
+            PointerEvents::Fill => "fill".to_string(),
+            PointerEvents::Stroke => "stroke".to_string(),
+            PointerEvents::All => "all".to_string(),
+            PointerEvents::None => "none".to_string(),
+        }
+    }
+}
+
 impl FromStr for PointerEvents {
     type Err = ();
 
@@ -935,21 +1452,23 @@ impl FromStr for PointerEvents {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct CircleRadius(pub LengthOrPercentage);
-
-impl Default for CircleRadius {
-    fn default() -> Self {
-        CircleRadius(LengthOrPercentage::Percentage(Percentage(50.0)))
-    }
-}
-
 // NOTE: This is called EllipsisRadius, but it can be applied to both ellipse and a rect
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum EllipsisRadius {
     LengthOrPercentage(LengthOrPercentage),
     #[default]
     Auto,
+}
+
+impl ToString for EllipsisRadius {
+    fn to_string(&self) -> String {
+        match self {
+            EllipsisRadius::LengthOrPercentage(length_or_percentage) => {
+                length_or_percentage.to_string()
+            }
+            EllipsisRadius::Auto => "auto".to_string(),
+        }
+    }
 }
 
 impl FromStr for EllipsisRadius {
@@ -974,6 +1493,18 @@ pub enum ShapeRendering {
     GeometricPrecision,
 }
 
+impl ToString for ShapeRendering {
+    fn to_string(&self) -> String {
+        match self {
+            ShapeRendering::Auto => "auto",
+            ShapeRendering::OptimizeSpeed => "optimizeSpeed",
+            ShapeRendering::CrispEdges => "crispEdges",
+            ShapeRendering::GeometricPrecision => "geometricPrecision",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for ShapeRendering {
     type Err = ();
 
@@ -990,6 +1521,12 @@ impl FromStr for ShapeRendering {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct StopColor(pub Color);
+
+impl ToString for StopColor {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
 
 impl FromStr for StopColor {
     type Err = ();
@@ -1011,6 +1548,17 @@ pub enum StrokeLinecap {
     Butt,
     Round,
     Square,
+}
+
+impl ToString for StrokeLinecap {
+    fn to_string(&self) -> String {
+        match self {
+            StrokeLinecap::Butt => "butt",
+            StrokeLinecap::Round => "round",
+            StrokeLinecap::Square => "square",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for StrokeLinecap {
@@ -1036,6 +1584,19 @@ pub enum StrokeLinejoin {
     Round,
 }
 
+impl ToString for StrokeLinejoin {
+    fn to_string(&self) -> String {
+        match self {
+            StrokeLinejoin::Arcs => "arcs",
+            StrokeLinejoin::Bevel => "bevel",
+            StrokeLinejoin::Miter => "miter",
+            StrokeLinejoin::MiterClip => "miter-clip",
+            StrokeLinejoin::Round => "round",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for StrokeLinejoin {
     type Err = ();
 
@@ -1055,6 +1616,15 @@ impl FromStr for StrokeLinejoin {
 pub enum StrokeOpacity {
     Number(f64),
     Percentage(Percentage),
+}
+
+impl ToString for StrokeOpacity {
+    fn to_string(&self) -> String {
+        match self {
+            StrokeOpacity::Number(number) => number.to_string(),
+            StrokeOpacity::Percentage(percentage) => percentage.to_string(),
+        }
+    }
 }
 
 impl FromStr for StrokeOpacity {
@@ -1085,6 +1655,19 @@ pub enum VectorEffect {
     FixedPosition,
 }
 
+impl ToString for VectorEffect {
+    fn to_string(&self) -> String {
+        match self {
+            VectorEffect::None => "none",
+            VectorEffect::NonScalingStroke => "non-scaling-stroke",
+            VectorEffect::NonScalingSize => "non-scaling-size",
+            VectorEffect::NonRotation => "non-rotation",
+            VectorEffect::FixedPosition => "fixeed-position",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for VectorEffect {
     type Err = ();
 
@@ -1108,6 +1691,17 @@ pub enum TextAnchor {
     End,
 }
 
+impl ToString for TextAnchor {
+    fn to_string(&self) -> String {
+        match self {
+            TextAnchor::Start => "start",
+            TextAnchor::Middle => "middle",
+            TextAnchor::End => "end",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for TextAnchor {
     type Err = ();
 
@@ -1125,7 +1719,17 @@ impl FromStr for TextAnchor {
 pub enum TextOverflow {
     #[default]
     Clip,
-    Ellipses,
+    Ellipsis,
+}
+
+impl ToString for TextOverflow {
+    fn to_string(&self) -> String {
+        match self {
+            TextOverflow::Clip => "clip",
+            TextOverflow::Ellipsis => "ellipsis",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for TextOverflow {
@@ -1134,7 +1738,7 @@ impl FromStr for TextOverflow {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "clip" => Ok(TextOverflow::Clip),
-            "ellipsis" => Ok(TextOverflow::Ellipses),
+            "ellipsis" => Ok(TextOverflow::Ellipsis),
             _ => Err(()),
         }
     }
@@ -1147,6 +1751,18 @@ pub enum TextRendering {
     OptimizeSpeed,
     OptimizeLegibility,
     GeometricPrecision,
+}
+
+impl ToString for TextRendering {
+    fn to_string(&self) -> String {
+        match self {
+            TextRendering::Auto => "auto",
+            TextRendering::OptimizeSpeed => "optimizeSpeed",
+            TextRendering::OptimizeLegibility => "optimizeLegibility",
+            TextRendering::GeometricPrecision => "geometricPrecision",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for TextRendering {
@@ -1174,6 +1790,20 @@ pub enum UnicodeBidi {
     Plaintext,
 }
 
+impl ToString for UnicodeBidi {
+    fn to_string(&self) -> String {
+        match self {
+            UnicodeBidi::Normal => "normal",
+            UnicodeBidi::Embed => "embed",
+            UnicodeBidi::Isolate => "isolate",
+            UnicodeBidi::BidiOverride => "bidi-override",
+            UnicodeBidi::IsolateOverride => "isolate-override",
+            UnicodeBidi::Plaintext => "plaintext",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for UnicodeBidi {
     type Err = ();
 
@@ -1196,6 +1826,17 @@ pub enum Visibility {
     Visible,
     Hidden,
     Collapse,
+}
+
+impl ToString for Visibility {
+    fn to_string(&self) -> String {
+        match self {
+            Visibility::Visible => "visible",
+            Visibility::Hidden => "hidden",
+            Visibility::Collapse => "collapse",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for Visibility {
@@ -1222,6 +1863,20 @@ pub enum WhiteSpace {
     PreLine,
 }
 
+impl ToString for WhiteSpace {
+    fn to_string(&self) -> String {
+        match self {
+            WhiteSpace::Normal => "normal",
+            WhiteSpace::Pre => "pre",
+            WhiteSpace::Nowrap => "nowrap",
+            WhiteSpace::PreWrap => "pre-wrap",
+            WhiteSpace::BreakSpace => "break-space",
+            WhiteSpace::PreLine => "pre-line",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for WhiteSpace {
     type Err = ();
 
@@ -1245,6 +1900,15 @@ pub enum WordSpacing {
     Length(Length),
 }
 
+impl ToString for WordSpacing {
+    fn to_string(&self) -> String {
+        match self {
+            WordSpacing::Normal => "normal".to_string(),
+            WordSpacing::Length(length) => length.to_string(),
+        }
+    }
+}
+
 impl FromStr for WordSpacing {
     type Err = ();
 
@@ -1262,6 +1926,17 @@ pub enum WritingMode {
     HorizontalTb,
     VerticalRl,
     VerticalLr,
+}
+
+impl ToString for WritingMode {
+    fn to_string(&self) -> String {
+        match self {
+            WritingMode::HorizontalTb => "horizontal-tb",
+            WritingMode::VerticalRl => "vertical-rl",
+            WritingMode::VerticalLr => "vertical-lr",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for WritingMode {
@@ -1282,6 +1957,16 @@ pub enum Rotate {
     Auto,
     AutoReverse,
     Number(f64),
+}
+
+impl ToString for Rotate {
+    fn to_string(&self) -> String {
+        match self {
+            Rotate::Auto => "auto".to_string(),
+            Rotate::AutoReverse => "auto-reverse".to_string(),
+            Rotate::Number(number) => number.to_string(),
+        }
+    }
 }
 
 impl Default for Rotate {
@@ -1311,6 +1996,16 @@ pub enum LengthOrPercentageOrNumber {
     Length(Length),
     Percentage(Percentage),
     Number(f64),
+}
+
+impl ToString for LengthOrPercentageOrNumber {
+    fn to_string(&self) -> String {
+        match self {
+            LengthOrPercentageOrNumber::Length(length) => length.to_string(),
+            LengthOrPercentageOrNumber::Percentage(percentage) => percentage.to_string(),
+            LengthOrPercentageOrNumber::Number(number) => number.to_string(),
+        }
+    }
 }
 
 impl FromStr for LengthOrPercentageOrNumber {
@@ -1343,6 +2038,22 @@ pub enum ReferrerPolicy {
     OriginWhenCrossOrigin,
     StrictOriginWhenCrossOrigin,
     UnsafeUrl,
+}
+
+impl ToString for ReferrerPolicy {
+    fn to_string(&self) -> String {
+        match self {
+            ReferrerPolicy::NoReferrer => "no-referrer",
+            ReferrerPolicy::NoReferrerWhenDowngrade => "no-referrer-when-downgrade",
+            ReferrerPolicy::SameOrigin => "same-origin",
+            ReferrerPolicy::Origin => "origin",
+            ReferrerPolicy::StrictOrigin => "strict-origin",
+            ReferrerPolicy::OriginWhenCrossOrigin => "origin-when-cross-origin",
+            ReferrerPolicy::StrictOriginWhenCrossOrigin => "strict-origin-when-cross-origin",
+            ReferrerPolicy::UnsafeUrl => "unsafe-url",
+        }
+        .to_string()
+    }
 }
 
 impl TryFrom<&str> for ReferrerPolicy {
@@ -1396,6 +2107,43 @@ pub enum RelType {
     TermsOfService,
 }
 
+impl ToString for RelType {
+    fn to_string(&self) -> String {
+        match self {
+            RelType::Alternate => "alternate",
+            RelType::Author => "author",
+            RelType::Bookmark => "bookmark",
+            RelType::Canonical => "canonical",
+            RelType::CompressionDictionary => "compression-dictionary",
+            RelType::DnsPrefetch => "dns-prefetch",
+            RelType::External => "external",
+            RelType::Expect => "expect",
+            RelType::Help => "help",
+            RelType::Icon => "icon",
+            RelType::License => "license",
+            RelType::Manifest => "manifest",
+            RelType::Me => "me",
+            RelType::ModulePreload => "module-preload",
+            RelType::Next => "next",
+            RelType::NoFollow => "nofollow",
+            RelType::NoOpener => "noopener",
+            RelType::NoReferrer => "noreferrer",
+            RelType::Opener => "opener",
+            RelType::PingBack => "pingback",
+            RelType::PreConnect => "preconnect",
+            RelType::Prefetch => "prefetch",
+            RelType::Preload => "preload",
+            RelType::Prev => "prev",
+            RelType::PrivacyPolicy => "privacy-policy",
+            RelType::Search => "search",
+            RelType::StyleSheet => "stylesheet",
+            RelType::Tag => "tag",
+            RelType::TermsOfService => "terms-of-service",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for RelType {
     type Err = ();
 
@@ -1444,6 +2192,18 @@ pub enum Target {
     Blank,
 }
 
+impl ToString for Target {
+    fn to_string(&self) -> String {
+        match self {
+            Target::Self_ => "_self",
+            Target::Parent => "parent",
+            Target::Top => "top",
+            Target::Blank => "blank",
+        }
+        .to_string()
+    }
+}
+
 impl TryFrom<&str> for Target {
     type Error = ();
 
@@ -1465,6 +2225,16 @@ pub enum MarkerUnits {
     StrokeWidth,
 }
 
+impl ToString for MarkerUnits {
+    fn to_string(&self) -> String {
+        match self {
+            MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
+            MarkerUnits::StrokeWidth => "strokeWidth",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for MarkerUnits {
     type Err = ();
 
@@ -1482,6 +2252,16 @@ pub enum Orient {
     Auto,
     AutoStartReverse,
     Angle(f64),
+}
+
+impl ToString for Orient {
+    fn to_string(&self) -> String {
+        match self {
+            Orient::Auto => "auto".to_string(),
+            Orient::AutoStartReverse => "auto-start-reverse".to_string(),
+            Orient::Angle(angle) => angle.to_string(),
+        }
+    }
 }
 
 impl Default for Orient {
@@ -1530,6 +2310,33 @@ pub enum PreserveAspectRatio {
     XMaxYMaxSlice,
 }
 
+impl ToString for PreserveAspectRatio {
+    fn to_string(&self) -> String {
+        match self {
+            PreserveAspectRatio::None => "none",
+            PreserveAspectRatio::XMinYMinMeet => "xMinYMin meet",
+            PreserveAspectRatio::XMidYMinMeet => "xMidYMid meet",
+            PreserveAspectRatio::XMaxYMinMeet => "xMaxYMin meet",
+            PreserveAspectRatio::XMinYMidMeet => "xMinYMid meet",
+            PreserveAspectRatio::XMidYMidMeet => "xMidYMid meet",
+            PreserveAspectRatio::XMaxYMidMeet => "xMaxYMid meet",
+            PreserveAspectRatio::XMinYMaxMeet => "xMinYMax meet",
+            PreserveAspectRatio::XMidYMaxMeet => "xMidYMax meet",
+            PreserveAspectRatio::XMaxYMaxMeet => "xMaxYMax meet",
+            PreserveAspectRatio::XMinYMinSlice => "xMinYMin slice",
+            PreserveAspectRatio::XMidYMinSlice => "xMidYMid slice",
+            PreserveAspectRatio::XMaxYMinSlice => "xMaxYMin slice",
+            PreserveAspectRatio::XMinYMidSlice => "xMinYMid slice",
+            PreserveAspectRatio::XMidYMidSlice => "xMidYMid slice",
+            PreserveAspectRatio::XMaxYMidSlice => "xMaxYMid slice",
+            PreserveAspectRatio::XMinYMaxSlice => "xMinYMax slice",
+            PreserveAspectRatio::XMidYMaxSlice => "xMidYMax slice",
+            PreserveAspectRatio::XMaxYMaxSlice => "xMaxYMax slice",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for PreserveAspectRatio {
     type Err = ();
 
@@ -1567,6 +2374,17 @@ pub enum RefX {
     Coordinate(LengthOrPercentage),
 }
 
+impl ToString for RefX {
+    fn to_string(&self) -> String {
+        match self {
+            RefX::Left => "left".to_string(),
+            RefX::Center => "center".to_string(),
+            RefX::Right => "right".to_string(),
+            RefX::Coordinate(length_or_percentage) => length_or_percentage.to_string(),
+        }
+    }
+}
+
 impl Default for RefX {
     fn default() -> Self {
         Self::Coordinate(LengthOrPercentage::Length(Length::Absolute(
@@ -1594,6 +2412,17 @@ pub enum RefY {
     Center,
     Bottom,
     Coordinate(LengthOrPercentage),
+}
+
+impl ToString for RefY {
+    fn to_string(&self) -> String {
+        match self {
+            RefY::Top => "top".to_string(),
+            RefY::Center => "center".to_string(),
+            RefY::Bottom => "bottom".to_string(),
+            RefY::Coordinate(length_or_percentage) => length_or_percentage.to_string(),
+        }
+    }
 }
 
 impl Default for RefY {
@@ -1642,6 +2471,16 @@ pub enum MaskContentUnits {
     ObjectBoundingBox,
 }
 
+impl ToString for MaskContentUnits {
+    fn to_string(&self) -> String {
+        match self {
+            MaskContentUnits::UserSpaceOnUse => "userSpaceOnUse",
+            MaskContentUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for MaskContentUnits {
     type Err = ();
 
@@ -1659,6 +2498,16 @@ pub enum MaskUnits {
     #[default]
     UserSpaceOnUse,
     ObjectBoundingBox,
+}
+
+impl ToString for MaskUnits {
+    fn to_string(&self) -> String {
+        match self {
+            MaskUnits::UserSpaceOnUse => "userSpaceOnUse",
+            MaskUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for MaskUnits {
@@ -1680,6 +2529,16 @@ pub enum PatternContentUnits {
     ObjectBoundingBox,
 }
 
+impl ToString for PatternContentUnits {
+    fn to_string(&self) -> String {
+        match self {
+            PatternContentUnits::UserSpaceOnUse => "userSpaceOnUse",
+            PatternContentUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for PatternContentUnits {
     type Err = ();
 
@@ -1697,6 +2556,16 @@ pub enum PatternUnits {
     #[default]
     UserSpaceOnUse,
     ObjectBoundingBox,
+}
+
+impl ToString for PatternUnits {
+    fn to_string(&self) -> String {
+        match self {
+            PatternUnits::UserSpaceOnUse => "userSpaceOnUse",
+            PatternUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for PatternUnits {
@@ -1721,6 +2590,20 @@ pub enum In {
     FillPaint,
     StrokePaint,
     Identifier(String),
+}
+
+impl ToString for In {
+    fn to_string(&self) -> String {
+        match self {
+            In::SourceGraphic => "SourceGraphic".to_string(),
+            In::SourceAlpha => "SourceAlpha".to_string(),
+            In::BackgroundImage => "BackgroundImage".to_string(),
+            In::BackgroundAlpha => "BackgroundAlpha".to_string(),
+            In::FillPaint => "FillPaint".to_string(),
+            In::StrokePaint => "StrokePaint".to_string(),
+            In::Identifier(identifier) => identifier.to_string(),
+        }
+    }
 }
 
 impl FromStr for In {
@@ -1758,6 +2641,30 @@ pub enum BlendMode {
     Saturation,
     Color,
     Luminosity,
+}
+
+impl ToString for BlendMode {
+    fn to_string(&self) -> String {
+        match self {
+            BlendMode::Normal => "normal",
+            BlendMode::Multiply => "multiply",
+            BlendMode::Screen => "screen",
+            BlendMode::Overlay => "overlay",
+            BlendMode::Darken => "darken",
+            BlendMode::Lighten => "lighten",
+            BlendMode::ColorDodge => "color-dodge",
+            BlendMode::ColorBurn => "color-burn",
+            BlendMode::HardLight => "hard-light",
+            BlendMode::SoftLight => "soft-light",
+            BlendMode::Difference => "difference",
+            BlendMode::Exclusion => "exclusion",
+            BlendMode::Hue => "hue",
+            BlendMode::Saturation => "saturation",
+            BlendMode::Color => "color",
+            BlendMode::Luminosity => "luminosity",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for BlendMode {
@@ -1798,6 +2705,21 @@ pub enum Operator {
     Arithmetic,
 }
 
+impl ToString for Operator {
+    fn to_string(&self) -> String {
+        match self {
+            Operator::Over => "over",
+            Operator::In => "in",
+            Operator::Out => "out",
+            Operator::Atop => "atop",
+            Operator::Xor => "xor",
+            Operator::Lighter => "lighter",
+            Operator::Arithmetic => "arithmetic",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for Operator {
     type Err = ();
 
@@ -1823,6 +2745,17 @@ pub enum EdgeMode {
     None,
 }
 
+impl ToString for EdgeMode {
+    fn to_string(&self) -> String {
+        match self {
+            EdgeMode::Duplicate => "duplicate",
+            EdgeMode::Wrap => "wrap",
+            EdgeMode::None => "none",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for EdgeMode {
     type Err = ();
 
@@ -1843,6 +2776,18 @@ pub enum ChannelSelector {
     B,
     #[default]
     A,
+}
+
+impl ToString for ChannelSelector {
+    fn to_string(&self) -> String {
+        match self {
+            ChannelSelector::R => "R",
+            ChannelSelector::G => "G",
+            ChannelSelector::B => "B",
+            ChannelSelector::A => "A",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for ChannelSelector {
@@ -1867,6 +2812,17 @@ pub enum CrossOrigin {
     Empty,
 }
 
+impl ToString for CrossOrigin {
+    fn to_string(&self) -> String {
+        match self {
+            CrossOrigin::Anonymous => "anonymous",
+            CrossOrigin::UseCredentials => "use-credentials",
+            CrossOrigin::Empty => "",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for CrossOrigin {
     type Err = ();
 
@@ -1885,6 +2841,16 @@ pub enum StitchTiles {
     #[default]
     NoStitch,
     Stitch,
+}
+
+impl ToString for StitchTiles {
+    fn to_string(&self) -> String {
+        match self {
+            StitchTiles::NoStitch => "noStitch",
+            StitchTiles::Stitch => "stitch",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for StitchTiles {
@@ -1906,6 +2872,16 @@ pub enum GradientUnits {
     ObjectBoundingBox,
 }
 
+impl ToString for GradientUnits {
+    fn to_string(&self) -> String {
+        match self {
+            GradientUnits::UserSpaceOnUse => "userSpaceOnUse",
+            GradientUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for GradientUnits {
     type Err = ();
 
@@ -1924,6 +2900,17 @@ pub enum SpreadMethod {
     Pad,
     Reflect,
     Repeat,
+}
+
+impl ToString for SpreadMethod {
+    fn to_string(&self) -> String {
+        match self {
+            SpreadMethod::Pad => "pad",
+            SpreadMethod::Reflect => "reflect",
+            SpreadMethod::Repeat => "repeat",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for SpreadMethod {
@@ -1947,6 +2934,17 @@ pub enum Decoding {
     Asynchronous,
 }
 
+impl ToString for Decoding {
+    fn to_string(&self) -> String {
+        match self {
+            Decoding::Auto => "auto",
+            Decoding::Synchronous => "sync",
+            Decoding::Asynchronous => "async",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for Decoding {
     type Err = ();
 
@@ -1966,6 +2964,17 @@ pub enum FetchPriority {
     Auto,
     High,
     Low,
+}
+
+impl ToString for FetchPriority {
+    fn to_string(&self) -> String {
+        match self {
+            FetchPriority::Auto => "auto",
+            FetchPriority::High => "high",
+            FetchPriority::Low => "low",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for FetchPriority {
@@ -1988,6 +2997,16 @@ pub enum LengthAdjust {
     SpacingAndGlyphs,
 }
 
+impl ToString for LengthAdjust {
+    fn to_string(&self) -> String {
+        match self {
+            LengthAdjust::Spacing => "spacing",
+            LengthAdjust::SpacingAndGlyphs => "spacingAndGlyphs",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for LengthAdjust {
     type Err = ();
 
@@ -2005,6 +3024,16 @@ pub enum ClipPathUnits {
     #[default]
     UserSpaceOnUse,
     ObjectBoundingBox,
+}
+
+impl ToString for ClipPathUnits {
+    fn to_string(&self) -> String {
+        match self {
+            ClipPathUnits::UserSpaceOnUse => "userSpaceOnUse",
+            ClipPathUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for ClipPathUnits {
@@ -2026,6 +3055,16 @@ pub enum Method {
     Stretch,
 }
 
+impl ToString for Method {
+    fn to_string(&self) -> String {
+        match self {
+            Method::Align => "align",
+            Method::Stretch => "stretch",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for Method {
     type Err = ();
 
@@ -2043,6 +3082,16 @@ pub enum Side {
     #[default]
     Left,
     Right,
+}
+
+impl ToString for Side {
+    fn to_string(&self) -> String {
+        match self {
+            Side::Left => "left",
+            Side::Right => "right",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for Side {
@@ -2064,6 +3113,16 @@ pub enum Spacing {
     Auto,
 }
 
+impl ToString for Spacing {
+    fn to_string(&self) -> String {
+        match self {
+            Spacing::Exact => "exact",
+            Spacing::Auto => "auto",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for Spacing {
     type Err = ();
 
@@ -2083,6 +3142,16 @@ pub enum FilterUnits {
     ObjectBoundingBox,
 }
 
+impl ToString for FilterUnits {
+    fn to_string(&self) -> String {
+        match self {
+            FilterUnits::UserSpaceOnUse => "userSpaceOnUse",
+            FilterUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for FilterUnits {
     type Err = ();
 
@@ -2100,6 +3169,16 @@ pub enum PrimitiveUnits {
     #[default]
     UserSpaceOnUse,
     ObjectBoundingBox,
+}
+
+impl ToString for PrimitiveUnits {
+    fn to_string(&self) -> String {
+        match self {
+            PrimitiveUnits::UserSpaceOnUse => "userSpaceOnUse",
+            PrimitiveUnits::ObjectBoundingBox => "objectBoundingBox",
+        }
+        .to_string()
+    }
 }
 
 impl FromStr for PrimitiveUnits {
@@ -2642,6 +3721,264 @@ impl TryFrom<(&String, &String)> for Attribute {
 }
 
 impl Attribute {
+    pub fn name(&self) -> &str {
+        match self {
+            Attribute::Xmlns(_) => "xmlns",
+            Attribute::Autofocus(_) => "autofocus",
+            Attribute::Id(_) => "id",
+            Attribute::Class(_) => "class",
+            Attribute::Style(_) => "style",
+            Attribute::Lang(_) => "lang",
+            Attribute::Tabindex(_) => "tabindex",
+            Attribute::RequiredExtensions(_) => "requiredExtensions",
+            Attribute::SystemLanguage(_) => "systemLanguage",
+            Attribute::AlignmentBaseline(_) => "alignment-baseline",
+            Attribute::BaselineShift(_) => "baseline-shift",
+            Attribute::ClipPath(_) => "clip-path",
+            Attribute::ClipRule(_) => "clip-rule",
+            Attribute::Color(_) => "color",
+            Attribute::ColorInterpolation(_) => "color-interpolation",
+            Attribute::ColorInterpolationFilters(_) => "color-interpolation-filters",
+            Attribute::Cursor(_) => "cursor",
+            Attribute::Cx(_) => "cx",
+            Attribute::Cy(_) => "cy",
+            Attribute::D(_) => "d",
+            Attribute::Direction(_) => "direction",
+            Attribute::Display(_) => "display",
+            Attribute::DominantBaseline(_) => "dominant-baseline",
+            Attribute::Fill(_) => "fill",
+            Attribute::FillOpacity(_) => "fill-opacity",
+            Attribute::FillRule(_) => "fill-rule",
+            Attribute::Filter(_) => "filter",
+            Attribute::FloodColor(_) => "flood-color",
+            Attribute::FloodOpacity(_) => "flood-opacity",
+            Attribute::FontFamily(_) => "font-family",
+            Attribute::FontSize(_) => "font-size",
+            Attribute::FontSizeAdjust(_) => "font-size-adjust",
+            Attribute::FontStyle(_) => "font-style",
+            Attribute::FontVariant(_) => "font-variant",
+            Attribute::FontWeight(_) => "font-weight",
+            Attribute::Height(_) => "height",
+            Attribute::ImageRendering(_) => "image-rendering",
+            Attribute::LetterSpacing(_) => "letter-spacing",
+            Attribute::LightingColor(_) => "lighting-color",
+            Attribute::MarkerEnd(_) => "marker-end",
+            Attribute::MarkerMid(_) => "marker-mid",
+            Attribute::MarkerStart(_) => "marker-start",
+            Attribute::Mask(_) => "mask",
+            Attribute::MaskType(_) => "mask-type",
+            Attribute::Opacity(_) => "opacity",
+            Attribute::Overflow(_) => "overflow",
+            Attribute::PointerEvents(_) => "pointer-events",
+            Attribute::R(_) => "r",
+            Attribute::Rx(_) => "rx",
+            Attribute::Ry(_) => "ry",
+            Attribute::ShapeRendering(_) => "shape-rendering",
+            Attribute::StopColor(_) => "stop-color",
+            Attribute::StopOpacity(_) => "stop-opacity",
+            Attribute::Stroke(_) => "stroke",
+            Attribute::StrokeDasharray(_) => "stroke-dasharray",
+            Attribute::StrokeDashoffset(_) => "stroke-dashoffset",
+            Attribute::StrokeLinecap(_) => "stroke-linecap",
+            Attribute::StrokeLinejoin(_) => "stroke-linejoin",
+            Attribute::StrokeMiterlimit(_) => "stroke-miterlimit",
+            Attribute::StrokeOpacity(_) => "stroke-opacity",
+            Attribute::StrokeWidth(_) => "stroke-width",
+            Attribute::TextAnchor(_) => "text-anchor",
+            Attribute::TextDecoration(_) => "text-decoration",
+            Attribute::TextOverflow(_) => "text-overflow",
+            Attribute::TextRendering(_) => "text-rendering",
+            Attribute::Transform(_) => "transform",
+            Attribute::TransformOrigin(_) => "transform-origin",
+            Attribute::UnicodeBidi(_) => "unicode-bidi",
+            Attribute::VectorEffect(_) => "vector-effect",
+            Attribute::Visibility(_) => "visibility",
+            Attribute::Width(_) => "width",
+            Attribute::WhiteSpace(_) => "white-space",
+            Attribute::WordSpacing(_) => "word-spacing",
+            Attribute::WritingMode(_) => "writing-mode",
+            Attribute::X(_) => "x",
+            Attribute::Y(_) => "y",
+            Attribute::Type => "type",
+            Attribute::TableValues => "tableValues",
+            Attribute::Slope => "slope",
+            Attribute::Intercept => "intercept",
+            Attribute::Amplitude => "amplitude",
+            Attribute::Exponent => "exponent",
+            Attribute::Offset => "offset",
+            Attribute::Href(_) => "href",
+            Attribute::AttributeType => "attributeType",
+            Attribute::AttributeName => "attributeName",
+            Attribute::Begin => "begin",
+            Attribute::Dur => "dur",
+            Attribute::End => "end",
+            Attribute::Min => "min",
+            Attribute::Max => "max",
+            Attribute::Restart => "restart",
+            Attribute::RepeatCount => "repeatCount",
+            Attribute::RepeatDur => "repeatDur",
+            Attribute::Additive => "additive",
+            Attribute::Accumulate => "accumulate",
+            Attribute::OnAfterPrint(_) => "onAfterPrint",
+            Attribute::OnBeforePrint(_) => "onBeforePrint",
+            Attribute::OnBeforeUnload(_) => "onBeforeUnload",
+            Attribute::OnError(_) => "onError",
+            Attribute::OnHashChange(_) => "onHashChange",
+            Attribute::OnLoad(_) => "onLoad",
+            Attribute::OnMessage(_) => "onMessage",
+            Attribute::OnOffline(_) => "onOffline",
+            Attribute::OnOnline(_) => "onOnline",
+            Attribute::OnPageHide(_) => "onPageHide",
+            Attribute::OnPageShow(_) => "onPageShow",
+            Attribute::OnPopState(_) => "onPopState",
+            Attribute::OnResize(_) => "onResize",
+            Attribute::OnStorage(_) => "onStorage",
+            Attribute::OnUnload(_) => "onUnload",
+            Attribute::OnBlur(_) => "onBlur",
+            Attribute::OnChange(_) => "onChange",
+            Attribute::OnContextMenu(_) => "onContextMenu",
+            Attribute::OnFocus(_) => "onFocus",
+            Attribute::OnInput(_) => "onInput",
+            Attribute::OnInvalid(_) => "onInvalid",
+            Attribute::OnReset(_) => "onReset",
+            Attribute::OnSearch(_) => "onSearch",
+            Attribute::OnSelect(_) => "onSelect",
+            Attribute::OnSubmit(_) => "onSubmit",
+            Attribute::OnKeyDown(_) => "onKeyDown",
+            Attribute::OnKeyPress(_) => "onKeyPress",
+            Attribute::OnKeyUp(_) => "onKeyUp",
+            Attribute::OnClick(_) => "onClick",
+            Attribute::OnDoubleClick(_) => "onDoubleClick",
+            Attribute::OnMouseDown(_) => "onMouseDown",
+            Attribute::OnMouseMove(_) => "onMouseMove",
+            Attribute::OnMouseOut(_) => "onMouseOut",
+            Attribute::OnMouseOver(_) => "onMouseOver",
+            Attribute::OnMouseUp(_) => "onMouseUp",
+            Attribute::OnWheel(_) => "onWheel",
+            Attribute::OnDrag(_) => "onDrag",
+            Attribute::OnDragEnd(_) => "onDragEnd",
+            Attribute::OnDragEnter(_) => "onDragEnter",
+            Attribute::OnDragLeave(_) => "onDragLeave",
+            Attribute::OnDragOver(_) => "onDragOver",
+            Attribute::OnDragStart(_) => "onDragStart",
+            Attribute::OnDrop(_) => "onDrop",
+            Attribute::OnScroll(_) => "onScroll",
+            Attribute::OnCopy(_) => "onCopy",
+            Attribute::OnCut(_) => "onCut",
+            Attribute::OnPaste(_) => "onPaste",
+            Attribute::OnAbort(_) => "onAbort",
+            Attribute::OnCanPlay(_) => "onCanPlay",
+            Attribute::OnCanPlayThrough(_) => "onCanPlayThrough",
+            Attribute::OnCueChange(_) => "onCueChange",
+            Attribute::OnDurationChange(_) => "onDurationChange",
+            Attribute::OnEmptied(_) => "onEmptied",
+            Attribute::OnEnded(_) => "onEnded",
+            Attribute::OnLoadedData(_) => "onLoadedData",
+            Attribute::OnLoadedMetadata(_) => "onLoadedMetadata",
+            Attribute::OnLoadStart(_) => "onLoadStart",
+            Attribute::OnPause(_) => "onPause",
+            Attribute::OnPlay(_) => "onPlay",
+            Attribute::OnPlaying(_) => "onPlaying",
+            Attribute::OnProgress(_) => "onProgress",
+            Attribute::OnRateChange(_) => "onRateChange",
+            Attribute::OnSeeked(_) => "onSeeked",
+            Attribute::OnSeeking(_) => "onSeeking",
+            Attribute::OnStalled(_) => "onStalled",
+            Attribute::OnSuspend(_) => "onSuspend",
+            Attribute::OnTimeUpdate(_) => "onTimeUpdate",
+            Attribute::OnVolumeChange(_) => "onVolumeChange",
+            Attribute::OnWaiting(_) => "onWaiting",
+            Attribute::OnToggle(_) => "onToggle",
+            Attribute::KeyPoints(_) => "keyPoints",
+            Attribute::Path(_) => "path",
+            Attribute::Rotate(_) => "rotate",
+            Attribute::CalcMode => "calcMode",
+            Attribute::Values => "values",
+            Attribute::KeyTimes => "keyTimes",
+            Attribute::KeySplines => "keySplines",
+            Attribute::From => "from",
+            Attribute::To => "to",
+            Attribute::By => "by",
+            Attribute::PathLength(_) => "pathLength",
+            Attribute::X1(_) => "x1",
+            Attribute::Y1(_) => "y1",
+            Attribute::X2(_) => "x2",
+            Attribute::Y2(_) => "y2",
+            Attribute::Points(_) => "points",
+            Attribute::Download(_) => "download",
+            Attribute::HrefLang(_) => "hrefLang",
+            Attribute::InterestFor(_) => "interestFor",
+            Attribute::Ping(_) => "ping",
+            Attribute::ReferrerPolicy(_) => "referrerPolicy",
+            Attribute::Rel(_) => "rel",
+            Attribute::Target(_) => "target",
+            Attribute::MarkerHeight(_) => "markerHeight",
+            Attribute::MarkerUnits(_) => "markerUnits",
+            Attribute::MarkerWidth(_) => "markerWidth",
+            Attribute::Orient(_) => "orient",
+            Attribute::PreserveAspectRatio(_) => "preserveAspectRatio",
+            Attribute::RefX(_) => "refX",
+            Attribute::RefY(_) => "refY",
+            Attribute::ViewBox(_) => "viewBox",
+            Attribute::MaskContentUnits(_) => "maskContentUnits",
+            Attribute::MaskUnits(_) => "maskUnits",
+            Attribute::PatternContentUnits(_) => "patternContentUnits",
+            Attribute::PatternUnits(_) => "patternUnits",
+            Attribute::PatternTransform(_) => "patternTransform",
+            Attribute::Result(_) => "result",
+            Attribute::In(_) => "in",
+            Attribute::In2(_) => "in2",
+            Attribute::Mode(_) => "mode",
+            Attribute::Operator(_) => "operator",
+            Attribute::K1(_) => "k1",
+            Attribute::K2(_) => "k2",
+            Attribute::K3(_) => "k3",
+            Attribute::K4(_) => "k4",
+            Attribute::Order(_) => "order",
+            Attribute::KernelMatrix(_) => "kernelMatrix",
+            Attribute::Divisor(_) => "divisor",
+            Attribute::Bias(_) => "bias",
+            Attribute::TargetX(_) => "targetX",
+            Attribute::TargetY(_) => "targetY",
+            Attribute::EdgeMode(_) => "edgeMode",
+            Attribute::KernelUnitLength(_, _) => "kernelUnitLength",
+            Attribute::PreserveAlpha(_) => "preserveAlpha",
+            Attribute::SurfaceScale(_) => "surfaceScale",
+            Attribute::DiffuseConstant(_) => "diffuseConstant",
+            Attribute::Scale(_) => "scale",
+            Attribute::XChannelSelector(_) => "xChannelSelector",
+            Attribute::YChannelSelector(_) => "yChannelSelector",
+            Attribute::Dx(_) => "dx",
+            Attribute::Dy(_) => "dy",
+            Attribute::StdDeviation(_, _) => "stdDeviation",
+            Attribute::CrossOrigin(_) => "crossOrigin",
+            Attribute::Radius(_, _) => "radius",
+            Attribute::SpecularConstant(_) => "specularConstant",
+            Attribute::SpecularExponent(_) => "specularExponent",
+            Attribute::BaseFrequency(_, _) => "baseFrequency",
+            Attribute::NumOctaves(_) => "numOctaves",
+            Attribute::Seed(_) => "seed",
+            Attribute::StitchTiles(_) => "stitchTiles",
+            Attribute::GradientUnits(_) => "gradientUnits",
+            Attribute::GradientTransform(_) => "gradientTransform",
+            Attribute::SpreadMethod(_) => "spreadMethod",
+            Attribute::Fx(_) => "fx",
+            Attribute::Fy(_) => "fy",
+            Attribute::Fr(_) => "fr",
+            Attribute::Decoding(_) => "decoding",
+            Attribute::FetchPriority(_) => "fetchPriority",
+            Attribute::LengthAdjust(_) => "lengthAdjust",
+            Attribute::TextLength(_) => "textLength",
+            Attribute::ClipPathUnits(_) => "clipPathUnits",
+            Attribute::Method(_) => "method",
+            Attribute::Side(_) => "side",
+            Attribute::Spacing(_) => "spacing",
+            Attribute::StartOffset(_) => "startOffset",
+            Attribute::FilterUnits(_) => "filterUnits",
+            Attribute::PrimitiveUnits(_) => "primitiveUnits",
+        }
+    }
+
     #[inline]
     pub fn is_global(&self) -> bool {
         matches!(
@@ -3275,5 +4612,351 @@ impl Attribute {
             ElementType::ForeignObject => todo!(),
             ElementType::View => todo!(),
         }
+    }
+
+    pub fn value_as_string(&self) -> Option<String> {
+        match self {
+            Attribute::Xmlns(xmlns) => Some(xmlns.clone()),
+            Attribute::Autofocus(autofocus) => Some(if *autofocus { "1" } else { "0" }.to_string()),
+            Attribute::Id(id) => Some(id.clone()),
+            Attribute::Class(items) => Some(items.join(" ")),
+            Attribute::Style(style) => Some(style.clone()),
+            Attribute::Lang(lang) => Some(lang.clone()),
+            Attribute::Tabindex(tab_index) => Some(tab_index.to_string()),
+            Attribute::RequiredExtensions(items) => Some(items.join(" ")),
+            Attribute::SystemLanguage(system_language) => Some(system_language.clone()),
+            Attribute::AlignmentBaseline(alignment_baseline) => {
+                Some(alignment_baseline.as_str().to_string())
+            }
+            Attribute::BaselineShift(baseline_shift) => Some(baseline_shift.to_string()),
+            Attribute::ClipPath(clip_path) => Some(clip_path.to_string()),
+            Attribute::ClipRule(clip_rule) => Some(clip_rule.as_str().to_string()),
+            Attribute::Color(color) => Some(color.to_string()),
+            Attribute::ColorInterpolation(color_interpolation) => {
+                Some(color_interpolation.as_str().to_string())
+            }
+            Attribute::ColorInterpolationFilters(color_interpolation_filter) => {
+                Some(color_interpolation_filter.as_str().to_string())
+            }
+            Attribute::Cursor(cursor) => Some(cursor.to_string()),
+            Attribute::Cx(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Cy(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::D(paths) => Some(
+                paths
+                    .iter()
+                    .map(|path| path.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::Direction(text_direction) => Some(text_direction.to_string()),
+            Attribute::Display(display) => Some(display.to_string()),
+            Attribute::DominantBaseline(dominant_baseline) => Some(dominant_baseline.to_string()),
+            Attribute::Fill(fill) => Some(fill.to_string()),
+            Attribute::FillOpacity(percentage) => Some(percentage.to_string()),
+            Attribute::FillRule(fill_rule) => Some(fill_rule.to_string()),
+            Attribute::Filter(filter) => Some(filter.to_owned()),
+            Attribute::FloodColor(color) => Some(color.to_string()),
+            Attribute::FloodOpacity(flood_opacity) => Some(flood_opacity.to_string()),
+            Attribute::FontFamily(font_family) => Some(font_family.to_string()),
+            Attribute::FontSize(font_size) => Some(font_size.to_string()),
+            Attribute::FontSizeAdjust(font_size_adjust) => Some(font_size_adjust.to_string()),
+            Attribute::FontStyle(font_style) => Some(font_style.to_string()),
+            Attribute::FontVariant(font_variant) => Some(font_variant.to_string()),
+            Attribute::FontWeight(font_weight) => Some(font_weight.to_string()),
+            Attribute::Height(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::ImageRendering(image_rendering) => Some(image_rendering.to_string()),
+            Attribute::LetterSpacing(letter_spacing) => Some(letter_spacing.to_string()),
+            Attribute::LightingColor(lighting_color) => Some(lighting_color.0.to_string()),
+            Attribute::MarkerEnd(marker) => Some(marker.to_string()),
+            Attribute::MarkerMid(marker) => Some(marker.to_string()),
+            Attribute::MarkerStart(marker) => Some(marker.to_string()),
+            Attribute::Mask(mask) => Some(mask.to_string()),
+            Attribute::MaskType(mask_type) => Some(mask_type.to_string()),
+            Attribute::Opacity(opacity) => Some(opacity.to_string()),
+            Attribute::Overflow(overflow) => Some(overflow.to_string()),
+            Attribute::PointerEvents(pointer_events) => Some(pointer_events.to_string()),
+            Attribute::R(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Rx(ellipsis_radius) => Some(ellipsis_radius.to_string()),
+            Attribute::Ry(ellipsis_radius) => Some(ellipsis_radius.to_string()),
+            Attribute::ShapeRendering(shape_rendering) => Some(shape_rendering.to_string()),
+            Attribute::StopColor(stop_color) => Some(stop_color.to_string()),
+            Attribute::StopOpacity(opacity) => Some(opacity.to_string()),
+            Attribute::Stroke(paint) => Some(paint.to_string()),
+            Attribute::StrokeDasharray(items) => Some(
+                items
+                    .iter()
+                    .map(|n| n.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::StrokeDashoffset(length_or_percentage) => {
+                Some(length_or_percentage.to_string())
+            }
+            Attribute::StrokeLinecap(stroke_linecap) => Some(stroke_linecap.to_string()),
+            Attribute::StrokeLinejoin(stroke_linejoin) => Some(stroke_linejoin.to_string()),
+            Attribute::StrokeMiterlimit(stroke_miter_limit) => Some(stroke_miter_limit.to_string()),
+            Attribute::StrokeOpacity(stroke_opacity) => Some(stroke_opacity.to_string()),
+            Attribute::StrokeWidth(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::TextAnchor(text_anchor) => Some(text_anchor.to_string()),
+            Attribute::TextDecoration(text_decoration) => Some(text_decoration.to_string()),
+            Attribute::TextOverflow(text_overflow) => Some(text_overflow.to_string()),
+            Attribute::TextRendering(text_rendering) => Some(text_rendering.to_string()),
+            Attribute::Transform(transform) => Some(transform.to_string()),
+            Attribute::TransformOrigin(transform_origin) => Some(transform_origin.to_string()),
+            Attribute::UnicodeBidi(unicode_bidi) => Some(unicode_bidi.to_string()),
+            Attribute::VectorEffect(vector_effect) => Some(vector_effect.to_string()),
+            Attribute::Visibility(visibility) => Some(visibility.to_string()),
+            Attribute::Width(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::WhiteSpace(white_space) => Some(white_space.to_string()),
+            Attribute::WordSpacing(word_spacing) => Some(word_spacing.to_string()),
+            Attribute::WritingMode(writing_mode) => Some(writing_mode.to_string()),
+            Attribute::X(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Y(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Type => todo!(),
+            Attribute::TableValues => todo!(),
+            Attribute::Slope => todo!(),
+            Attribute::Intercept => todo!(),
+            Attribute::Amplitude => todo!(),
+            Attribute::Exponent => todo!(),
+            Attribute::Offset => todo!(),
+            Attribute::Href(href) => Some(href.to_string()),
+            Attribute::AttributeType => todo!(),
+            Attribute::AttributeName => todo!(),
+            Attribute::Begin => todo!(),
+            Attribute::Dur => todo!(),
+            Attribute::End => todo!(),
+            Attribute::Min => todo!(),
+            Attribute::Max => todo!(),
+            Attribute::Restart => todo!(),
+            Attribute::RepeatCount => todo!(),
+            Attribute::RepeatDur => todo!(),
+            Attribute::Additive => todo!(),
+            Attribute::Accumulate => todo!(),
+            Attribute::OnAfterPrint(_) => todo!(),
+            Attribute::OnBeforePrint(_) => todo!(),
+            Attribute::OnBeforeUnload(_) => todo!(),
+            Attribute::OnError(_) => todo!(),
+            Attribute::OnHashChange(_) => todo!(),
+            Attribute::OnLoad(_) => todo!(),
+            Attribute::OnMessage(_) => todo!(),
+            Attribute::OnOffline(_) => todo!(),
+            Attribute::OnOnline(_) => todo!(),
+            Attribute::OnPageHide(_) => todo!(),
+            Attribute::OnPageShow(_) => todo!(),
+            Attribute::OnPopState(_) => todo!(),
+            Attribute::OnResize(_) => todo!(),
+            Attribute::OnStorage(_) => todo!(),
+            Attribute::OnUnload(_) => todo!(),
+            Attribute::OnBlur(_) => todo!(),
+            Attribute::OnChange(_) => todo!(),
+            Attribute::OnContextMenu(_) => todo!(),
+            Attribute::OnFocus(_) => todo!(),
+            Attribute::OnInput(_) => todo!(),
+            Attribute::OnInvalid(_) => todo!(),
+            Attribute::OnReset(_) => todo!(),
+            Attribute::OnSearch(_) => todo!(),
+            Attribute::OnSelect(_) => todo!(),
+            Attribute::OnSubmit(_) => todo!(),
+            Attribute::OnKeyDown(_) => todo!(),
+            Attribute::OnKeyPress(_) => todo!(),
+            Attribute::OnKeyUp(_) => todo!(),
+            Attribute::OnClick(_) => todo!(),
+            Attribute::OnDoubleClick(_) => todo!(),
+            Attribute::OnMouseDown(_) => todo!(),
+            Attribute::OnMouseMove(_) => todo!(),
+            Attribute::OnMouseOut(_) => todo!(),
+            Attribute::OnMouseOver(_) => todo!(),
+            Attribute::OnMouseUp(_) => todo!(),
+            Attribute::OnWheel(_) => todo!(),
+            Attribute::OnDrag(_) => todo!(),
+            Attribute::OnDragEnd(_) => todo!(),
+            Attribute::OnDragEnter(_) => todo!(),
+            Attribute::OnDragLeave(_) => todo!(),
+            Attribute::OnDragOver(_) => todo!(),
+            Attribute::OnDragStart(_) => todo!(),
+            Attribute::OnDrop(_) => todo!(),
+            Attribute::OnScroll(_) => todo!(),
+            Attribute::OnCopy(_) => todo!(),
+            Attribute::OnCut(_) => todo!(),
+            Attribute::OnPaste(_) => todo!(),
+            Attribute::OnAbort(_) => todo!(),
+            Attribute::OnCanPlay(_) => todo!(),
+            Attribute::OnCanPlayThrough(_) => todo!(),
+            Attribute::OnCueChange(_) => todo!(),
+            Attribute::OnDurationChange(_) => todo!(),
+            Attribute::OnEmptied(_) => todo!(),
+            Attribute::OnEnded(_) => todo!(),
+            Attribute::OnLoadedData(_) => todo!(),
+            Attribute::OnLoadedMetadata(_) => todo!(),
+            Attribute::OnLoadStart(_) => todo!(),
+            Attribute::OnPause(_) => todo!(),
+            Attribute::OnPlay(_) => todo!(),
+            Attribute::OnPlaying(_) => todo!(),
+            Attribute::OnProgress(_) => todo!(),
+            Attribute::OnRateChange(_) => todo!(),
+            Attribute::OnSeeked(_) => todo!(),
+            Attribute::OnSeeking(_) => todo!(),
+            Attribute::OnStalled(_) => todo!(),
+            Attribute::OnSuspend(_) => todo!(),
+            Attribute::OnTimeUpdate(_) => todo!(),
+            Attribute::OnVolumeChange(_) => todo!(),
+            Attribute::OnWaiting(_) => todo!(),
+            Attribute::OnToggle(_) => todo!(),
+            Attribute::KeyPoints(_) => todo!(),
+            Attribute::Path(paths) => Some(
+                paths
+                    .iter()
+                    .map(|path| path.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::Rotate(rotate) => Some(rotate.to_string()),
+            Attribute::CalcMode => todo!(),
+            Attribute::Values => todo!(),
+            Attribute::KeyTimes => todo!(),
+            Attribute::KeySplines => todo!(),
+            Attribute::From => todo!(),
+            Attribute::To => todo!(),
+            Attribute::By => todo!(),
+            Attribute::PathLength(path_length) => Some(path_length.to_string()),
+            Attribute::X1(length_or_percentage_or_number) => {
+                Some(length_or_percentage_or_number.to_string())
+            }
+            Attribute::Y1(length_or_percentage_or_number) => {
+                Some(length_or_percentage_or_number.to_string())
+            }
+            Attribute::X2(length_or_percentage_or_number) => {
+                Some(length_or_percentage_or_number.to_string())
+            }
+            Attribute::Y2(length_or_percentage_or_number) => {
+                Some(length_or_percentage_or_number.to_string())
+            }
+            Attribute::Points(points) => Some(
+                points
+                    .iter()
+                    .map(|point| point.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::Download(download) => Some(download.to_string()),
+            Attribute::HrefLang(href_lang) => Some(href_lang.to_string()),
+            Attribute::InterestFor(interest_for) => Some(interest_for.to_string()),
+            Attribute::Ping(urls) => Some(
+                urls.iter()
+                    .map(|url| url.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::ReferrerPolicy(referrer_policy) => Some(referrer_policy.to_string()),
+            Attribute::Rel(rel_types) => Some(
+                rel_types
+                    .iter()
+                    .map(|rel| rel.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::Target(target) => Some(target.to_string()),
+            Attribute::MarkerHeight(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::MarkerUnits(marker_units) => Some(marker_units.to_string()),
+            Attribute::MarkerWidth(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Orient(orient) => Some(orient.to_string()),
+            Attribute::PreserveAspectRatio(preserve_aspect_ratio) => {
+                Some(preserve_aspect_ratio.to_string())
+            }
+            Attribute::RefX(ref_x) => Some(ref_x.to_string()),
+            Attribute::RefY(ref_y) => Some(ref_y.to_string()),
+            Attribute::ViewBox(view_box) => Some(
+                view_box
+                    .0
+                    .iter()
+                    .map(|num| num.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::MaskContentUnits(mask_content_units) => Some(mask_content_units.to_string()),
+            Attribute::MaskUnits(mask_units) => Some(mask_units.to_string()),
+            Attribute::PatternContentUnits(pattern_content_units) => {
+                Some(pattern_content_units.to_string())
+            }
+            Attribute::PatternUnits(pattern_units) => Some(pattern_units.to_string()),
+            Attribute::PatternTransform(pattern_transform) => Some(pattern_transform.to_string()),
+            Attribute::Result(result) => Some(result.to_string()),
+            Attribute::In(in_) => Some(in_.to_string()),
+            Attribute::In2(in2) => Some(in2.to_string()),
+            Attribute::Mode(blend_mode) => Some(blend_mode.to_string()),
+            Attribute::Operator(operator) => Some(operator.to_string()),
+            Attribute::K1(k1) => Some(k1.to_string()),
+            Attribute::K2(k2) => Some(k2.to_string()),
+            Attribute::K3(k3) => Some(k3.to_string()),
+            Attribute::K4(k4) => Some(k4.to_string()),
+            Attribute::Order(order) => Some(order.to_string()),
+            Attribute::KernelMatrix(items) => Some(
+                items
+                    .iter()
+                    .map(|item| item.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            ),
+            Attribute::Divisor(divisor) => Some(divisor.to_string()),
+            Attribute::Bias(bias) => Some(bias.to_string()),
+            Attribute::TargetX(target_x) => Some(target_x.to_string()),
+            Attribute::TargetY(target_y) => Some(target_y.to_string()),
+            Attribute::EdgeMode(edge_mode) => Some(edge_mode.to_string()),
+            Attribute::KernelUnitLength(a, None) => Some(a.to_string()),
+            Attribute::KernelUnitLength(a, Some(b)) => Some(format!("{} {}", a, b)),
+            Attribute::PreserveAlpha(preserve_alpha) => {
+                Some((if *preserve_alpha { "1" } else { "0" }).to_string())
+            }
+            Attribute::SurfaceScale(surface_scale) => Some(surface_scale.to_string()),
+            Attribute::DiffuseConstant(diffuse_constant) => Some(diffuse_constant.to_string()),
+            Attribute::Scale(scale) => Some(scale.to_string()),
+            Attribute::XChannelSelector(channel_selector) => Some(channel_selector.to_string()),
+            Attribute::YChannelSelector(channel_selector) => Some(channel_selector.to_string()),
+            Attribute::Dx(dx) => Some(dx.to_string()),
+            Attribute::Dy(dy) => Some(dy.to_string()),
+            Attribute::StdDeviation(a, None) => Some(a.to_string()),
+            Attribute::StdDeviation(a, Some(b)) => Some(format!("{} {}", a, b)),
+            Attribute::CrossOrigin(cross_origin) => Some(cross_origin.to_string()),
+            Attribute::Radius(a, None) => Some(a.to_string()),
+            Attribute::Radius(a, Some(b)) => Some(format!("{} {}", a, b)),
+            Attribute::SpecularConstant(specular_constant) => Some(specular_constant.to_string()),
+            Attribute::SpecularExponent(specular_exponent) => Some(specular_exponent.to_string()),
+            Attribute::BaseFrequency(a, None) => Some(a.to_string()),
+            Attribute::BaseFrequency(a, Some(b)) => Some(format!("{} {}", a, b)),
+            Attribute::NumOctaves(num_octaves) => Some(num_octaves.to_string()),
+            Attribute::Seed(seed) => Some(seed.to_string()),
+            Attribute::StitchTiles(stitch_tiles) => Some(stitch_tiles.to_string()),
+            Attribute::GradientUnits(gradient_units) => Some(gradient_units.to_string()),
+            Attribute::GradientTransform(gradient_transform) => {
+                Some(gradient_transform.to_string())
+            }
+            Attribute::SpreadMethod(spread_method) => Some(spread_method.to_string()),
+            Attribute::Fx(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Fy(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Fr(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Decoding(decoding) => Some(decoding.to_string()),
+            Attribute::FetchPriority(fetch_priority) => Some(fetch_priority.to_string()),
+            Attribute::LengthAdjust(length_adjust) => Some(length_adjust.to_string()),
+            Attribute::TextLength(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::ClipPathUnits(clip_path_units) => Some(clip_path_units.to_string()),
+            Attribute::Method(method) => Some(method.to_string()),
+            Attribute::Side(side) => Some(side.to_string()),
+            Attribute::Spacing(spacing) => Some(spacing.to_string()),
+            Attribute::StartOffset(length_or_percentage_or_number) => {
+                Some(length_or_percentage_or_number.to_string())
+            }
+            Attribute::FilterUnits(filter_units) => Some(filter_units.to_string()),
+            Attribute::PrimitiveUnits(primitive_units) => Some(primitive_units.to_string()),
+        }
+    }
+
+    pub fn to_svg(&self) -> String {
+        let name = self.name();
+
+        if let Some(value) = self.value_as_string() {
+            return format!("{}=\"{}\"", name, value);
+        }
+
+        name.to_string()
     }
 }

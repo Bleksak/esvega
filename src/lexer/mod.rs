@@ -124,7 +124,6 @@ pub struct Lexer<'input> {
     pub mode: LexerMode,
 }
 
-// TODO: The lexer does not produce attributes like autofocus that do not need a value
 impl<'input> Lexer<'input> {
     pub fn new(input: Input<'input>) -> Self {
         Self {
@@ -227,23 +226,20 @@ impl<'input> Lexer<'input> {
                             // we know that we are at the start of an identifier, and we need to find
                             // the end of the word - which is either a space, equal sign, or >
                             loop {
-                                if self.input.is_at(b" ", false) {
+                                if self.input.is_at(b"=", false)
+                                    || self.input.is_at(b" ", false)
+                                    || self.input.is_at(b">", false)
+                                    || self.input.is_at(b"/", false)
+                                {
                                     return Some(self.token(
                                         TokenKind::Identifier,
                                         token_start..self.input.offset,
                                     ));
                                 }
-                                if self.input.is_at(b"=", false) {
-                                    return Some(self.token(
-                                        TokenKind::Identifier,
-                                        token_start..self.input.offset,
-                                    ));
-                                }
-                                if self.input.is_at(b">", false) {
-                                    return Some(self.token(
-                                        TokenKind::Identifier,
-                                        token_start..self.input.offset,
-                                    ));
+
+                                if self.input.has_reached_eof() {
+                                    // TODO: Error, expected one of " ", ">", "=" or "/"
+                                    return None;
                                 }
                                 self.input.consume(1);
                             }

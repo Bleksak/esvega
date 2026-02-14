@@ -11,6 +11,18 @@ pub enum RelativeLength {
     Lh(f64),
 }
 
+impl ToString for RelativeLength {
+    fn to_string(&self) -> String {
+        match self {
+            RelativeLength::Cap(c) => format!("{}cap", c),
+            RelativeLength::Em(e) => format!("{}em", e),
+            RelativeLength::Ex(e) => format!("{}ex", e),
+            RelativeLength::Ic(i) => format!("{}ic", i),
+            RelativeLength::Lh(l) => format!("{}lh", l),
+        }
+    }
+}
+
 impl FromStr for RelativeLength {
     type Err = ();
 
@@ -34,6 +46,19 @@ pub enum RelativeLengthBasedOnRoot {
     Rex(f64),
     Ric(f64),
     Rlh(f64),
+}
+
+impl ToString for RelativeLengthBasedOnRoot {
+    fn to_string(&self) -> String {
+        match self {
+            RelativeLengthBasedOnRoot::Rcap(c) => format!("{}rcap", c),
+            RelativeLengthBasedOnRoot::Rch(c) => format!("{}rch", c),
+            RelativeLengthBasedOnRoot::Rem(r) => format!("{}rem", r),
+            RelativeLengthBasedOnRoot::Rex(r) => format!("{}rex", r),
+            RelativeLengthBasedOnRoot::Ric(r) => format!("{}ric", r),
+            RelativeLengthBasedOnRoot::Rlh(r) => format!("{}rlh", r),
+        }
+    }
 }
 
 impl FromStr for RelativeLengthBasedOnRoot {
@@ -63,6 +88,20 @@ pub enum AbsoluteLength {
     Pc(f64), // 1pc = 1/6th of an inch
 }
 
+impl ToString for AbsoluteLength {
+    fn to_string(&self) -> String {
+        match self {
+            AbsoluteLength::Px(p) => format!("{}px", p),
+            AbsoluteLength::Cm(c) => format!("{}cm", c),
+            AbsoluteLength::Q(q) => format!("{}q", q),
+            AbsoluteLength::In(i) => format!("{}in", i),
+            AbsoluteLength::Mm(m) => format!("{}mm", m),
+            AbsoluteLength::Pt(p) => format!("{}pt", p),
+            AbsoluteLength::Pc(p) => format!("{}pc", p),
+        }
+    }
+}
+
 impl FromStr for AbsoluteLength {
     type Err = ();
 
@@ -84,6 +123,15 @@ impl FromStr for AbsoluteLength {
 pub enum RelativeLengths {
     RelativeLength(RelativeLength),
     RelativeLengthBasedOnRoot(RelativeLengthBasedOnRoot),
+}
+
+impl ToString for RelativeLengths {
+    fn to_string(&self) -> String {
+        match self {
+            RelativeLengths::RelativeLength(r) => r.to_string(),
+            RelativeLengths::RelativeLengthBasedOnRoot(r) => r.to_string(),
+        }
+    }
 }
 
 impl FromStr for RelativeLengths {
@@ -108,6 +156,15 @@ pub enum Length {
     Relative(RelativeLengths),
 }
 
+impl ToString for Length {
+    fn to_string(&self) -> String {
+        match self {
+            Length::Absolute(a) => a.to_string(),
+            Length::Relative(r) => r.to_string(),
+        }
+    }
+}
+
 impl FromStr for Length {
     type Err = ();
 
@@ -126,6 +183,12 @@ impl FromStr for Length {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Percentage(pub f64);
+
+impl ToString for Percentage {
+    fn to_string(&self) -> String {
+        format!("{}%", self.0)
+    }
+}
 
 impl FromStr for Percentage {
     type Err = ();
@@ -147,6 +210,15 @@ impl FromStr for Percentage {
 pub enum LengthOrPercentage {
     Length(Length),
     Percentage(Percentage),
+}
+
+impl ToString for LengthOrPercentage {
+    fn to_string(&self) -> String {
+        match self {
+            LengthOrPercentage::Length(l) => l.to_string(),
+            LengthOrPercentage::Percentage(p) => p.to_string(),
+        }
+    }
 }
 
 impl Default for LengthOrPercentage {
@@ -467,6 +539,128 @@ pub enum ColorLiteral {
     AliceBlue,
     MintCream,
     GhostWhite,
+}
+
+impl ColorLiteral {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ColorLiteral::Maroon => "maroon",
+            ColorLiteral::DarkRed => "darkred",
+            ColorLiteral::Brown => "brown",
+            ColorLiteral::FireBrick => "firebrick",
+            ColorLiteral::Crimson => "crimson",
+            ColorLiteral::Red => "red",
+            ColorLiteral::IndianRed => "indianred",
+            ColorLiteral::SaddleBrown => "saddlebrown",
+            ColorLiteral::Sienna => "sienna",
+            ColorLiteral::RosyBrown => "rosybrown",
+            ColorLiteral::Chocolate => "chocolate",
+            ColorLiteral::Peru => "peru",
+            ColorLiteral::DarkGoldenRod => "darkgoldenrod",
+            ColorLiteral::DarkSalmon => "darksalmon",
+            ColorLiteral::LightCoral => "lightcoral",
+            ColorLiteral::GoldenRod => "goldenrod",
+            ColorLiteral::Tan => "tan",
+            ColorLiteral::DarkKhaki => "darkkhaki",
+            ColorLiteral::BurlyWood => "burlywood",
+            ColorLiteral::PaleGoldenRod => "palegoldenrod",
+            ColorLiteral::SandyBrown => "sandybrown",
+            ColorLiteral::Salmon => "salmon",
+            ColorLiteral::OrangeRed => "orangered",
+            ColorLiteral::Tomato => "tomato",
+            ColorLiteral::Coral => "coral",
+            ColorLiteral::DarkOrange => "darkorange",
+            ColorLiteral::LightSalmon => "lightsalmon",
+            ColorLiteral::Orange => "orange",
+            ColorLiteral::Gold => "gold",
+            ColorLiteral::Yellow => "yellow",
+            ColorLiteral::Khaki => "khaki",
+            ColorLiteral::Wheat => "wheat",
+            ColorLiteral::Beige => "beige",
+            ColorLiteral::AntiqueWhite => "antiquewhite",
+            ColorLiteral::Linen => "linen",
+            ColorLiteral::LightGoldenRodYellow => "lightgoldenrodyellow",
+            ColorLiteral::OldLace => "oldlace",
+            ColorLiteral::PeachPuff => "peachpuff",
+            ColorLiteral::NavajoWhite => "navajowhite",
+            ColorLiteral::Moccasin => "moccasin",
+            ColorLiteral::Bisque => "bisque",
+            ColorLiteral::BlanchedAlmond => "blanchedalmond",
+            ColorLiteral::PapayaWhip => "papayawhip",
+            ColorLiteral::LemonChiffon => "lemonchiffon",
+            ColorLiteral::LightYellow => "lightyellow",
+            ColorLiteral::Cornsilk => "cornsilk",
+            ColorLiteral::MistyRose => "mistyrose",
+            ColorLiteral::FloralWhite => "floralwhite",
+            ColorLiteral::SeaShell => "seashell",
+            ColorLiteral::Snow => "snow",
+            ColorLiteral::Ivory => "ivory",
+            ColorLiteral::White => "white",
+            ColorLiteral::Black => "black",
+            ColorLiteral::DimGray => "dimgray",
+            ColorLiteral::DarkGray => "darkgray",
+            ColorLiteral::Gray => "gray",
+            ColorLiteral::Silver => "silver",
+            ColorLiteral::LightGray => "lightgray",
+            ColorLiteral::Gainsboro => "gainsboro",
+            ColorLiteral::WhiteSmoke => "whitesmoke",
+            ColorLiteral::DarkSlateGray => "darkslategray",
+            ColorLiteral::SlateGray => "slategray",
+            ColorLiteral::LightSlateGray => "lightslategray",
+            ColorLiteral::DarkGreen => "darkgreen",
+            ColorLiteral::Green => "green",
+            ColorLiteral::ForestGreen => "forestgreen",
+            ColorLiteral::DarkSeaGreen => "darkseagreen",
+            ColorLiteral::SeaGreen => "seagreen",
+            ColorLiteral::MediumSeaGreen => "mediumseagreen",
+            ColorLiteral::LightSeaGreen => "lightseagreen",
+            ColorLiteral::LimeGreen => "limegreen",
+            ColorLiteral::Lime => "lime",
+            ColorLiteral::Chartreuse => "chartreuse",
+            ColorLiteral::LawnGreen => "lawngreen",
+            ColorLiteral::SpringGreen => "springgreen",
+            ColorLiteral::MediumSpringGreen => "mediumspringgreen",
+            ColorLiteral::DarkOliveGreen => "darkolivegreen",
+            ColorLiteral::OliveDrab => "olivedrab",
+            ColorLiteral::Olive => "olive",
+            ColorLiteral::YellowGreen => "yellowgreen",
+            ColorLiteral::GreenYellow => "greenyellow",
+            ColorLiteral::PaleGreen => "palegreen",
+            ColorLiteral::LightGreen => "lightgreen",
+            ColorLiteral::HoneyDew => "honeydew",
+            ColorLiteral::Teal => "teal",
+            ColorLiteral::DarkCyan => "darkcyan",
+            ColorLiteral::CadetBlue => "cadetblue",
+            ColorLiteral::DarkTurquoise => "darkturquoise",
+            ColorLiteral::Turquoise => "turquoise",
+            ColorLiteral::MediumTurquoise => "mediumturquoise",
+            ColorLiteral::MediumAquaMarine => "mediumaquamarine",
+            ColorLiteral::Aquamarine => "aquamarine",
+            ColorLiteral::MidnightBlue => "midnightblue",
+            ColorLiteral::Navy => "navy",
+            ColorLiteral::DarkBlue => "darkblue",
+            ColorLiteral::MediumBlue => "mediumblue",
+            ColorLiteral::RoyalBlue => "royalblue",
+            ColorLiteral::CornflowerBlue => "cornflowerblue",
+            ColorLiteral::SteelBlue => "steelblue",
+            ColorLiteral::Blue => "blue",
+            ColorLiteral::DodgerBlue => "dodgerblue",
+            ColorLiteral::PaleTurquoise => "paleturquoise",
+            ColorLiteral::LightSteelBlue => "lightsteelblue",
+            ColorLiteral::PowderBlue => "powderblue",
+            ColorLiteral::DeepSkyBlue => "deepskyblue",
+            ColorLiteral::SkyBlue => "skyblue",
+            ColorLiteral::LightSkyBlue => "lightskyblue",
+            ColorLiteral::LightBlue => "lightblue",
+            ColorLiteral::Aqua => "aqua",
+            ColorLiteral::Cyan => "cyan",
+            ColorLiteral::LightCyan => "lightcyan",
+            ColorLiteral::Azure => "azure",
+            ColorLiteral::AliceBlue => "aliceblue",
+            ColorLiteral::MintCream => "mintcream",
+            ColorLiteral::GhostWhite => "ghostwhite",
+        }
+    }
 }
 
 impl FromStr for ColorLiteral {
@@ -948,6 +1142,15 @@ pub enum Url {
     Id(String),
 }
 
+impl ToString for Url {
+    fn to_string(&self) -> String {
+        match self {
+            Url::Url(url) => url.to_string(),
+            Url::Id(id) => format!("#{}", id),
+        }
+    }
+}
+
 impl FromStr for Url {
     type Err = ();
 
@@ -973,6 +1176,19 @@ pub enum Color {
     Hsl(f64, f64, f64),
     Hsla(f64, f64, f64, f64),
     Literal(ColorLiteral),
+}
+
+impl ToString for Color {
+    fn to_string(&self) -> String {
+        match self {
+            Color::Hex(hex) => hex.clone(),
+            Color::Rgb(r, g, b) => format!("rgb({}, {}, {})", r, g, b),
+            Color::Rgba(r, g, b, a) => format!("rgba({}, {}, {}, {})", r, g, b, a),
+            Color::Hsl(h, s, l) => format!("hsl({}, {}, {})", h, s, l),
+            Color::Hsla(h, s, l, a) => format!("hsla({}, {}, {}, {})", h, s, l, a),
+            Color::Literal(literal) => literal.as_str().to_string(),
+        }
+    }
 }
 
 impl FromStr for Color {
@@ -1062,6 +1278,18 @@ pub enum Paint {
     ContextStroke,
 }
 
+impl ToString for Paint {
+    fn to_string(&self) -> String {
+        match self {
+            Paint::None => "none".to_string(),
+            Paint::Color(color) => color.to_string(),
+            Paint::Url(url) => url.to_string(),
+            Paint::ContextFill => "context-fill".to_string(),
+            Paint::ContextStroke => "context-stroke".to_string(),
+        }
+    }
+}
+
 impl FromStr for Paint {
     type Err = ();
 
@@ -1093,6 +1321,22 @@ pub enum AbsoluteSize {
     XXXLarge,
 }
 
+impl ToString for AbsoluteSize {
+    fn to_string(&self) -> String {
+        match self {
+            AbsoluteSize::XXSmall => "xx-small",
+            AbsoluteSize::XSmall => "x-small",
+            AbsoluteSize::Small => "small",
+            AbsoluteSize::Medium => "medium",
+            AbsoluteSize::Large => "large",
+            AbsoluteSize::XLarge => "x-large",
+            AbsoluteSize::XXLarge => "xx-large",
+            AbsoluteSize::XXXLarge => "xxx-large",
+        }
+        .to_string()
+    }
+}
+
 impl FromStr for AbsoluteSize {
     type Err = ();
 
@@ -1117,6 +1361,15 @@ pub enum RelativeSize {
     Smaller,
 }
 
+impl ToString for RelativeSize {
+    fn to_string(&self) -> String {
+        match self {
+            RelativeSize::Larger => "larger".to_string(),
+            RelativeSize::Smaller => "smaller".to_string(),
+        }
+    }
+}
+
 impl FromStr for RelativeSize {
     type Err = ();
 
@@ -1136,6 +1389,18 @@ pub enum FontWeight {
     Bolder,
     Lighter,
     Number(f64),
+}
+
+impl ToString for FontWeight {
+    fn to_string(&self) -> String {
+        match self {
+            FontWeight::Normal => "normal".to_string(),
+            FontWeight::Bold => "bold".to_string(),
+            FontWeight::Bolder => "bolder".to_string(),
+            FontWeight::Lighter => "lighter".to_string(),
+            FontWeight::Number(number) => number.to_string(),
+        }
+    }
 }
 
 impl FromStr for FontWeight {

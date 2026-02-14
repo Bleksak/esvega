@@ -325,7 +325,6 @@ impl<'input> Parser<'input> {
         assert_eq!(state_machine.element_stack.len(), 0);
 
         let ast = Self::construct_ast(state_machine.temp_ast);
-        dbg!(&ast);
 
         ast
     }
