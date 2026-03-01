@@ -42,7 +42,7 @@ impl Element {
         }
 
         if self.children.is_empty() {
-            svg.push_str("/>\n");
+            svg.push_str("/>");
             return svg;
         }
 
