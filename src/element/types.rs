@@ -177,6 +177,12 @@ impl FromStr for Length {
             return Ok(Length::Relative(relative));
         }
 
+        if s.chars().all(|c| c.is_ascii_digit() || c == '-') {
+            return Ok(Length::Absolute(AbsoluteLength::Px(
+                s.parse::<f64>().map_err(|_| ())?,
+            )));
+        }
+
         return Err(());
     }
 }
@@ -395,6 +401,11 @@ impl TryFrom<&str> for Length {
         } else if let Ok(relative_length) = RelativeLengths::try_from(value) {
             Ok(Length::Relative(relative_length))
         } else {
+            if value.chars().all(|c| c.is_ascii_digit() || c == '-') {
+                return Ok(Length::Absolute(AbsoluteLength::Px(
+                    value.parse::<f64>().map_err(|_| ())?,
+                )));
+            }
             Err(())
         }
     }
@@ -410,12 +421,6 @@ impl TryFrom<&str> for LengthOrPercentage {
 
         if let Ok(percentage) = s.parse() {
             return Ok(LengthOrPercentage::Percentage(percentage));
-        }
-
-        if s.chars().all(|c| c.is_ascii_digit()) {
-            return Ok(LengthOrPercentage::Length(Length::Absolute(
-                AbsoluteLength::Px(s.parse::<f64>().map_err(|_| ())?),
-            )));
         }
 
         return Err(());
@@ -1181,7 +1186,7 @@ pub enum Color {
 impl ToString for Color {
     fn to_string(&self) -> String {
         match self {
-            Color::Hex(hex) => hex.clone(),
+            Color::Hex(hex) => format!("#{}", hex),
             Color::Rgb(r, g, b) => format!("rgb({}, {}, {})", r, g, b),
             Color::Rgba(r, g, b, a) => format!("rgba({}, {}, {}, {})", r, g, b, a),
             Color::Hsl(h, s, l) => format!("hsl({}, {}, {})", h, s, l),
@@ -1299,11 +1304,11 @@ impl FromStr for Paint {
             _ if s.eq_ignore_ascii_case("context-fill") => Ok(Self::ContextFill),
             _ if s.eq_ignore_ascii_case("context-stroke") => Ok(Self::ContextStroke),
             _ => {
-                if let Ok(url) = s.parse::<Url>() {
-                    return Ok(Self::Url(url));
+                if let Ok(color) = s.parse::<Color>() {
+                    return Ok(Self::Color(color));
                 }
 
-                Ok(Self::Color(s.parse()?))
+                Ok(Self::Url(s.parse()?))
             }
         }
     }

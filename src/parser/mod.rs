@@ -1,6 +1,6 @@
 use crate::{
     Element,
-    parser::ast::{AST, NodeId},
+    parser::ast::{AST, Node, NodeId},
     token::{Token, TokenKind},
 };
 
@@ -54,7 +54,7 @@ impl StateMachine {
                 };
 
                 self.current_state = State::TagName;
-                let node_id = self.ast.nodes.insert(element);
+                let node_id = self.ast.nodes.insert(Node::Element(element));
                 self.element_stack.push(node_id);
             }
             (State::TagName | State::AttributeValueClosingQuote, TokenKind::Identifier) => {
@@ -74,12 +74,11 @@ impl StateMachine {
 
                 let node_id = self.element_stack.last().unwrap();
 
-                self.ast
-                    .nodes
-                    .get_mut(*node_id)
-                    .unwrap()
-                    .attributes
-                    .push(attribute);
+                let Node::Element(element) = self.ast.nodes.get_mut(*node_id).unwrap() else {
+                    panic!("Node is supposed to be of type Element at this point");
+                };
+
+                element.attributes.push(attribute);
 
                 self.current_state = State::AttributeName;
                 self.current_attribute = Some(token.value);
@@ -94,12 +93,11 @@ impl StateMachine {
 
                 let node_id = self.element_stack.last().unwrap();
 
-                self.ast
-                    .nodes
-                    .get_mut(*node_id)
-                    .unwrap()
-                    .attributes
-                    .push(attribute);
+                let Node::Element(element) = self.ast.nodes.get_mut(*node_id).unwrap() else {
+                    panic!("Node is supposed to be of type Element at this point");
+                };
+
+                element.attributes.push(attribute);
 
                 self.current_state = State::Text;
             }
@@ -122,12 +120,11 @@ impl StateMachine {
 
                 let node_id = self.element_stack.last().unwrap();
 
-                self.ast
-                    .nodes
-                    .get_mut(*node_id)
-                    .unwrap()
-                    .attributes
-                    .push(attribute);
+                let Node::Element(element) = self.ast.nodes.get_mut(*node_id).unwrap() else {
+                    panic!("Node is supposed to be of type Element at this point");
+                };
+
+                element.attributes.push(attribute);
 
                 self.current_state = State::AttributeValue;
                 self.current_attribute = None;
@@ -155,19 +152,23 @@ impl StateMachine {
 
                     let node_id = self.element_stack.last().unwrap();
 
-                    self.ast
-                        .nodes
-                        .get_mut(*node_id)
-                        .unwrap()
-                        .attributes
-                        .push(attribute);
+                    let Node::Element(element) = self.ast.nodes.get_mut(*node_id).unwrap() else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+
+                    element.attributes.push(attribute);
                 }
 
                 self.current_state = State::Text;
 
                 let element_id = self.element_stack.pop().unwrap();
                 if let Some(last_element_id) = self.element_stack.last() {
-                    let last_element = self.ast.nodes.get_mut(*last_element_id).unwrap();
+                    let Node::Element(last_element) =
+                        self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+
                     last_element.children.push(element_id);
                 } else {
                     self.ast.children.push(element_id);
@@ -181,7 +182,9 @@ impl StateMachine {
                     panic!("Element stack is empty");
                 };
 
-                let element = self.ast.nodes.get(element_id).unwrap();
+                let Node::Element(element) = self.ast.nodes.get(element_id).unwrap() else {
+                    panic!("Node is supposed to be of type Element at this point");
+                };
 
                 if element.element_type.as_str() != token.value {
                     panic!(
@@ -191,7 +194,12 @@ impl StateMachine {
                 }
 
                 if let Some(last_element_id) = self.element_stack.last_mut() {
-                    let last_element = self.ast.nodes.get_mut(*last_element_id).unwrap();
+                    let Node::Element(last_element) =
+                        self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+
                     last_element.children.push(element_id);
                 } else {
                     self.ast.children.push(element_id);
@@ -212,7 +220,17 @@ impl StateMachine {
                 panic!("Unexpected identifier after tag close name");
             }
             (State::Text, TokenKind::Text) => {
-                // TODO: handle inner text where aplicable
+                let text_node = Node::Text(token.value);
+                let node_id = self.ast.nodes.insert(text_node);
+
+                let last_element_id = self.element_stack.last().unwrap();
+
+                let Node::Element(last_element) = self.ast.nodes.get_mut(*last_element_id).unwrap()
+                else {
+                    panic!("Node is supposed to be of type Element at this point");
+                };
+
+                last_element.children.push(node_id);
             }
             (
                 State::Text,

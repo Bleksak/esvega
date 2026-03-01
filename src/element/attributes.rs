@@ -288,27 +288,44 @@ impl FromStr for Cursor {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MoveTo {
-    Absolute((LengthOrPercentage, LengthOrPercentage)), // M x y
-    Relative((LengthOrPercentage, LengthOrPercentage)), // m dx dy
+    Absolute((Number, Number)), // M x y
+    Relative((Number, Number)), // m dx dy
 }
 
 impl ToString for MoveTo {
     fn to_string(&self) -> String {
         match self {
-            MoveTo::Absolute((x, y)) => format!("M {} {}", x.to_string(), y.to_string()),
-            MoveTo::Relative((dx, dy)) => format!("m {} {}", dx.to_string(), dy.to_string()),
+            MoveTo::Absolute((x, y)) => format!("M {},{}", x.to_string(), y.to_string()),
+            MoveTo::Relative((dx, dy)) => format!("m {},{}", dx.to_string(), dy.to_string()),
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Number(f64);
+
+impl ToString for Number {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl FromStr for Number {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.parse().map_err(|_| ())?))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum LineTo {
-    XYAbsolute(Vec<LengthOrPercentage>),         // L (x y)+
-    XYRelative(Vec<LengthOrPercentage>),         // l (dx dy)+
-    HorizontalAbsolute(Vec<LengthOrPercentage>), // H (x)+
-    HorizontalRelative(Vec<LengthOrPercentage>), // h (dx)+
-    VerticalAbsolute(Vec<LengthOrPercentage>),   // V (y)+
-    VerticalRelative(Vec<LengthOrPercentage>),   // v (dy)+
+    XYAbsolute(Vec<Number>),         // L (x y)+
+    XYRelative(Vec<Number>),         // l (dx dy)+
+    HorizontalAbsolute(Vec<Number>), // H (x)+
+    HorizontalRelative(Vec<Number>), // h (dx)+
+    VerticalAbsolute(Vec<Number>),   // V (y)+
+    VerticalRelative(Vec<Number>),   // v (dy)+
 }
 
 impl ToString for LineTo {
@@ -319,42 +336,42 @@ impl ToString for LineTo {
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
             LineTo::XYRelative(v) => format!(
                 "l {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
             LineTo::HorizontalAbsolute(v) => format!(
                 "H {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
             LineTo::HorizontalRelative(v) => format!(
                 "h {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
             LineTo::VerticalAbsolute(v) => format!(
                 "V {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
             LineTo::VerticalRelative(v) => format!(
                 "v {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join(",")
             ),
         }
     }
@@ -362,12 +379,12 @@ impl ToString for LineTo {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CubicBezierCurvePoint {
-    pub x1: LengthOrPercentage,
-    pub y1: LengthOrPercentage,
-    pub x2: LengthOrPercentage,
-    pub y2: LengthOrPercentage,
-    pub x: LengthOrPercentage,
-    pub y: LengthOrPercentage,
+    pub x1: Number,
+    pub y1: Number,
+    pub x2: Number,
+    pub y2: Number,
+    pub x: Number,
+    pub y: Number,
 }
 
 impl ToString for CubicBezierCurvePoint {
@@ -386,10 +403,10 @@ impl ToString for CubicBezierCurvePoint {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SmoothCubicBezierCurvePoint {
-    pub x2: LengthOrPercentage,
-    pub y2: LengthOrPercentage,
-    pub x: LengthOrPercentage,
-    pub y: LengthOrPercentage,
+    pub x2: Number,
+    pub y2: Number,
+    pub x: Number,
+    pub y: Number,
 }
 
 impl ToString for SmoothCubicBezierCurvePoint {
@@ -461,10 +478,10 @@ impl ToString for CubicBezierCurve {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct QuadraticBezierCurvePoint {
-    pub x1: LengthOrPercentage,
-    pub y1: LengthOrPercentage,
-    pub x: LengthOrPercentage,
-    pub y: LengthOrPercentage,
+    pub x1: Number,
+    pub y1: Number,
+    pub x: Number,
+    pub y: Number,
 }
 
 impl ToString for QuadraticBezierCurvePoint {
@@ -481,8 +498,8 @@ impl ToString for QuadraticBezierCurvePoint {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Point {
-    pub x: LengthOrPercentage,
-    pub y: LengthOrPercentage,
+    pub x: Number,
+    pub y: Number,
 }
 
 impl ToString for Point {
@@ -544,13 +561,13 @@ impl ToString for QuadraticBezierCurve {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EllipticalArcPoint {
-    pub rx: LengthOrPercentage,
-    pub ry: LengthOrPercentage,
-    pub angle: f64,
+    pub rx: Number,
+    pub ry: Number,
+    pub angle: Number,
     pub large_arc_flag: bool,
     pub sweep_flag: bool,
-    pub x: LengthOrPercentage,
-    pub y: LengthOrPercentage,
+    pub x: Number,
+    pub y: Number,
 }
 
 impl ToString for EllipticalArcPoint {
@@ -559,7 +576,7 @@ impl ToString for EllipticalArcPoint {
             "{} {} {} {} {} {} {}",
             self.rx.to_string(),
             self.ry.to_string(),
-            self.angle,
+            self.angle.to_string(),
             self.large_arc_flag as u8,
             self.sweep_flag as u8,
             self.x.to_string(),
@@ -598,7 +615,7 @@ impl ToString for EllipticalArcCurve {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Path {
+pub enum PathType {
     MoveTo(MoveTo),                             // M m
     LineTo(LineTo),                             // L l H h V v
     CubicBezierCurve(CubicBezierCurve),         // C c S s
@@ -607,266 +624,508 @@ pub enum Path {
     ClosePath,                                  // Z z
 }
 
-impl ToString for Path {
+impl ToString for PathType {
     fn to_string(&self) -> String {
         match self {
-            Path::MoveTo(move_to) => move_to.to_string(),
-            Path::LineTo(line_to) => line_to.to_string(),
-            Path::CubicBezierCurve(cubic_bezier_curve) => cubic_bezier_curve.to_string(),
-            Path::QuadraticBezierCurve(quadratic_bezier_curve) => {
+            PathType::MoveTo(move_to) => move_to.to_string(),
+            PathType::LineTo(line_to) => line_to.to_string(),
+            PathType::CubicBezierCurve(cubic_bezier_curve) => cubic_bezier_curve.to_string(),
+            PathType::QuadraticBezierCurve(quadratic_bezier_curve) => {
                 quadratic_bezier_curve.to_string()
             }
-            Path::EllipticalArcCurve(elliptical_arc_curve) => elliptical_arc_curve.to_string(),
-            Path::ClosePath => "Z".to_string(),
+            PathType::EllipticalArcCurve(elliptical_arc_curve) => elliptical_arc_curve.to_string(),
+            PathType::ClosePath => "Z".to_string(),
         }
     }
 }
 
-impl FromStr for Path {
-    type Err = ();
+impl PathType {
+    fn split_left_rest(input: &str) -> Result<(&str, &str), ()> {
+        input.split_once(',').ok_or(())
+    }
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn split_eos(input: &str) -> (&str, &str) {
+        let split_index = input
+            .find(|c: char| c.is_ascii_alphabetic() && !matches!(c, '.' | '+' | '-' | 'e' | 'E'))
+            .unwrap_or(input.len());
+        let (left, rest) = input.split_at(split_index);
+
+        (left, rest)
+    }
+
+    fn split_left_right_rest(input: &str) -> Result<(&str, &str, &str), ()> {
+        let (left, rest) = Self::split_left_rest(input)?;
+        let (right, rest) = Self::split_eos(rest);
+
+        Ok((left, right, rest))
+    }
+
+    pub fn parse(s: &str) -> Result<(Self, &str), ()> {
         let Some(first_char) = s.chars().next() else {
             return Err(());
         };
 
         let rest = &s[1..];
-        let mut iterator = rest.split_whitespace();
 
         match first_char {
-            'M' => Ok(Path::MoveTo(MoveTo::Absolute((
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            )))),
-            'm' => Ok(Path::MoveTo(MoveTo::Relative((
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            )))),
-            'L' => Ok(Path::LineTo(LineTo::XYAbsolute(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'l' => Ok(Path::LineTo(LineTo::XYRelative(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'H' => Ok(Path::LineTo(LineTo::HorizontalAbsolute(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'h' => Ok(Path::LineTo(LineTo::HorizontalRelative(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'V' => Ok(Path::LineTo(LineTo::VerticalAbsolute(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'v' => Ok(Path::LineTo(LineTo::VerticalRelative(vec![
-                LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-            ]))),
-            'C' => Ok(Path::CubicBezierCurve(CubicBezierCurve::Absolute(vec![
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-            ]))),
-            'c' => Ok(Path::CubicBezierCurve(CubicBezierCurve::Relative(vec![
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-                CubicBezierCurvePoint {
-                    x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                },
-            ]))),
-            'S' => Ok(Path::CubicBezierCurve(CubicBezierCurve::SmoothAbsolute(
-                vec![
-                    SmoothCubicBezierCurvePoint {
-                        x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    SmoothCubicBezierCurvePoint {
-                        x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            's' => Ok(Path::CubicBezierCurve(CubicBezierCurve::SmoothRelative(
-                vec![
-                    SmoothCubicBezierCurvePoint {
-                        x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    SmoothCubicBezierCurvePoint {
-                        x2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y2: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            'Q' => Ok(Path::QuadraticBezierCurve(QuadraticBezierCurve::Absolute(
-                vec![
-                    QuadraticBezierCurvePoint {
-                        x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    QuadraticBezierCurvePoint {
-                        x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            'q' => Ok(Path::QuadraticBezierCurve(QuadraticBezierCurve::Relative(
-                vec![
-                    QuadraticBezierCurvePoint {
-                        x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    QuadraticBezierCurvePoint {
-                        x1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y1: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            'T' => Ok(Path::QuadraticBezierCurve(
-                QuadraticBezierCurve::SmoothAbsolute(vec![
-                    Point {
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    Point {
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ]),
-            )),
-            't' => Ok(Path::QuadraticBezierCurve(
-                QuadraticBezierCurve::SmoothRelative(vec![
-                    Point {
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    Point {
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ]),
-            )),
-            'A' => Ok(Path::EllipticalArcCurve(EllipticalArcCurve::Absolute(
-                vec![
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            'a' => Ok(Path::EllipticalArcCurve(EllipticalArcCurve::Relative(
-                vec![
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                    EllipticalArcPoint {
-                        rx: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        ry: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        angle: f64::from_str(iterator.next().ok_or(())?).map_err(|_| ())?,
-                        large_arc_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        sweep_flag: iterator.next().ok_or(())?.eq_ignore_ascii_case("1"),
-                        x: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                        y: LengthOrPercentage::from_str(iterator.next().ok_or(())?)?,
-                    },
-                ],
-            ))),
-            'Z' => Ok(Path::ClosePath),
+            'M' => {
+                let (left, right, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::MoveTo(MoveTo::Absolute((
+                        Number::from_str(left)?,
+                        Number::from_str(right)?,
+                    ))),
+                    rest,
+                ))
+            }
+            'm' => {
+                let (left, right, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::MoveTo(MoveTo::Relative((
+                        Number::from_str(left)?,
+                        Number::from_str(right)?,
+                    ))),
+                    rest,
+                ))
+            }
+            'L' => {
+                let (left, right, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::LineTo(LineTo::XYAbsolute(vec![
+                        Number::from_str(left)?,
+                        Number::from_str(right)?,
+                    ])),
+                    rest,
+                ))
+            }
+            'l' => {
+                let (left, right, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::LineTo(LineTo::XYRelative(vec![
+                        Number::from_str(left)?,
+                        Number::from_str(right)?,
+                    ])),
+                    rest,
+                ))
+            }
+            'H' => {
+                let (left, rest) = Self::split_eos(rest);
+
+                Ok((
+                    PathType::LineTo(LineTo::HorizontalAbsolute(vec![Number::from_str(left)?])),
+                    rest,
+                ))
+            }
+            'h' => {
+                let (left, rest) = Self::split_eos(rest);
+
+                Ok((
+                    PathType::LineTo(LineTo::HorizontalRelative(vec![Number::from_str(left)?])),
+                    rest,
+                ))
+            }
+            'V' => {
+                let (left, rest) = Self::split_eos(rest);
+
+                Ok((
+                    PathType::LineTo(LineTo::VerticalAbsolute(vec![Number::from_str(left)?])),
+                    rest,
+                ))
+            }
+            'v' => {
+                let (left, rest) = Self::split_eos(rest);
+
+                Ok((
+                    PathType::LineTo(LineTo::VerticalRelative(vec![Number::from_str(left)?])),
+                    rest,
+                ))
+            }
+            'C' => {
+                let (x1_1, rest) = Self::split_left_rest(rest)?;
+                let (y1_1, rest) = Self::split_left_rest(rest)?;
+                let (x2_1, rest) = Self::split_left_rest(rest)?;
+                let (y2_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_2, rest) = Self::split_left_rest(rest)?;
+                let (y1_2, rest) = Self::split_left_rest(rest)?;
+                let (x2_2, rest) = Self::split_left_rest(rest)?;
+                let (y2_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_3, rest) = Self::split_left_rest(rest)?;
+                let (y1_3, rest) = Self::split_left_rest(rest)?;
+                let (x2_3, rest) = Self::split_left_rest(rest)?;
+                let (y2_3, rest) = Self::split_left_rest(rest)?;
+                let (x_3, rest) = Self::split_left_rest(rest)?;
+                let (y_3, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::CubicBezierCurve(CubicBezierCurve::Absolute(vec![
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_1)?,
+                            y1: Number::from_str(y1_1)?,
+                            x2: Number::from_str(x2_1)?,
+                            y2: Number::from_str(y2_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_2)?,
+                            y1: Number::from_str(y1_2)?,
+                            x2: Number::from_str(x2_2)?,
+                            y2: Number::from_str(y2_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_3)?,
+                            y1: Number::from_str(y1_3)?,
+                            x2: Number::from_str(x2_3)?,
+                            y2: Number::from_str(y2_3)?,
+                            x: Number::from_str(x_3)?,
+                            y: Number::from_str(y_3)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'c' => {
+                let (x1_1, rest) = Self::split_left_rest(rest)?;
+                let (y1_1, rest) = Self::split_left_rest(rest)?;
+                let (x2_1, rest) = Self::split_left_rest(rest)?;
+                let (y2_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_2, rest) = Self::split_left_rest(rest)?;
+                let (y1_2, rest) = Self::split_left_rest(rest)?;
+                let (x2_2, rest) = Self::split_left_rest(rest)?;
+                let (y2_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_3, rest) = Self::split_left_rest(rest)?;
+                let (y1_3, rest) = Self::split_left_rest(rest)?;
+                let (x2_3, rest) = Self::split_left_rest(rest)?;
+                let (y2_3, rest) = Self::split_left_rest(rest)?;
+                let (x_3, rest) = Self::split_left_rest(rest)?;
+                let (y_3, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::CubicBezierCurve(CubicBezierCurve::Relative(vec![
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_1)?,
+                            y1: Number::from_str(y1_1)?,
+                            x2: Number::from_str(x2_1)?,
+                            y2: Number::from_str(y2_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_2)?,
+                            y1: Number::from_str(y1_2)?,
+                            x2: Number::from_str(x2_2)?,
+                            y2: Number::from_str(y2_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                        CubicBezierCurvePoint {
+                            x1: Number::from_str(x1_3)?,
+                            y1: Number::from_str(y1_3)?,
+                            x2: Number::from_str(x2_3)?,
+                            y2: Number::from_str(y2_3)?,
+                            x: Number::from_str(x_3)?,
+                            y: Number::from_str(y_3)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'S' => {
+                let (x2_1, rest) = Self::split_left_rest(rest)?;
+                let (y2_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x2_2, rest) = Self::split_left_rest(rest)?;
+                let (y2_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::CubicBezierCurve(CubicBezierCurve::SmoothAbsolute(vec![
+                        SmoothCubicBezierCurvePoint {
+                            x2: Number::from_str(x2_1)?,
+                            y2: Number::from_str(y2_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        SmoothCubicBezierCurvePoint {
+                            x2: Number::from_str(x2_2)?,
+                            y2: Number::from_str(y2_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            's' => {
+                let (x2_1, rest) = Self::split_left_rest(rest)?;
+                let (y2_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x2_2, rest) = Self::split_left_rest(rest)?;
+                let (y2_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::CubicBezierCurve(CubicBezierCurve::SmoothRelative(vec![
+                        SmoothCubicBezierCurvePoint {
+                            x2: Number::from_str(x2_1)?,
+                            y2: Number::from_str(y2_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        SmoothCubicBezierCurvePoint {
+                            x2: Number::from_str(x2_2)?,
+                            y2: Number::from_str(y2_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'Q' => {
+                let (x1_1, rest) = Self::split_left_rest(rest)?;
+                let (y1_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_2, rest) = Self::split_left_rest(rest)?;
+                let (y1_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::QuadraticBezierCurve(QuadraticBezierCurve::Absolute(vec![
+                        QuadraticBezierCurvePoint {
+                            x1: Number::from_str(x1_1)?,
+                            y1: Number::from_str(y1_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        QuadraticBezierCurvePoint {
+                            x1: Number::from_str(x1_2)?,
+                            y1: Number::from_str(y1_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'q' => {
+                let (x1_1, rest) = Self::split_left_rest(rest)?;
+                let (y1_1, rest) = Self::split_left_rest(rest)?;
+                let (x_1, rest) = Self::split_left_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (x1_2, rest) = Self::split_left_rest(rest)?;
+                let (y1_2, rest) = Self::split_left_rest(rest)?;
+                let (x_2, rest) = Self::split_left_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::QuadraticBezierCurve(QuadraticBezierCurve::Relative(vec![
+                        QuadraticBezierCurvePoint {
+                            x1: Number::from_str(x1_1)?,
+                            y1: Number::from_str(y1_1)?,
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        QuadraticBezierCurvePoint {
+                            x1: Number::from_str(x1_2)?,
+                            y1: Number::from_str(y1_2)?,
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'T' => {
+                let (x_1, y_1, rest) = Self::split_left_right_rest(rest)?;
+                let (x_2, y_2, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::QuadraticBezierCurve(QuadraticBezierCurve::SmoothAbsolute(vec![
+                        Point {
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        Point {
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            't' => {
+                let (x_1, y_1, rest) = Self::split_left_right_rest(rest)?;
+                let (x_2, y_2, rest) = Self::split_left_right_rest(rest)?;
+
+                Ok((
+                    PathType::QuadraticBezierCurve(QuadraticBezierCurve::SmoothRelative(vec![
+                        Point {
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        Point {
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'A' => {
+                let (rx_1, ry_1, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_1, large_arc_flag_1, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_1, x_1, rest) = Self::split_left_right_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (rx_2, ry_2, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_2, large_arc_flag_2, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_2, x_2, rest) = Self::split_left_right_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                let (rx_3, ry_3, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_3, large_arc_flag_3, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_3, x_3, rest) = Self::split_left_right_rest(rest)?;
+                let (y_3, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::EllipticalArcCurve(EllipticalArcCurve::Absolute(vec![
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_1)?,
+                            ry: Number::from_str(ry_1)?,
+                            angle: Number::from_str(angle_1).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_1.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_1.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_2)?,
+                            ry: Number::from_str(ry_2)?,
+                            angle: Number::from_str(angle_2).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_2.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_2.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_3)?,
+                            ry: Number::from_str(ry_3)?,
+                            angle: Number::from_str(angle_3).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_3.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_3.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_3)?,
+                            y: Number::from_str(y_3)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'a' => {
+                let (rx_1, ry_1, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_1, large_arc_flag_1, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_1, x_1, rest) = Self::split_left_right_rest(rest)?;
+                let (y_1, rest) = Self::split_left_rest(rest)?;
+
+                let (rx_2, ry_2, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_2, large_arc_flag_2, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_2, x_2, rest) = Self::split_left_right_rest(rest)?;
+                let (y_2, rest) = Self::split_left_rest(rest)?;
+
+                let (rx_3, ry_3, rest) = Self::split_left_right_rest(rest)?;
+                let (angle_3, large_arc_flag_3, rest) = Self::split_left_right_rest(rest)?;
+                let (sweep_flag_3, x_3, rest) = Self::split_left_right_rest(rest)?;
+                let (y_3, rest) = Self::split_left_rest(rest)?;
+
+                Ok((
+                    PathType::EllipticalArcCurve(EllipticalArcCurve::Relative(vec![
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_1)?,
+                            ry: Number::from_str(ry_1)?,
+                            angle: Number::from_str(angle_1).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_1.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_1.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_1)?,
+                            y: Number::from_str(y_1)?,
+                        },
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_2)?,
+                            ry: Number::from_str(ry_2)?,
+                            angle: Number::from_str(angle_2).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_2.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_2.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_2)?,
+                            y: Number::from_str(y_2)?,
+                        },
+                        EllipticalArcPoint {
+                            rx: Number::from_str(rx_3)?,
+                            ry: Number::from_str(ry_3)?,
+                            angle: Number::from_str(angle_3).map_err(|_| ())?,
+                            large_arc_flag: large_arc_flag_3.eq_ignore_ascii_case("1"),
+                            sweep_flag: sweep_flag_3.eq_ignore_ascii_case("1"),
+                            x: Number::from_str(x_3)?,
+                            y: Number::from_str(y_3)?,
+                        },
+                    ])),
+                    rest,
+                ))
+            }
+            'Z' => Ok((PathType::ClosePath, "")),
+            'z' => Ok((PathType::ClosePath, "")),
             _ => Err(()),
         }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Path(Vec<PathType>);
+
+impl FromStr for Path {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        // M31,3h38l28,28v38l-28,28h-38l-28-28v-38z
+        let replaced = input.replace(' ', "");
+        let mut input = replaced.as_str();
+
+        let mut result = vec![];
+
+        while !input.is_empty() {
+            if let Ok((path_type, new_input)) = PathType::parse(&input) {
+                result.push(path_type);
+                input = new_input;
+            }
+        }
+
+        Ok(Self(result))
     }
 }
 
@@ -1060,6 +1319,7 @@ pub enum Fill {
     Paint(Paint),
     Freeze,
     Remove,
+    None,
 }
 
 impl ToString for Fill {
@@ -1068,6 +1328,7 @@ impl ToString for Fill {
             Fill::Paint(paint) => paint.to_string(),
             Fill::Freeze => "freeze".to_string(),
             Fill::Remove => "remove".to_string(),
+            Fill::None => "none".to_string(),
         }
     }
 }
@@ -1077,8 +1338,9 @@ impl FromStr for Fill {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "none" => Ok(Fill::Remove),
+            "remove" => Ok(Fill::Remove),
             "freeze" => Ok(Fill::Freeze),
+            "none" => Ok(Fill::None),
             _ => Ok(Fill::Paint(Paint::from_str(s)?)),
         }
     }
@@ -3220,7 +3482,7 @@ pub enum Attribute {
     Cursor(Cursor),
     Cx(LengthOrPercentage),
     Cy(LengthOrPercentage),
-    D(Vec<Path>),
+    D(Path),
     Direction(TextDirection),
     Display(Display),
     DominantBaseline(DominantBaseline),
@@ -3385,7 +3647,7 @@ pub enum Attribute {
 
     // Element Specific
     KeyPoints(String),
-    Path(Vec<Path>),
+    Path(Path),
     Rotate(Rotate),
 
     // Animation Value Attributes
@@ -3549,12 +3811,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "cursor" => Ok(Attribute::Cursor(value.parse()?)),
             "cx" => Ok(Attribute::Cx(value.parse()?)),
             "cy" => Ok(Attribute::Cy(value.parse()?)),
-            "d" => Ok(Attribute::D(
-                value
-                    .split_whitespace()
-                    .map(Path::from_str)
-                    .collect::<Result<_, _>>()?,
-            )),
+            "d" => Ok(Attribute::D(value.parse()?)),
             "direction" => Ok(Attribute::Direction(value.parse()?)),
             "display" => Ok(Attribute::Display(value.parse()?)),
             "dominant-baseline" => Ok(Attribute::DominantBaseline(value.parse()?)),
@@ -3612,6 +3869,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "transform-origin" => Ok(Attribute::TransformOrigin(value.clone())),
             "unicode-bidi" => Ok(Attribute::UnicodeBidi(value.parse()?)),
             "vector-effect" => Ok(Attribute::VectorEffect(value.parse()?)),
+            "viewBox" => Ok(Attribute::ViewBox(value.parse()?)),
             "visibility" => Ok(Attribute::Visibility(value.parse()?)),
             "width" => Ok(Attribute::Width(value.parse().unwrap_or(
                 LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
@@ -4646,6 +4904,7 @@ impl Attribute {
             Attribute::Cy(length_or_percentage) => Some(length_or_percentage.to_string()),
             Attribute::D(paths) => Some(
                 paths
+                    .0
                     .iter()
                     .map(|path| path.to_string())
                     .collect::<Vec<_>>()
@@ -4808,6 +5067,7 @@ impl Attribute {
             Attribute::KeyPoints(_) => todo!(),
             Attribute::Path(paths) => Some(
                 paths
+                    .0
                     .iter()
                     .map(|path| path.to_string())
                     .collect::<Vec<_>>()
