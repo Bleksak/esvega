@@ -1,5 +1,5 @@
 use crate::parser::ast::{AST, NodeId};
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::{self, Display}, str::FromStr};
 
 use crate::element::attributes::Attribute;
 
@@ -14,62 +14,51 @@ pub struct Element {
 }
 
 impl Element {
-    pub fn to_svg(&self, ast: &AST, current_indent: usize) -> String {
-        let mut svg = String::new();
-
-        for _ in 0..current_indent {
-            svg.push_str("  ");
+    pub fn write_svg(&self, ast: &AST, f: &mut impl fmt::Write, indent: usize) -> fmt::Result {
+        for _ in 0..indent {
+            write!(f, "  ")?;
         }
 
-        svg.push_str(&format!("<{}", self.element_type));
+        write!(f, "<{}", self.element_type)?;
 
-        if !self.attributes.is_empty() {
-            svg.push(' ');
+        let mut attrs = self.attributes.iter().peekable();
+        if attrs.peek().is_some() {
+            write!(f, " ")?;
         }
 
-        let mut attribute_iterator = self
-            .attributes
-            .iter()
-            .map(|attribute| attribute.to_svg())
-            .peekable();
-
-        while let Some(attribute) = attribute_iterator.next() {
-            svg.push_str(&attribute);
-
-            if let Some(_) = attribute_iterator.peek() {
-                svg.push(' ');
+        while let Some(attr) = attrs.next() {
+            attr.write_svg(f)?;
+            if attrs.peek().is_some() {
+                write!(f, " ")?;
             }
         }
 
         if self.children.is_empty() {
-            svg.push_str("/>");
-            return svg;
+            return write!(f, "/>");
         }
 
-        svg.push_str(">\n");
+        write!(f, ">\n")?;
 
         // NOTE(@bleksak): If this crashes some day, we need to rewrite it without recursion
         let mut children = self.children.iter().peekable();
 
-        while let Some(child_node) = children.next() {
-            let Some(child) = ast.nodes.get(*child_node) else {
+        while let Some(child_id) = children.next() {
+            let Some(child) = ast.nodes.get(*child_id) else {
                 continue;
             };
 
-            svg.push_str(&child.to_svg(ast, current_indent + 1));
+            child.write_svg(ast, f, indent + 1)?;
 
-            if let Some(_) = children.peek() {
-                svg.push('\n');
+            if children.peek().is_some() {
+                write!(f, "\n")?;
             }
         }
 
-        for _ in 0..current_indent {
-            svg.push_str("  ");
+        for _ in 0..indent {
+            write!(f, "  ")?;
         }
 
-        svg.push_str(&format!("</{}>\n", self.element_type));
-
-        svg
+        write!(f, "</{}>\n", self.element_type)
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{convert::Infallible, str::FromStr};
+use std::{convert::Infallible, fmt, str::FromStr};
 
 use crate::{
     Element,
@@ -5214,13 +5214,13 @@ impl Attribute {
         }
     }
 
-    pub fn to_svg(&self) -> String {
+    pub fn write_svg(&self, f: &mut impl fmt::Write) -> fmt::Result {
         let name = self.name();
 
         if let Some(value) = self.value_as_string() {
-            return format!("{}=\"{}\"", name, value);
+            write!(f, "{}=\"{}\"", name, value)
+        } else {
+            write!(f, "{}", name)
         }
-
-        name.to_string()
     }
 }
