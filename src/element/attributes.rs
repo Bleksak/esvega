@@ -87,14 +87,14 @@ pub enum BaselineShift {
     Super,
 }
 
-impl BaselineShift {
-    pub fn to_string(&self) -> String {
+impl fmt::Display for BaselineShift {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BaselineShift::LengthOrPercentage(length_or_percentage) => {
-                length_or_percentage.to_string()
+                write!(f, "{}", length_or_percentage)
             }
-            BaselineShift::Sub => "sub".into(),
-            BaselineShift::Super => "super".into(),
+            BaselineShift::Sub => write!(f, "sub"),
+            BaselineShift::Super => write!(f, "super"),
         }
     }
 }
@@ -234,9 +234,9 @@ pub enum Cursor {
     // TODO: add FuncURI, not sure what that is at the moment
 }
 
-impl ToString for Cursor {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Cursor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Cursor::Auto => "auto",
             Cursor::Crosshair => "crosshair",
             Cursor::Default => "default",
@@ -254,8 +254,7 @@ impl ToString for Cursor {
             Cursor::Wait => "wait",
             Cursor::Help => "help",
             Cursor::Inherit => "inherit",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -292,11 +291,11 @@ pub enum MoveTo {
     Relative((Number, Number)), // m dx dy
 }
 
-impl ToString for MoveTo {
-    fn to_string(&self) -> String {
+impl fmt::Display for MoveTo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MoveTo::Absolute((x, y)) => format!("M {},{}", x.to_string(), y.to_string()),
-            MoveTo::Relative((dx, dy)) => format!("m {},{}", dx.to_string(), dy.to_string()),
+            MoveTo::Absolute((x, y)) => write!(f, "M {},{}", x, y),
+            MoveTo::Relative((dx, dy)) => write!(f, "m {},{}", dx, dy),
         }
     }
 }
@@ -304,9 +303,9 @@ impl ToString for MoveTo {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Number(f64);
 
-impl ToString for Number {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl fmt::Display for Number {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -328,45 +327,51 @@ pub enum LineTo {
     VerticalRelative(Vec<Number>),   // v (dy)+
 }
 
-impl ToString for LineTo {
-    fn to_string(&self) -> String {
+impl fmt::Display for LineTo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LineTo::XYAbsolute(v) => format!(
+            LineTo::XYAbsolute(v) => write!(
+                f,
                 "L {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            LineTo::XYRelative(v) => format!(
+            LineTo::XYRelative(v) => write!(
+                f,
                 "l {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            LineTo::HorizontalAbsolute(v) => format!(
+            LineTo::HorizontalAbsolute(v) => write!(
+                f,
                 "H {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            LineTo::HorizontalRelative(v) => format!(
+            LineTo::HorizontalRelative(v) => write!(
+                f,
                 "h {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            LineTo::VerticalAbsolute(v) => format!(
+            LineTo::VerticalAbsolute(v) => write!(
+                f,
                 "V {}",
                 v.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            LineTo::VerticalRelative(v) => format!(
+            LineTo::VerticalRelative(v) => write!(
+                f,
                 "v {}",
                 v.iter()
                     .map(|x| x.to_string())
@@ -387,16 +392,17 @@ pub struct CubicBezierCurvePoint {
     pub y: Number,
 }
 
-impl ToString for CubicBezierCurvePoint {
-    fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for CubicBezierCurvePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "{} {} {} {} {} {}",
-            self.x1.to_string(),
-            self.y1.to_string(),
-            self.x2.to_string(),
-            self.y2.to_string(),
-            self.x.to_string(),
-            self.y.to_string(),
+            self.x1,
+            self.y1,
+            self.x2,
+            self.y2,
+            self.x,
+            self.y,
         )
     }
 }
@@ -409,14 +415,15 @@ pub struct SmoothCubicBezierCurvePoint {
     pub y: Number,
 }
 
-impl ToString for SmoothCubicBezierCurvePoint {
-    fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for SmoothCubicBezierCurvePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "{} {} {} {}",
-            self.x2.to_string(),
-            self.y2.to_string(),
-            self.x.to_string(),
-            self.y.to_string()
+            self.x2,
+            self.y2,
+            self.x,
+            self.y
         )
     }
 }
@@ -429,10 +436,11 @@ pub enum CubicBezierCurve {
     SmoothRelative(Vec<SmoothCubicBezierCurvePoint>), // s (x2 y2 x y)+
 }
 
-impl ToString for CubicBezierCurve {
-    fn to_string(&self) -> String {
+impl fmt::Display for CubicBezierCurve {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CubicBezierCurve::Absolute(cubic_bezier_curve_points) => format!(
+            CubicBezierCurve::Absolute(cubic_bezier_curve_points) => write!(
+                f,
                 "C {}",
                 cubic_bezier_curve_points
                     .iter()
@@ -440,7 +448,8 @@ impl ToString for CubicBezierCurve {
                     .collect::<Vec<String>>()
                     .join(" ")
             ),
-            CubicBezierCurve::Relative(cubic_bezier_curve_points) => format!(
+            CubicBezierCurve::Relative(cubic_bezier_curve_points) => write!(
+                f,
                 "c {}",
                 cubic_bezier_curve_points
                     .iter()
@@ -449,7 +458,8 @@ impl ToString for CubicBezierCurve {
                     .join(" ")
             ),
             CubicBezierCurve::SmoothAbsolute(smooth_cubic_bezier_curve_points) => {
-                format!(
+                write!(
+                    f,
                     "S {}",
                     smooth_cubic_bezier_curve_points
                         .iter()
@@ -461,7 +471,8 @@ impl ToString for CubicBezierCurve {
                 )
             }
             CubicBezierCurve::SmoothRelative(smooth_cubic_bezier_curve_points) => {
-                format!(
+                write!(
+                    f,
                     "s {}",
                     smooth_cubic_bezier_curve_points
                         .iter()
@@ -484,14 +495,15 @@ pub struct QuadraticBezierCurvePoint {
     pub y: Number,
 }
 
-impl ToString for QuadraticBezierCurvePoint {
-    fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for QuadraticBezierCurvePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "{} {} {} {}",
-            self.x1.to_string(),
-            self.y1.to_string(),
-            self.x.to_string(),
-            self.y.to_string()
+            self.x1,
+            self.y1,
+            self.x,
+            self.y
         )
     }
 }
@@ -502,9 +514,9 @@ pub struct Point {
     pub y: Number,
 }
 
-impl ToString for Point {
-    fn to_string(&self) -> String {
-        format!("{} {}", self.x.to_string(), self.y.to_string())
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.x, self.y)
     }
 }
 
@@ -516,11 +528,12 @@ pub enum QuadraticBezierCurve {
     SmoothRelative(Vec<Point>),               // t (x y)+
 }
 
-impl ToString for QuadraticBezierCurve {
-    fn to_string(&self) -> String {
+impl fmt::Display for QuadraticBezierCurve {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             QuadraticBezierCurve::Absolute(quadratic_bezier_curve_points) => {
-                format!(
+                write!(
+                    f,
                     "Q {}",
                     quadratic_bezier_curve_points
                         .iter()
@@ -530,7 +543,8 @@ impl ToString for QuadraticBezierCurve {
                 )
             }
             QuadraticBezierCurve::Relative(quadratic_bezier_curve_points) => {
-                format!(
+                write!(
+                    f,
                     "q {}",
                     quadratic_bezier_curve_points
                         .iter()
@@ -539,7 +553,8 @@ impl ToString for QuadraticBezierCurve {
                         .join(" ")
                 )
             }
-            QuadraticBezierCurve::SmoothAbsolute(points) => format!(
+            QuadraticBezierCurve::SmoothAbsolute(points) => write!(
+                f,
                 "T {}",
                 points
                     .iter()
@@ -547,7 +562,8 @@ impl ToString for QuadraticBezierCurve {
                     .collect::<Vec<_>>()
                     .join(" ")
             ),
-            QuadraticBezierCurve::SmoothRelative(points) => format!(
+            QuadraticBezierCurve::SmoothRelative(points) => write!(
+                f,
                 "t {}",
                 points
                     .iter()
@@ -570,17 +586,18 @@ pub struct EllipticalArcPoint {
     pub y: Number,
 }
 
-impl ToString for EllipticalArcPoint {
-    fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for EllipticalArcPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "{} {} {} {} {} {} {}",
-            self.rx.to_string(),
-            self.ry.to_string(),
-            self.angle.to_string(),
+            self.rx,
+            self.ry,
+            self.angle,
             self.large_arc_flag as u8,
             self.sweep_flag as u8,
-            self.x.to_string(),
-            self.y.to_string(),
+            self.x,
+            self.y,
         )
     }
 }
@@ -591,10 +608,11 @@ pub enum EllipticalArcCurve {
     Relative(Vec<EllipticalArcPoint>), // a (rx ry angle large-arc-flag sweep-flag dx dy)+
 }
 
-impl ToString for EllipticalArcCurve {
-    fn to_string(&self) -> String {
+impl fmt::Display for EllipticalArcCurve {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EllipticalArcCurve::Absolute(elliptical_arc_points) => format!(
+            EllipticalArcCurve::Absolute(elliptical_arc_points) => write!(
+                f,
                 "A {}",
                 elliptical_arc_points
                     .iter()
@@ -602,7 +620,8 @@ impl ToString for EllipticalArcCurve {
                     .collect::<Vec<_>>()
                     .join(" ")
             ),
-            EllipticalArcCurve::Relative(elliptical_arc_points) => format!(
+            EllipticalArcCurve::Relative(elliptical_arc_points) => write!(
+                f,
                 "a {}",
                 elliptical_arc_points
                     .iter()
@@ -624,17 +643,17 @@ pub enum PathType {
     ClosePath,                                  // Z z
 }
 
-impl ToString for PathType {
-    fn to_string(&self) -> String {
+impl fmt::Display for PathType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PathType::MoveTo(move_to) => move_to.to_string(),
-            PathType::LineTo(line_to) => line_to.to_string(),
-            PathType::CubicBezierCurve(cubic_bezier_curve) => cubic_bezier_curve.to_string(),
+            PathType::MoveTo(move_to) => write!(f, "{}", move_to),
+            PathType::LineTo(line_to) => write!(f, "{}", line_to),
+            PathType::CubicBezierCurve(cubic_bezier_curve) => write!(f, "{}", cubic_bezier_curve),
             PathType::QuadraticBezierCurve(quadratic_bezier_curve) => {
-                quadratic_bezier_curve.to_string()
+                write!(f, "{}", quadratic_bezier_curve)
             }
-            PathType::EllipticalArcCurve(elliptical_arc_curve) => elliptical_arc_curve.to_string(),
-            PathType::ClosePath => "Z".to_string(),
+            PathType::EllipticalArcCurve(elliptical_arc_curve) => write!(f, "{}", elliptical_arc_curve),
+            PathType::ClosePath => write!(f, "Z"),
         }
     }
 }
@@ -1136,11 +1155,11 @@ pub enum TextDirection {
     Rtl,
 }
 
-impl ToString for TextDirection {
-    fn to_string(&self) -> String {
+impl fmt::Display for TextDirection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TextDirection::Ltr => "ltr".to_string(),
-            TextDirection::Rtl => "rtl".to_string(),
+            TextDirection::Ltr => write!(f, "ltr"),
+            TextDirection::Rtl => write!(f, "rtl"),
         }
     }
 }
@@ -1190,9 +1209,9 @@ pub enum Display {
     InlineGrid,
 }
 
-impl ToString for Display {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Display {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Display::Inline => "inline",
             Display::Block => "block",
             Display::RunIn => "run-in",
@@ -1221,8 +1240,7 @@ impl ToString for Display {
             Display::InlineTable => "inline-table",
             Display::InlineFlex => "inline-flex",
             Display::InlineGrid => "inline-grid",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1278,9 +1296,9 @@ pub enum DominantBaseline {
     TextTop,
 }
 
-impl ToString for DominantBaseline {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for DominantBaseline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             DominantBaseline::Auto => "auto",
             DominantBaseline::TextBottom => "text-bottom",
             DominantBaseline::Alphabetic => "alphabetic",
@@ -1290,8 +1308,7 @@ impl ToString for DominantBaseline {
             DominantBaseline::Mathematical => "mathematical",
             DominantBaseline::Hanging => "hanging",
             DominantBaseline::TextTop => "text-top",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1322,13 +1339,13 @@ pub enum Fill {
     None,
 }
 
-impl ToString for Fill {
-    fn to_string(&self) -> String {
+impl fmt::Display for Fill {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Fill::Paint(paint) => paint.to_string(),
-            Fill::Freeze => "freeze".to_string(),
-            Fill::Remove => "remove".to_string(),
-            Fill::None => "none".to_string(),
+            Fill::Paint(paint) => write!(f, "{}", paint),
+            Fill::Freeze => write!(f, "freeze"),
+            Fill::Remove => write!(f, "remove"),
+            Fill::None => write!(f, "none"),
         }
     }
 }
@@ -1353,11 +1370,11 @@ pub enum FillRule {
     EvenOdd,
 }
 
-impl ToString for FillRule {
-    fn to_string(&self) -> String {
+impl fmt::Display for FillRule {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FillRule::NonZero => "nonzero".to_string(),
-            FillRule::EvenOdd => "evenodd".to_string(),
+            FillRule::NonZero => write!(f, "nonzero"),
+            FillRule::EvenOdd => write!(f, "evenodd"),
         }
     }
 }
@@ -1382,13 +1399,13 @@ pub enum FontSize {
     Percentage(Percentage),
 }
 
-impl ToString for FontSize {
-    fn to_string(&self) -> String {
+impl fmt::Display for FontSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FontSize::Absolute(absolute_size) => absolute_size.to_string(),
-            FontSize::Relative(relative_size) => relative_size.to_string(),
-            FontSize::Length(length) => length.to_string(),
-            FontSize::Percentage(percentage) => percentage.to_string(),
+            FontSize::Absolute(absolute_size) => write!(f, "{}", absolute_size),
+            FontSize::Relative(relative_size) => write!(f, "{}", relative_size),
+            FontSize::Length(length) => write!(f, "{}", length),
+            FontSize::Percentage(percentage) => write!(f, "{}", percentage),
         }
     }
 }
@@ -1423,11 +1440,11 @@ pub enum FontSizeAdjust {
     Number(f64),
 }
 
-impl ToString for FontSizeAdjust {
-    fn to_string(&self) -> String {
+impl fmt::Display for FontSizeAdjust {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FontSizeAdjust::None => "none".to_string(),
-            FontSizeAdjust::Number(number) => number.to_string(),
+            FontSizeAdjust::None => write!(f, "none"),
+            FontSizeAdjust::Number(number) => write!(f, "{}", number),
         }
     }
 }
@@ -1451,12 +1468,12 @@ pub enum FontStyle {
     Oblique,
 }
 
-impl ToString for FontStyle {
-    fn to_string(&self) -> String {
+impl fmt::Display for FontStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FontStyle::Normal => "normal".to_string(),
-            FontStyle::Italic => "italic".to_string(),
-            FontStyle::Oblique => "oblique".to_string(),
+            FontStyle::Normal => write!(f, "normal"),
+            FontStyle::Italic => write!(f, "italic"),
+            FontStyle::Oblique => write!(f, "oblique"),
         }
     }
 }
@@ -1482,14 +1499,13 @@ pub enum ImageRendering {
     OptimizeQuality,
 }
 
-impl ToString for ImageRendering {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ImageRendering {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             ImageRendering::Auto => "auto",
             ImageRendering::OptimizeSpeed => "optimizeSpeed",
             ImageRendering::OptimizeQuality => "optimizeQuality",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1513,11 +1529,11 @@ pub enum LetterSpacing {
     Length(Length),
 }
 
-impl ToString for LetterSpacing {
-    fn to_string(&self) -> String {
+impl fmt::Display for LetterSpacing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LetterSpacing::Normal => "normal".to_string(),
-            LetterSpacing::Length(length) => length.to_string(),
+            LetterSpacing::Normal => write!(f, "normal"),
+            LetterSpacing::Length(length) => write!(f, "{}", length),
         }
     }
 }
@@ -1556,10 +1572,10 @@ pub enum Marker {
     Url(Url), // TODO: Is this correct?
 }
 
-impl ToString for Marker {
-    fn to_string(&self) -> String {
+impl fmt::Display for Marker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Marker::None => "none".to_string(),
+            Marker::None => write!(f, "none"),
             Marker::Url(_) => todo!(),
         }
     }
@@ -1584,11 +1600,11 @@ pub enum MaskType {
     Luminance,
 }
 
-impl ToString for MaskType {
-    fn to_string(&self) -> String {
+impl fmt::Display for MaskType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MaskType::Alpha => "alpha".to_string(),
-            MaskType::Luminance => "luminance".to_string(),
+            MaskType::Alpha => write!(f, "alpha"),
+            MaskType::Luminance => write!(f, "luminance"),
         }
     }
 }
@@ -1608,9 +1624,9 @@ impl FromStr for MaskType {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Opacity(pub f64);
 
-impl ToString for Opacity {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl fmt::Display for Opacity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -1637,13 +1653,13 @@ pub enum Overflow {
     Auto,
 }
 
-impl ToString for Overflow {
-    fn to_string(&self) -> String {
+impl fmt::Display for Overflow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Overflow::Visible => "visible".to_string(),
-            Overflow::Hidden => "hidden".to_string(),
-            Overflow::Scroll => "scroll".to_string(),
-            Overflow::Auto => "auto".to_string(),
+            Overflow::Visible => write!(f, "visible"),
+            Overflow::Hidden => write!(f, "hidden"),
+            Overflow::Scroll => write!(f, "scroll"),
+            Overflow::Auto => write!(f, "auto"),
         }
     }
 }
@@ -1677,19 +1693,19 @@ pub enum PointerEvents {
     None,
 }
 
-impl ToString for PointerEvents {
-    fn to_string(&self) -> String {
+impl fmt::Display for PointerEvents {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PointerEvents::BoundingBox => "bounding-box".to_string(),
-            PointerEvents::VisiblePainted => "visiblePainted".to_string(),
-            PointerEvents::VisibleFill => "visibleFill".to_string(),
-            PointerEvents::VisibleStroke => "visibleStroke".to_string(),
-            PointerEvents::Visible => "visible".to_string(),
-            PointerEvents::Painted => "painted".to_string(),
-            PointerEvents::Fill => "fill".to_string(),
-            PointerEvents::Stroke => "stroke".to_string(),
-            PointerEvents::All => "all".to_string(),
-            PointerEvents::None => "none".to_string(),
+            PointerEvents::BoundingBox => write!(f, "bounding-box"),
+            PointerEvents::VisiblePainted => write!(f, "visiblePainted"),
+            PointerEvents::VisibleFill => write!(f, "visibleFill"),
+            PointerEvents::VisibleStroke => write!(f, "visibleStroke"),
+            PointerEvents::Visible => write!(f, "visible"),
+            PointerEvents::Painted => write!(f, "painted"),
+            PointerEvents::Fill => write!(f, "fill"),
+            PointerEvents::Stroke => write!(f, "stroke"),
+            PointerEvents::All => write!(f, "all"),
+            PointerEvents::None => write!(f, "none"),
         }
     }
 }
@@ -1722,13 +1738,13 @@ pub enum EllipsisRadius {
     Auto,
 }
 
-impl ToString for EllipsisRadius {
-    fn to_string(&self) -> String {
+impl fmt::Display for EllipsisRadius {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EllipsisRadius::LengthOrPercentage(length_or_percentage) => {
-                length_or_percentage.to_string()
+                write!(f, "{}", length_or_percentage)
             }
-            EllipsisRadius::Auto => "auto".to_string(),
+            EllipsisRadius::Auto => write!(f, "auto"),
         }
     }
 }
@@ -1755,15 +1771,14 @@ pub enum ShapeRendering {
     GeometricPrecision,
 }
 
-impl ToString for ShapeRendering {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ShapeRendering {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             ShapeRendering::Auto => "auto",
             ShapeRendering::OptimizeSpeed => "optimizeSpeed",
             ShapeRendering::CrispEdges => "crispEdges",
             ShapeRendering::GeometricPrecision => "geometricPrecision",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1784,9 +1799,9 @@ impl FromStr for ShapeRendering {
 #[derive(Clone, Debug, PartialEq)]
 pub struct StopColor(pub Color);
 
-impl ToString for StopColor {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl fmt::Display for StopColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -1812,14 +1827,13 @@ pub enum StrokeLinecap {
     Square,
 }
 
-impl ToString for StrokeLinecap {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for StrokeLinecap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             StrokeLinecap::Butt => "butt",
             StrokeLinecap::Round => "round",
             StrokeLinecap::Square => "square",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1846,16 +1860,15 @@ pub enum StrokeLinejoin {
     Round,
 }
 
-impl ToString for StrokeLinejoin {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for StrokeLinejoin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             StrokeLinejoin::Arcs => "arcs",
             StrokeLinejoin::Bevel => "bevel",
             StrokeLinejoin::Miter => "miter",
             StrokeLinejoin::MiterClip => "miter-clip",
             StrokeLinejoin::Round => "round",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1880,11 +1893,11 @@ pub enum StrokeOpacity {
     Percentage(Percentage),
 }
 
-impl ToString for StrokeOpacity {
-    fn to_string(&self) -> String {
+impl fmt::Display for StrokeOpacity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StrokeOpacity::Number(number) => number.to_string(),
-            StrokeOpacity::Percentage(percentage) => percentage.to_string(),
+            StrokeOpacity::Number(number) => write!(f, "{}", number),
+            StrokeOpacity::Percentage(percentage) => write!(f, "{}", percentage),
         }
     }
 }
@@ -1917,16 +1930,15 @@ pub enum VectorEffect {
     FixedPosition,
 }
 
-impl ToString for VectorEffect {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for VectorEffect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             VectorEffect::None => "none",
             VectorEffect::NonScalingStroke => "non-scaling-stroke",
             VectorEffect::NonScalingSize => "non-scaling-size",
             VectorEffect::NonRotation => "non-rotation",
             VectorEffect::FixedPosition => "fixeed-position",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1953,14 +1965,13 @@ pub enum TextAnchor {
     End,
 }
 
-impl ToString for TextAnchor {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for TextAnchor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             TextAnchor::Start => "start",
             TextAnchor::Middle => "middle",
             TextAnchor::End => "end",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1984,13 +1995,12 @@ pub enum TextOverflow {
     Ellipsis,
 }
 
-impl ToString for TextOverflow {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for TextOverflow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             TextOverflow::Clip => "clip",
             TextOverflow::Ellipsis => "ellipsis",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2015,15 +2025,14 @@ pub enum TextRendering {
     GeometricPrecision,
 }
 
-impl ToString for TextRendering {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for TextRendering {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             TextRendering::Auto => "auto",
             TextRendering::OptimizeSpeed => "optimizeSpeed",
             TextRendering::OptimizeLegibility => "optimizeLegibility",
             TextRendering::GeometricPrecision => "geometricPrecision",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2052,17 +2061,16 @@ pub enum UnicodeBidi {
     Plaintext,
 }
 
-impl ToString for UnicodeBidi {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for UnicodeBidi {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             UnicodeBidi::Normal => "normal",
             UnicodeBidi::Embed => "embed",
             UnicodeBidi::Isolate => "isolate",
             UnicodeBidi::BidiOverride => "bidi-override",
             UnicodeBidi::IsolateOverride => "isolate-override",
             UnicodeBidi::Plaintext => "plaintext",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2090,14 +2098,13 @@ pub enum Visibility {
     Collapse,
 }
 
-impl ToString for Visibility {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Visibility {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Visibility::Visible => "visible",
             Visibility::Hidden => "hidden",
             Visibility::Collapse => "collapse",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2125,17 +2132,16 @@ pub enum WhiteSpace {
     PreLine,
 }
 
-impl ToString for WhiteSpace {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for WhiteSpace {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             WhiteSpace::Normal => "normal",
             WhiteSpace::Pre => "pre",
             WhiteSpace::Nowrap => "nowrap",
             WhiteSpace::PreWrap => "pre-wrap",
             WhiteSpace::BreakSpace => "break-space",
             WhiteSpace::PreLine => "pre-line",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2162,11 +2168,11 @@ pub enum WordSpacing {
     Length(Length),
 }
 
-impl ToString for WordSpacing {
-    fn to_string(&self) -> String {
+impl fmt::Display for WordSpacing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            WordSpacing::Normal => "normal".to_string(),
-            WordSpacing::Length(length) => length.to_string(),
+            WordSpacing::Normal => write!(f, "normal"),
+            WordSpacing::Length(length) => write!(f, "{}", length),
         }
     }
 }
@@ -2190,14 +2196,13 @@ pub enum WritingMode {
     VerticalLr,
 }
 
-impl ToString for WritingMode {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for WritingMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             WritingMode::HorizontalTb => "horizontal-tb",
             WritingMode::VerticalRl => "vertical-rl",
             WritingMode::VerticalLr => "vertical-lr",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2221,12 +2226,12 @@ pub enum Rotate {
     Number(f64),
 }
 
-impl ToString for Rotate {
-    fn to_string(&self) -> String {
+impl fmt::Display for Rotate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Rotate::Auto => "auto".to_string(),
-            Rotate::AutoReverse => "auto-reverse".to_string(),
-            Rotate::Number(number) => number.to_string(),
+            Rotate::Auto => write!(f, "auto"),
+            Rotate::AutoReverse => write!(f, "auto-reverse"),
+            Rotate::Number(number) => write!(f, "{}", number),
         }
     }
 }
@@ -2260,12 +2265,12 @@ pub enum LengthOrPercentageOrNumber {
     Number(f64),
 }
 
-impl ToString for LengthOrPercentageOrNumber {
-    fn to_string(&self) -> String {
+impl fmt::Display for LengthOrPercentageOrNumber {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LengthOrPercentageOrNumber::Length(length) => length.to_string(),
-            LengthOrPercentageOrNumber::Percentage(percentage) => percentage.to_string(),
-            LengthOrPercentageOrNumber::Number(number) => number.to_string(),
+            LengthOrPercentageOrNumber::Length(length) => write!(f, "{}", length),
+            LengthOrPercentageOrNumber::Percentage(percentage) => write!(f, "{}", percentage),
+            LengthOrPercentageOrNumber::Number(number) => write!(f, "{}", number),
         }
     }
 }
@@ -2302,9 +2307,9 @@ pub enum ReferrerPolicy {
     UnsafeUrl,
 }
 
-impl ToString for ReferrerPolicy {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ReferrerPolicy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             ReferrerPolicy::NoReferrer => "no-referrer",
             ReferrerPolicy::NoReferrerWhenDowngrade => "no-referrer-when-downgrade",
             ReferrerPolicy::SameOrigin => "same-origin",
@@ -2313,8 +2318,7 @@ impl ToString for ReferrerPolicy {
             ReferrerPolicy::OriginWhenCrossOrigin => "origin-when-cross-origin",
             ReferrerPolicy::StrictOriginWhenCrossOrigin => "strict-origin-when-cross-origin",
             ReferrerPolicy::UnsafeUrl => "unsafe-url",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2369,9 +2373,9 @@ pub enum RelType {
     TermsOfService,
 }
 
-impl ToString for RelType {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for RelType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             RelType::Alternate => "alternate",
             RelType::Author => "author",
             RelType::Bookmark => "bookmark",
@@ -2401,8 +2405,7 @@ impl ToString for RelType {
             RelType::StyleSheet => "stylesheet",
             RelType::Tag => "tag",
             RelType::TermsOfService => "terms-of-service",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2454,15 +2457,14 @@ pub enum Target {
     Blank,
 }
 
-impl ToString for Target {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Target {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Target::Self_ => "_self",
             Target::Parent => "parent",
             Target::Top => "top",
             Target::Blank => "blank",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2487,13 +2489,12 @@ pub enum MarkerUnits {
     StrokeWidth,
 }
 
-impl ToString for MarkerUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for MarkerUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
             MarkerUnits::StrokeWidth => "strokeWidth",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2516,12 +2517,12 @@ pub enum Orient {
     Angle(f64),
 }
 
-impl ToString for Orient {
-    fn to_string(&self) -> String {
+impl fmt::Display for Orient {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Orient::Auto => "auto".to_string(),
-            Orient::AutoStartReverse => "auto-start-reverse".to_string(),
-            Orient::Angle(angle) => angle.to_string(),
+            Orient::Auto => write!(f, "auto"),
+            Orient::AutoStartReverse => write!(f, "auto-start-reverse"),
+            Orient::Angle(angle) => write!(f, "{}", angle),
         }
     }
 }
@@ -2572,9 +2573,9 @@ pub enum PreserveAspectRatio {
     XMaxYMaxSlice,
 }
 
-impl ToString for PreserveAspectRatio {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for PreserveAspectRatio {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             PreserveAspectRatio::None => "none",
             PreserveAspectRatio::XMinYMinMeet => "xMinYMin meet",
             PreserveAspectRatio::XMidYMinMeet => "xMidYMid meet",
@@ -2594,8 +2595,7 @@ impl ToString for PreserveAspectRatio {
             PreserveAspectRatio::XMinYMaxSlice => "xMinYMax slice",
             PreserveAspectRatio::XMidYMaxSlice => "xMidYMax slice",
             PreserveAspectRatio::XMaxYMaxSlice => "xMaxYMax slice",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2636,13 +2636,13 @@ pub enum RefX {
     Coordinate(LengthOrPercentage),
 }
 
-impl ToString for RefX {
-    fn to_string(&self) -> String {
+impl fmt::Display for RefX {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RefX::Left => "left".to_string(),
-            RefX::Center => "center".to_string(),
-            RefX::Right => "right".to_string(),
-            RefX::Coordinate(length_or_percentage) => length_or_percentage.to_string(),
+            RefX::Left => write!(f, "left"),
+            RefX::Center => write!(f, "center"),
+            RefX::Right => write!(f, "right"),
+            RefX::Coordinate(length_or_percentage) => write!(f, "{}", length_or_percentage),
         }
     }
 }
@@ -2676,13 +2676,13 @@ pub enum RefY {
     Coordinate(LengthOrPercentage),
 }
 
-impl ToString for RefY {
-    fn to_string(&self) -> String {
+impl fmt::Display for RefY {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RefY::Top => "top".to_string(),
-            RefY::Center => "center".to_string(),
-            RefY::Bottom => "bottom".to_string(),
-            RefY::Coordinate(length_or_percentage) => length_or_percentage.to_string(),
+            RefY::Top => write!(f, "top"),
+            RefY::Center => write!(f, "center"),
+            RefY::Bottom => write!(f, "bottom"),
+            RefY::Coordinate(length_or_percentage) => write!(f, "{}", length_or_percentage),
         }
     }
 }
@@ -2733,13 +2733,12 @@ pub enum MaskContentUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for MaskContentUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for MaskContentUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             MaskContentUnits::UserSpaceOnUse => "userSpaceOnUse",
             MaskContentUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2762,13 +2761,12 @@ pub enum MaskUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for MaskUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for MaskUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             MaskUnits::UserSpaceOnUse => "userSpaceOnUse",
             MaskUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2791,13 +2789,12 @@ pub enum PatternContentUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for PatternContentUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for PatternContentUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             PatternContentUnits::UserSpaceOnUse => "userSpaceOnUse",
             PatternContentUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2820,13 +2817,12 @@ pub enum PatternUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for PatternUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for PatternUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             PatternUnits::UserSpaceOnUse => "userSpaceOnUse",
             PatternUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2854,16 +2850,16 @@ pub enum In {
     Identifier(String),
 }
 
-impl ToString for In {
-    fn to_string(&self) -> String {
+impl fmt::Display for In {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            In::SourceGraphic => "SourceGraphic".to_string(),
-            In::SourceAlpha => "SourceAlpha".to_string(),
-            In::BackgroundImage => "BackgroundImage".to_string(),
-            In::BackgroundAlpha => "BackgroundAlpha".to_string(),
-            In::FillPaint => "FillPaint".to_string(),
-            In::StrokePaint => "StrokePaint".to_string(),
-            In::Identifier(identifier) => identifier.to_string(),
+            In::SourceGraphic => write!(f, "SourceGraphic"),
+            In::SourceAlpha => write!(f, "SourceAlpha"),
+            In::BackgroundImage => write!(f, "BackgroundImage"),
+            In::BackgroundAlpha => write!(f, "BackgroundAlpha"),
+            In::FillPaint => write!(f, "FillPaint"),
+            In::StrokePaint => write!(f, "StrokePaint"),
+            In::Identifier(identifier) => write!(f, "{}", identifier),
         }
     }
 }
@@ -2905,9 +2901,9 @@ pub enum BlendMode {
     Luminosity,
 }
 
-impl ToString for BlendMode {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for BlendMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             BlendMode::Normal => "normal",
             BlendMode::Multiply => "multiply",
             BlendMode::Screen => "screen",
@@ -2924,8 +2920,7 @@ impl ToString for BlendMode {
             BlendMode::Saturation => "saturation",
             BlendMode::Color => "color",
             BlendMode::Luminosity => "luminosity",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -2967,9 +2962,9 @@ pub enum Operator {
     Arithmetic,
 }
 
-impl ToString for Operator {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Operator::Over => "over",
             Operator::In => "in",
             Operator::Out => "out",
@@ -2977,8 +2972,7 @@ impl ToString for Operator {
             Operator::Xor => "xor",
             Operator::Lighter => "lighter",
             Operator::Arithmetic => "arithmetic",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3007,14 +3001,13 @@ pub enum EdgeMode {
     None,
 }
 
-impl ToString for EdgeMode {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for EdgeMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             EdgeMode::Duplicate => "duplicate",
             EdgeMode::Wrap => "wrap",
             EdgeMode::None => "none",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3040,15 +3033,14 @@ pub enum ChannelSelector {
     A,
 }
 
-impl ToString for ChannelSelector {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ChannelSelector {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             ChannelSelector::R => "R",
             ChannelSelector::G => "G",
             ChannelSelector::B => "B",
             ChannelSelector::A => "A",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3074,14 +3066,13 @@ pub enum CrossOrigin {
     Empty,
 }
 
-impl ToString for CrossOrigin {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for CrossOrigin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             CrossOrigin::Anonymous => "anonymous",
             CrossOrigin::UseCredentials => "use-credentials",
             CrossOrigin::Empty => "",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3105,13 +3096,12 @@ pub enum StitchTiles {
     Stitch,
 }
 
-impl ToString for StitchTiles {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for StitchTiles {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             StitchTiles::NoStitch => "noStitch",
             StitchTiles::Stitch => "stitch",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3134,13 +3124,12 @@ pub enum GradientUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for GradientUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for GradientUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             GradientUnits::UserSpaceOnUse => "userSpaceOnUse",
             GradientUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3164,14 +3153,13 @@ pub enum SpreadMethod {
     Repeat,
 }
 
-impl ToString for SpreadMethod {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for SpreadMethod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             SpreadMethod::Pad => "pad",
             SpreadMethod::Reflect => "reflect",
             SpreadMethod::Repeat => "repeat",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3196,14 +3184,13 @@ pub enum Decoding {
     Asynchronous,
 }
 
-impl ToString for Decoding {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Decoding {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Decoding::Auto => "auto",
             Decoding::Synchronous => "sync",
             Decoding::Asynchronous => "async",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3228,14 +3215,13 @@ pub enum FetchPriority {
     Low,
 }
 
-impl ToString for FetchPriority {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for FetchPriority {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             FetchPriority::Auto => "auto",
             FetchPriority::High => "high",
             FetchPriority::Low => "low",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3259,13 +3245,12 @@ pub enum LengthAdjust {
     SpacingAndGlyphs,
 }
 
-impl ToString for LengthAdjust {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for LengthAdjust {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             LengthAdjust::Spacing => "spacing",
             LengthAdjust::SpacingAndGlyphs => "spacingAndGlyphs",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3288,13 +3273,12 @@ pub enum ClipPathUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for ClipPathUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for ClipPathUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             ClipPathUnits::UserSpaceOnUse => "userSpaceOnUse",
             ClipPathUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3317,13 +3301,12 @@ pub enum Method {
     Stretch,
 }
 
-impl ToString for Method {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Method {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Method::Align => "align",
             Method::Stretch => "stretch",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3346,13 +3329,12 @@ pub enum Side {
     Right,
 }
 
-impl ToString for Side {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Side {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Side::Left => "left",
             Side::Right => "right",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3375,13 +3357,12 @@ pub enum Spacing {
     Auto,
 }
 
-impl ToString for Spacing {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for Spacing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             Spacing::Exact => "exact",
             Spacing::Auto => "auto",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3404,13 +3385,12 @@ pub enum FilterUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for FilterUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for FilterUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             FilterUnits::UserSpaceOnUse => "userSpaceOnUse",
             FilterUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3433,13 +3413,12 @@ pub enum PrimitiveUnits {
     ObjectBoundingBox,
 }
 
-impl ToString for PrimitiveUnits {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for PrimitiveUnits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             PrimitiveUnits::UserSpaceOnUse => "userSpaceOnUse",
             PrimitiveUnits::ObjectBoundingBox => "objectBoundingBox",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -3978,6 +3957,22 @@ impl TryFrom<(&String, &String)> for Attribute {
             }
         }
     }
+}
+
+fn write_space_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
+where
+    W: fmt::Write,
+    I: Iterator,
+    I::Item: fmt::Display,
+{
+    write!(f, "=\"")?;
+    for (i, item) in iter.enumerate() {
+        if i > 0 {
+            write!(f, " ")?;
+        }
+        write!(f, "{}", item)?;
+    }
+    write!(f, "\"")
 }
 
 impl Attribute {
@@ -4875,105 +4870,84 @@ impl Attribute {
         }
     }
 
-    pub fn value_as_string(&self) -> Option<String> {
+    fn write_value(&self, f: &mut impl fmt::Write) -> fmt::Result {
         match self {
-            Attribute::Xmlns(xmlns) => Some(xmlns.clone()),
-            Attribute::Autofocus(autofocus) => Some(if *autofocus { "1" } else { "0" }.to_string()),
-            Attribute::Id(id) => Some(id.clone()),
-            Attribute::Class(items) => Some(items.join(" ")),
-            Attribute::Style(style) => Some(style.clone()),
-            Attribute::Lang(lang) => Some(lang.clone()),
-            Attribute::Tabindex(tab_index) => Some(tab_index.to_string()),
-            Attribute::RequiredExtensions(items) => Some(items.join(" ")),
-            Attribute::SystemLanguage(system_language) => Some(system_language.clone()),
-            Attribute::AlignmentBaseline(alignment_baseline) => {
-                Some(alignment_baseline.as_str().to_string())
-            }
-            Attribute::BaselineShift(baseline_shift) => Some(baseline_shift.to_string()),
-            Attribute::ClipPath(clip_path) => Some(clip_path.to_string()),
-            Attribute::ClipRule(clip_rule) => Some(clip_rule.as_str().to_string()),
-            Attribute::Color(color) => Some(color.to_string()),
-            Attribute::ColorInterpolation(color_interpolation) => {
-                Some(color_interpolation.as_str().to_string())
-            }
-            Attribute::ColorInterpolationFilters(color_interpolation_filter) => {
-                Some(color_interpolation_filter.as_str().to_string())
-            }
-            Attribute::Cursor(cursor) => Some(cursor.to_string()),
-            Attribute::Cx(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Cy(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::D(paths) => Some(
-                paths
-                    .0
-                    .iter()
-                    .map(|path| path.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::Direction(text_direction) => Some(text_direction.to_string()),
-            Attribute::Display(display) => Some(display.to_string()),
-            Attribute::DominantBaseline(dominant_baseline) => Some(dominant_baseline.to_string()),
-            Attribute::Fill(fill) => Some(fill.to_string()),
-            Attribute::FillOpacity(percentage) => Some(percentage.to_string()),
-            Attribute::FillRule(fill_rule) => Some(fill_rule.to_string()),
-            Attribute::Filter(filter) => Some(filter.to_owned()),
-            Attribute::FloodColor(color) => Some(color.to_string()),
-            Attribute::FloodOpacity(flood_opacity) => Some(flood_opacity.to_string()),
-            Attribute::FontFamily(font_family) => Some(font_family.to_string()),
-            Attribute::FontSize(font_size) => Some(font_size.to_string()),
-            Attribute::FontSizeAdjust(font_size_adjust) => Some(font_size_adjust.to_string()),
-            Attribute::FontStyle(font_style) => Some(font_style.to_string()),
-            Attribute::FontVariant(font_variant) => Some(font_variant.to_string()),
-            Attribute::FontWeight(font_weight) => Some(font_weight.to_string()),
-            Attribute::Height(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::ImageRendering(image_rendering) => Some(image_rendering.to_string()),
-            Attribute::LetterSpacing(letter_spacing) => Some(letter_spacing.to_string()),
-            Attribute::LightingColor(lighting_color) => Some(lighting_color.0.to_string()),
-            Attribute::MarkerEnd(marker) => Some(marker.to_string()),
-            Attribute::MarkerMid(marker) => Some(marker.to_string()),
-            Attribute::MarkerStart(marker) => Some(marker.to_string()),
-            Attribute::Mask(mask) => Some(mask.to_string()),
-            Attribute::MaskType(mask_type) => Some(mask_type.to_string()),
-            Attribute::Opacity(opacity) => Some(opacity.to_string()),
-            Attribute::Overflow(overflow) => Some(overflow.to_string()),
-            Attribute::PointerEvents(pointer_events) => Some(pointer_events.to_string()),
-            Attribute::R(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Rx(ellipsis_radius) => Some(ellipsis_radius.to_string()),
-            Attribute::Ry(ellipsis_radius) => Some(ellipsis_radius.to_string()),
-            Attribute::ShapeRendering(shape_rendering) => Some(shape_rendering.to_string()),
-            Attribute::StopColor(stop_color) => Some(stop_color.to_string()),
-            Attribute::StopOpacity(opacity) => Some(opacity.to_string()),
-            Attribute::Stroke(paint) => Some(paint.to_string()),
-            Attribute::StrokeDasharray(items) => Some(
-                items
-                    .iter()
-                    .map(|n| n.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::StrokeDashoffset(length_or_percentage) => {
-                Some(length_or_percentage.to_string())
-            }
-            Attribute::StrokeLinecap(stroke_linecap) => Some(stroke_linecap.to_string()),
-            Attribute::StrokeLinejoin(stroke_linejoin) => Some(stroke_linejoin.to_string()),
-            Attribute::StrokeMiterlimit(stroke_miter_limit) => Some(stroke_miter_limit.to_string()),
-            Attribute::StrokeOpacity(stroke_opacity) => Some(stroke_opacity.to_string()),
-            Attribute::StrokeWidth(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::TextAnchor(text_anchor) => Some(text_anchor.to_string()),
-            Attribute::TextDecoration(text_decoration) => Some(text_decoration.to_string()),
-            Attribute::TextOverflow(text_overflow) => Some(text_overflow.to_string()),
-            Attribute::TextRendering(text_rendering) => Some(text_rendering.to_string()),
-            Attribute::Transform(transform) => Some(transform.to_string()),
-            Attribute::TransformOrigin(transform_origin) => Some(transform_origin.to_string()),
-            Attribute::UnicodeBidi(unicode_bidi) => Some(unicode_bidi.to_string()),
-            Attribute::VectorEffect(vector_effect) => Some(vector_effect.to_string()),
-            Attribute::Visibility(visibility) => Some(visibility.to_string()),
-            Attribute::Width(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::WhiteSpace(white_space) => Some(white_space.to_string()),
-            Attribute::WordSpacing(word_spacing) => Some(word_spacing.to_string()),
-            Attribute::WritingMode(writing_mode) => Some(writing_mode.to_string()),
-            Attribute::X(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Y(length_or_percentage) => Some(length_or_percentage.to_string()),
+            Attribute::Xmlns(s) => write!(f, "=\"{}\"", s),
+            Attribute::Autofocus(v) => write!(f, "=\"{}\"", if *v { "1" } else { "0" }),
+            Attribute::Id(s) => write!(f, "=\"{}\"", s),
+            Attribute::Class(items) => write_space_separated(f, items.iter()),
+            Attribute::Style(s) => write!(f, "=\"{}\"", s),
+            Attribute::Lang(s) => write!(f, "=\"{}\"", s),
+            Attribute::Tabindex(n) => write!(f, "=\"{}\"", n),
+            Attribute::RequiredExtensions(items) => write_space_separated(f, items.iter()),
+            Attribute::SystemLanguage(s) => write!(f, "=\"{}\"", s),
+            Attribute::AlignmentBaseline(v) => write!(f, "=\"{}\"", v.as_str()),
+            Attribute::BaselineShift(v) => write!(f, "=\"{}\"", v),
+            Attribute::ClipPath(v) => write!(f, "=\"{}\"", v),
+            Attribute::ClipRule(v) => write!(f, "=\"{}\"", v.as_str()),
+            Attribute::Color(v) => write!(f, "=\"{}\"", v),
+            Attribute::ColorInterpolation(v) => write!(f, "=\"{}\"", v.as_str()),
+            Attribute::ColorInterpolationFilters(v) => write!(f, "=\"{}\"", v.as_str()),
+            Attribute::Cursor(v) => write!(f, "=\"{}\"", v),
+            Attribute::Cx(v) => write!(f, "=\"{}\"", v),
+            Attribute::Cy(v) => write!(f, "=\"{}\"", v),
+            Attribute::D(paths) => write_space_separated(f, paths.0.iter()),
+            Attribute::Direction(v) => write!(f, "=\"{}\"", v),
+            Attribute::Display(v) => write!(f, "=\"{}\"", v),
+            Attribute::DominantBaseline(v) => write!(f, "=\"{}\"", v),
+            Attribute::Fill(v) => write!(f, "=\"{}\"", v),
+            Attribute::FillOpacity(v) => write!(f, "=\"{}\"", v),
+            Attribute::FillRule(v) => write!(f, "=\"{}\"", v),
+            Attribute::Filter(s) => write!(f, "=\"{}\"", s),
+            Attribute::FloodColor(v) => write!(f, "=\"{}\"", v),
+            Attribute::FloodOpacity(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontFamily(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontSize(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontSizeAdjust(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontStyle(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontVariant(v) => write!(f, "=\"{}\"", v),
+            Attribute::FontWeight(v) => write!(f, "=\"{}\"", v),
+            Attribute::Height(v) => write!(f, "=\"{}\"", v),
+            Attribute::ImageRendering(v) => write!(f, "=\"{}\"", v),
+            Attribute::LetterSpacing(v) => write!(f, "=\"{}\"", v),
+            Attribute::LightingColor(v) => write!(f, "=\"{}\"", v.0),
+            Attribute::MarkerEnd(v) => write!(f, "=\"{}\"", v),
+            Attribute::MarkerMid(v) => write!(f, "=\"{}\"", v),
+            Attribute::MarkerStart(v) => write!(f, "=\"{}\"", v),
+            Attribute::Mask(v) => write!(f, "=\"{}\"", v),
+            Attribute::MaskType(v) => write!(f, "=\"{}\"", v),
+            Attribute::Opacity(v) => write!(f, "=\"{}\"", v),
+            Attribute::Overflow(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointerEvents(v) => write!(f, "=\"{}\"", v),
+            Attribute::R(v) => write!(f, "=\"{}\"", v),
+            Attribute::Rx(v) => write!(f, "=\"{}\"", v),
+            Attribute::Ry(v) => write!(f, "=\"{}\"", v),
+            Attribute::ShapeRendering(v) => write!(f, "=\"{}\"", v),
+            Attribute::StopColor(v) => write!(f, "=\"{}\"", v),
+            Attribute::StopOpacity(v) => write!(f, "=\"{}\"", v),
+            Attribute::Stroke(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeDasharray(items) => write_space_separated(f, items.iter()),
+            Attribute::StrokeDashoffset(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeLinecap(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeLinejoin(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeMiterlimit(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeOpacity(v) => write!(f, "=\"{}\"", v),
+            Attribute::StrokeWidth(v) => write!(f, "=\"{}\"", v),
+            Attribute::TextAnchor(v) => write!(f, "=\"{}\"", v),
+            Attribute::TextDecoration(v) => write!(f, "=\"{}\"", v),
+            Attribute::TextOverflow(v) => write!(f, "=\"{}\"", v),
+            Attribute::TextRendering(v) => write!(f, "=\"{}\"", v),
+            Attribute::Transform(v) => write!(f, "=\"{}\"", v),
+            Attribute::TransformOrigin(v) => write!(f, "=\"{}\"", v),
+            Attribute::UnicodeBidi(v) => write!(f, "=\"{}\"", v),
+            Attribute::VectorEffect(v) => write!(f, "=\"{}\"", v),
+            Attribute::Visibility(v) => write!(f, "=\"{}\"", v),
+            Attribute::Width(v) => write!(f, "=\"{}\"", v),
+            Attribute::WhiteSpace(v) => write!(f, "=\"{}\"", v),
+            Attribute::WordSpacing(v) => write!(f, "=\"{}\"", v),
+            Attribute::WritingMode(v) => write!(f, "=\"{}\"", v),
+            Attribute::X(v) => write!(f, "=\"{}\"", v),
+            Attribute::Y(v) => write!(f, "=\"{}\"", v),
             Attribute::Type => todo!(),
             Attribute::TableValues => todo!(),
             Attribute::Slope => todo!(),
@@ -4981,7 +4955,7 @@ impl Attribute {
             Attribute::Amplitude => todo!(),
             Attribute::Exponent => todo!(),
             Attribute::Offset => todo!(),
-            Attribute::Href(href) => Some(href.to_string()),
+            Attribute::Href(v) => write!(f, "=\"{}\"", v),
             Attribute::AttributeType => todo!(),
             Attribute::AttributeName => todo!(),
             Attribute::Begin => todo!(),
@@ -5065,15 +5039,8 @@ impl Attribute {
             Attribute::OnWaiting(_) => todo!(),
             Attribute::OnToggle(_) => todo!(),
             Attribute::KeyPoints(_) => todo!(),
-            Attribute::Path(paths) => Some(
-                paths
-                    .0
-                    .iter()
-                    .map(|path| path.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::Rotate(rotate) => Some(rotate.to_string()),
+            Attribute::Path(paths) => write_space_separated(f, paths.0.iter()),
+            Attribute::Rotate(v) => write!(f, "=\"{}\"", v),
             Attribute::CalcMode => todo!(),
             Attribute::Values => todo!(),
             Attribute::KeyTimes => todo!(),
@@ -5081,146 +5048,93 @@ impl Attribute {
             Attribute::From => todo!(),
             Attribute::To => todo!(),
             Attribute::By => todo!(),
-            Attribute::PathLength(path_length) => Some(path_length.to_string()),
-            Attribute::X1(length_or_percentage_or_number) => {
-                Some(length_or_percentage_or_number.to_string())
-            }
-            Attribute::Y1(length_or_percentage_or_number) => {
-                Some(length_or_percentage_or_number.to_string())
-            }
-            Attribute::X2(length_or_percentage_or_number) => {
-                Some(length_or_percentage_or_number.to_string())
-            }
-            Attribute::Y2(length_or_percentage_or_number) => {
-                Some(length_or_percentage_or_number.to_string())
-            }
-            Attribute::Points(points) => Some(
-                points
-                    .iter()
-                    .map(|point| point.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::Download(download) => Some(download.to_string()),
-            Attribute::HrefLang(href_lang) => Some(href_lang.to_string()),
-            Attribute::InterestFor(interest_for) => Some(interest_for.to_string()),
-            Attribute::Ping(urls) => Some(
-                urls.iter()
-                    .map(|url| url.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::ReferrerPolicy(referrer_policy) => Some(referrer_policy.to_string()),
-            Attribute::Rel(rel_types) => Some(
-                rel_types
-                    .iter()
-                    .map(|rel| rel.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::Target(target) => Some(target.to_string()),
-            Attribute::MarkerHeight(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::MarkerUnits(marker_units) => Some(marker_units.to_string()),
-            Attribute::MarkerWidth(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Orient(orient) => Some(orient.to_string()),
-            Attribute::PreserveAspectRatio(preserve_aspect_ratio) => {
-                Some(preserve_aspect_ratio.to_string())
-            }
-            Attribute::RefX(ref_x) => Some(ref_x.to_string()),
-            Attribute::RefY(ref_y) => Some(ref_y.to_string()),
-            Attribute::ViewBox(view_box) => Some(
-                view_box
-                    .0
-                    .iter()
-                    .map(|num| num.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::MaskContentUnits(mask_content_units) => Some(mask_content_units.to_string()),
-            Attribute::MaskUnits(mask_units) => Some(mask_units.to_string()),
-            Attribute::PatternContentUnits(pattern_content_units) => {
-                Some(pattern_content_units.to_string())
-            }
-            Attribute::PatternUnits(pattern_units) => Some(pattern_units.to_string()),
-            Attribute::PatternTransform(pattern_transform) => Some(pattern_transform.to_string()),
-            Attribute::Result(result) => Some(result.to_string()),
-            Attribute::In(in_) => Some(in_.to_string()),
-            Attribute::In2(in2) => Some(in2.to_string()),
-            Attribute::Mode(blend_mode) => Some(blend_mode.to_string()),
-            Attribute::Operator(operator) => Some(operator.to_string()),
-            Attribute::K1(k1) => Some(k1.to_string()),
-            Attribute::K2(k2) => Some(k2.to_string()),
-            Attribute::K3(k3) => Some(k3.to_string()),
-            Attribute::K4(k4) => Some(k4.to_string()),
-            Attribute::Order(order) => Some(order.to_string()),
-            Attribute::KernelMatrix(items) => Some(
-                items
-                    .iter()
-                    .map(|item| item.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" "),
-            ),
-            Attribute::Divisor(divisor) => Some(divisor.to_string()),
-            Attribute::Bias(bias) => Some(bias.to_string()),
-            Attribute::TargetX(target_x) => Some(target_x.to_string()),
-            Attribute::TargetY(target_y) => Some(target_y.to_string()),
-            Attribute::EdgeMode(edge_mode) => Some(edge_mode.to_string()),
-            Attribute::KernelUnitLength(a, None) => Some(a.to_string()),
-            Attribute::KernelUnitLength(a, Some(b)) => Some(format!("{} {}", a, b)),
-            Attribute::PreserveAlpha(preserve_alpha) => {
-                Some((if *preserve_alpha { "1" } else { "0" }).to_string())
-            }
-            Attribute::SurfaceScale(surface_scale) => Some(surface_scale.to_string()),
-            Attribute::DiffuseConstant(diffuse_constant) => Some(diffuse_constant.to_string()),
-            Attribute::Scale(scale) => Some(scale.to_string()),
-            Attribute::XChannelSelector(channel_selector) => Some(channel_selector.to_string()),
-            Attribute::YChannelSelector(channel_selector) => Some(channel_selector.to_string()),
-            Attribute::Dx(dx) => Some(dx.to_string()),
-            Attribute::Dy(dy) => Some(dy.to_string()),
-            Attribute::StdDeviation(a, None) => Some(a.to_string()),
-            Attribute::StdDeviation(a, Some(b)) => Some(format!("{} {}", a, b)),
-            Attribute::CrossOrigin(cross_origin) => Some(cross_origin.to_string()),
-            Attribute::Radius(a, None) => Some(a.to_string()),
-            Attribute::Radius(a, Some(b)) => Some(format!("{} {}", a, b)),
-            Attribute::SpecularConstant(specular_constant) => Some(specular_constant.to_string()),
-            Attribute::SpecularExponent(specular_exponent) => Some(specular_exponent.to_string()),
-            Attribute::BaseFrequency(a, None) => Some(a.to_string()),
-            Attribute::BaseFrequency(a, Some(b)) => Some(format!("{} {}", a, b)),
-            Attribute::NumOctaves(num_octaves) => Some(num_octaves.to_string()),
-            Attribute::Seed(seed) => Some(seed.to_string()),
-            Attribute::StitchTiles(stitch_tiles) => Some(stitch_tiles.to_string()),
-            Attribute::GradientUnits(gradient_units) => Some(gradient_units.to_string()),
-            Attribute::GradientTransform(gradient_transform) => {
-                Some(gradient_transform.to_string())
-            }
-            Attribute::SpreadMethod(spread_method) => Some(spread_method.to_string()),
-            Attribute::Fx(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Fy(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Fr(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::Decoding(decoding) => Some(decoding.to_string()),
-            Attribute::FetchPriority(fetch_priority) => Some(fetch_priority.to_string()),
-            Attribute::LengthAdjust(length_adjust) => Some(length_adjust.to_string()),
-            Attribute::TextLength(length_or_percentage) => Some(length_or_percentage.to_string()),
-            Attribute::ClipPathUnits(clip_path_units) => Some(clip_path_units.to_string()),
-            Attribute::Method(method) => Some(method.to_string()),
-            Attribute::Side(side) => Some(side.to_string()),
-            Attribute::Spacing(spacing) => Some(spacing.to_string()),
-            Attribute::StartOffset(length_or_percentage_or_number) => {
-                Some(length_or_percentage_or_number.to_string())
-            }
-            Attribute::FilterUnits(filter_units) => Some(filter_units.to_string()),
-            Attribute::PrimitiveUnits(primitive_units) => Some(primitive_units.to_string()),
-            Attribute::Version(version) => Some(version.to_string()),
+            Attribute::PathLength(v) => write!(f, "=\"{}\"", v),
+            Attribute::X1(v) => write!(f, "=\"{}\"", v),
+            Attribute::Y1(v) => write!(f, "=\"{}\"", v),
+            Attribute::X2(v) => write!(f, "=\"{}\"", v),
+            Attribute::Y2(v) => write!(f, "=\"{}\"", v),
+            Attribute::Points(points) => write_space_separated(f, points.iter()),
+            Attribute::Download(v) => write!(f, "=\"{}\"", v),
+            Attribute::HrefLang(v) => write!(f, "=\"{}\"", v),
+            Attribute::InterestFor(v) => write!(f, "=\"{}\"", v),
+            Attribute::Ping(urls) => write_space_separated(f, urls.iter()),
+            Attribute::ReferrerPolicy(v) => write!(f, "=\"{}\"", v),
+            Attribute::Rel(items) => write_space_separated(f, items.iter()),
+            Attribute::Target(v) => write!(f, "=\"{}\"", v),
+            Attribute::MarkerHeight(v) => write!(f, "=\"{}\"", v),
+            Attribute::MarkerUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::MarkerWidth(v) => write!(f, "=\"{}\"", v),
+            Attribute::Orient(v) => write!(f, "=\"{}\"", v),
+            Attribute::PreserveAspectRatio(v) => write!(f, "=\"{}\"", v),
+            Attribute::RefX(v) => write!(f, "=\"{}\"", v),
+            Attribute::RefY(v) => write!(f, "=\"{}\"", v),
+            Attribute::ViewBox(view_box) => write_space_separated(f, view_box.0.iter()),
+            Attribute::MaskContentUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::MaskUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::PatternContentUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::PatternUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::PatternTransform(v) => write!(f, "=\"{}\"", v),
+            Attribute::Result(v) => write!(f, "=\"{}\"", v),
+            Attribute::In(v) => write!(f, "=\"{}\"", v),
+            Attribute::In2(v) => write!(f, "=\"{}\"", v),
+            Attribute::Mode(v) => write!(f, "=\"{}\"", v),
+            Attribute::Operator(v) => write!(f, "=\"{}\"", v),
+            Attribute::K1(v) => write!(f, "=\"{}\"", v),
+            Attribute::K2(v) => write!(f, "=\"{}\"", v),
+            Attribute::K3(v) => write!(f, "=\"{}\"", v),
+            Attribute::K4(v) => write!(f, "=\"{}\"", v),
+            Attribute::Order(v) => write!(f, "=\"{}\"", v),
+            Attribute::KernelMatrix(items) => write_space_separated(f, items.iter()),
+            Attribute::Divisor(v) => write!(f, "=\"{}\"", v),
+            Attribute::Bias(v) => write!(f, "=\"{}\"", v),
+            Attribute::TargetX(v) => write!(f, "=\"{}\"", v),
+            Attribute::TargetY(v) => write!(f, "=\"{}\"", v),
+            Attribute::EdgeMode(v) => write!(f, "=\"{}\"", v),
+            Attribute::KernelUnitLength(a, None) => write!(f, "=\"{}\"", a),
+            Attribute::KernelUnitLength(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
+            Attribute::PreserveAlpha(v) => write!(f, "=\"{}\"", if *v { "1" } else { "0" }),
+            Attribute::SurfaceScale(v) => write!(f, "=\"{}\"", v),
+            Attribute::DiffuseConstant(v) => write!(f, "=\"{}\"", v),
+            Attribute::Scale(v) => write!(f, "=\"{}\"", v),
+            Attribute::XChannelSelector(v) => write!(f, "=\"{}\"", v),
+            Attribute::YChannelSelector(v) => write!(f, "=\"{}\"", v),
+            Attribute::Dx(v) => write!(f, "=\"{}\"", v),
+            Attribute::Dy(v) => write!(f, "=\"{}\"", v),
+            Attribute::StdDeviation(a, None) => write!(f, "=\"{}\"", a),
+            Attribute::StdDeviation(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
+            Attribute::CrossOrigin(v) => write!(f, "=\"{}\"", v),
+            Attribute::Radius(a, None) => write!(f, "=\"{}\"", a),
+            Attribute::Radius(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
+            Attribute::SpecularConstant(v) => write!(f, "=\"{}\"", v),
+            Attribute::SpecularExponent(v) => write!(f, "=\"{}\"", v),
+            Attribute::BaseFrequency(a, None) => write!(f, "=\"{}\"", a),
+            Attribute::BaseFrequency(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
+            Attribute::NumOctaves(v) => write!(f, "=\"{}\"", v),
+            Attribute::Seed(v) => write!(f, "=\"{}\"", v),
+            Attribute::StitchTiles(v) => write!(f, "=\"{}\"", v),
+            Attribute::GradientUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::GradientTransform(v) => write!(f, "=\"{}\"", v),
+            Attribute::SpreadMethod(v) => write!(f, "=\"{}\"", v),
+            Attribute::Fx(v) => write!(f, "=\"{}\"", v),
+            Attribute::Fy(v) => write!(f, "=\"{}\"", v),
+            Attribute::Fr(v) => write!(f, "=\"{}\"", v),
+            Attribute::Decoding(v) => write!(f, "=\"{}\"", v),
+            Attribute::FetchPriority(v) => write!(f, "=\"{}\"", v),
+            Attribute::LengthAdjust(v) => write!(f, "=\"{}\"", v),
+            Attribute::TextLength(v) => write!(f, "=\"{}\"", v),
+            Attribute::ClipPathUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::Method(v) => write!(f, "=\"{}\"", v),
+            Attribute::Side(v) => write!(f, "=\"{}\"", v),
+            Attribute::Spacing(v) => write!(f, "=\"{}\"", v),
+            Attribute::StartOffset(v) => write!(f, "=\"{}\"", v),
+            Attribute::FilterUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::PrimitiveUnits(v) => write!(f, "=\"{}\"", v),
+            Attribute::Version(v) => write!(f, "=\"{}\"", v),
         }
     }
 
     pub fn write_svg(&self, f: &mut impl fmt::Write) -> fmt::Result {
-        let name = self.name();
-
-        if let Some(value) = self.value_as_string() {
-            write!(f, "{}=\"{}\"", name, value)
-        } else {
-            write!(f, "{}", name)
-        }
+        write!(f, "{}", self.name())?;
+        self.write_value(f)
     }
 }
