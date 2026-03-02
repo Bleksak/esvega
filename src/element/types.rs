@@ -1,5 +1,6 @@
 // TODO: implement PartialOrd and PartialEq for all types
 
+use std::fmt;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -11,14 +12,14 @@ pub enum RelativeLength {
     Lh(f64),
 }
 
-impl ToString for RelativeLength {
-    fn to_string(&self) -> String {
+impl fmt::Display for RelativeLength {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RelativeLength::Cap(c) => format!("{}cap", c),
-            RelativeLength::Em(e) => format!("{}em", e),
-            RelativeLength::Ex(e) => format!("{}ex", e),
-            RelativeLength::Ic(i) => format!("{}ic", i),
-            RelativeLength::Lh(l) => format!("{}lh", l),
+            RelativeLength::Cap(c) => write!(f, "{}cap", c),
+            RelativeLength::Em(e) => write!(f, "{}em", e),
+            RelativeLength::Ex(e) => write!(f, "{}ex", e),
+            RelativeLength::Ic(i) => write!(f, "{}ic", i),
+            RelativeLength::Lh(l) => write!(f, "{}lh", l),
         }
     }
 }
@@ -48,15 +49,15 @@ pub enum RelativeLengthBasedOnRoot {
     Rlh(f64),
 }
 
-impl ToString for RelativeLengthBasedOnRoot {
-    fn to_string(&self) -> String {
+impl fmt::Display for RelativeLengthBasedOnRoot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RelativeLengthBasedOnRoot::Rcap(c) => format!("{}rcap", c),
-            RelativeLengthBasedOnRoot::Rch(c) => format!("{}rch", c),
-            RelativeLengthBasedOnRoot::Rem(r) => format!("{}rem", r),
-            RelativeLengthBasedOnRoot::Rex(r) => format!("{}rex", r),
-            RelativeLengthBasedOnRoot::Ric(r) => format!("{}ric", r),
-            RelativeLengthBasedOnRoot::Rlh(r) => format!("{}rlh", r),
+            RelativeLengthBasedOnRoot::Rcap(c) => write!(f, "{}rcap", c),
+            RelativeLengthBasedOnRoot::Rch(c) => write!(f, "{}rch", c),
+            RelativeLengthBasedOnRoot::Rem(r) => write!(f, "{}rem", r),
+            RelativeLengthBasedOnRoot::Rex(r) => write!(f, "{}rex", r),
+            RelativeLengthBasedOnRoot::Ric(r) => write!(f, "{}ric", r),
+            RelativeLengthBasedOnRoot::Rlh(r) => write!(f, "{}rlh", r),
         }
     }
 }
@@ -88,16 +89,16 @@ pub enum AbsoluteLength {
     Pc(f64), // 1pc = 1/6th of an inch
 }
 
-impl ToString for AbsoluteLength {
-    fn to_string(&self) -> String {
+impl fmt::Display for AbsoluteLength {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AbsoluteLength::Px(p) => format!("{}px", p),
-            AbsoluteLength::Cm(c) => format!("{}cm", c),
-            AbsoluteLength::Q(q) => format!("{}q", q),
-            AbsoluteLength::In(i) => format!("{}in", i),
-            AbsoluteLength::Mm(m) => format!("{}mm", m),
-            AbsoluteLength::Pt(p) => format!("{}pt", p),
-            AbsoluteLength::Pc(p) => format!("{}pc", p),
+            AbsoluteLength::Px(p) => write!(f, "{}px", p),
+            AbsoluteLength::Cm(c) => write!(f, "{}cm", c),
+            AbsoluteLength::Q(q) => write!(f, "{}q", q),
+            AbsoluteLength::In(i) => write!(f, "{}in", i),
+            AbsoluteLength::Mm(m) => write!(f, "{}mm", m),
+            AbsoluteLength::Pt(p) => write!(f, "{}pt", p),
+            AbsoluteLength::Pc(p) => write!(f, "{}pc", p),
         }
     }
 }
@@ -125,11 +126,11 @@ pub enum RelativeLengths {
     RelativeLengthBasedOnRoot(RelativeLengthBasedOnRoot),
 }
 
-impl ToString for RelativeLengths {
-    fn to_string(&self) -> String {
+impl fmt::Display for RelativeLengths {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RelativeLengths::RelativeLength(r) => r.to_string(),
-            RelativeLengths::RelativeLengthBasedOnRoot(r) => r.to_string(),
+            RelativeLengths::RelativeLength(r) => write!(f, "{}", r),
+            RelativeLengths::RelativeLengthBasedOnRoot(r) => write!(f, "{}", r),
         }
     }
 }
@@ -156,11 +157,11 @@ pub enum Length {
     Relative(RelativeLengths),
 }
 
-impl ToString for Length {
-    fn to_string(&self) -> String {
+impl fmt::Display for Length {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Length::Absolute(a) => a.to_string(),
-            Length::Relative(r) => r.to_string(),
+            Length::Absolute(a) => write!(f, "{}", a),
+            Length::Relative(r) => write!(f, "{}", r),
         }
     }
 }
@@ -190,9 +191,9 @@ impl FromStr for Length {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Percentage(pub f64);
 
-impl ToString for Percentage {
-    fn to_string(&self) -> String {
-        format!("{}%", self.0)
+impl fmt::Display for Percentage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}%", self.0)
     }
 }
 
@@ -218,11 +219,11 @@ pub enum LengthOrPercentage {
     Percentage(Percentage),
 }
 
-impl ToString for LengthOrPercentage {
-    fn to_string(&self) -> String {
+impl fmt::Display for LengthOrPercentage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LengthOrPercentage::Length(l) => l.to_string(),
-            LengthOrPercentage::Percentage(p) => p.to_string(),
+            LengthOrPercentage::Length(l) => write!(f, "{}", l),
+            LengthOrPercentage::Percentage(p) => write!(f, "{}", p),
         }
     }
 }
@@ -1147,11 +1148,11 @@ pub enum Url {
     Id(String),
 }
 
-impl ToString for Url {
-    fn to_string(&self) -> String {
+impl fmt::Display for Url {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Url::Url(url) => url.to_string(),
-            Url::Id(id) => format!("#{}", id),
+            Url::Url(url) => write!(f, "{}", url),
+            Url::Id(id) => write!(f, "#{}", id),
         }
     }
 }
@@ -1183,15 +1184,15 @@ pub enum Color {
     Literal(ColorLiteral),
 }
 
-impl ToString for Color {
-    fn to_string(&self) -> String {
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Color::Hex(hex) => format!("#{}", hex),
-            Color::Rgb(r, g, b) => format!("rgb({}, {}, {})", r, g, b),
-            Color::Rgba(r, g, b, a) => format!("rgba({}, {}, {}, {})", r, g, b, a),
-            Color::Hsl(h, s, l) => format!("hsl({}, {}, {})", h, s, l),
-            Color::Hsla(h, s, l, a) => format!("hsla({}, {}, {}, {})", h, s, l, a),
-            Color::Literal(literal) => literal.as_str().to_string(),
+            Color::Hex(hex) => write!(f, "#{}", hex),
+            Color::Rgb(r, g, b) => write!(f, "rgb({}, {}, {})", r, g, b),
+            Color::Rgba(r, g, b, a) => write!(f, "rgba({}, {}, {}, {})", r, g, b, a),
+            Color::Hsl(h, s, l) => write!(f, "hsl({}, {}, {})", h, s, l),
+            Color::Hsla(h, s, l, a) => write!(f, "hsla({}, {}, {}, {})", h, s, l, a),
+            Color::Literal(literal) => write!(f, "{}", literal.as_str()),
         }
     }
 }
@@ -1283,14 +1284,14 @@ pub enum Paint {
     ContextStroke,
 }
 
-impl ToString for Paint {
-    fn to_string(&self) -> String {
+impl fmt::Display for Paint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Paint::None => "none".to_string(),
-            Paint::Color(color) => color.to_string(),
-            Paint::Url(url) => url.to_string(),
-            Paint::ContextFill => "context-fill".to_string(),
-            Paint::ContextStroke => "context-stroke".to_string(),
+            Paint::None => write!(f, "none"),
+            Paint::Color(color) => write!(f, "{}", color),
+            Paint::Url(url) => write!(f, "{}", url),
+            Paint::ContextFill => write!(f, "context-fill"),
+            Paint::ContextStroke => write!(f, "context-stroke"),
         }
     }
 }
@@ -1326,9 +1327,9 @@ pub enum AbsoluteSize {
     XXXLarge,
 }
 
-impl ToString for AbsoluteSize {
-    fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for AbsoluteSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
             AbsoluteSize::XXSmall => "xx-small",
             AbsoluteSize::XSmall => "x-small",
             AbsoluteSize::Small => "small",
@@ -1337,8 +1338,7 @@ impl ToString for AbsoluteSize {
             AbsoluteSize::XLarge => "x-large",
             AbsoluteSize::XXLarge => "xx-large",
             AbsoluteSize::XXXLarge => "xxx-large",
-        }
-        .to_string()
+        })
     }
 }
 
@@ -1366,11 +1366,11 @@ pub enum RelativeSize {
     Smaller,
 }
 
-impl ToString for RelativeSize {
-    fn to_string(&self) -> String {
+impl fmt::Display for RelativeSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RelativeSize::Larger => "larger".to_string(),
-            RelativeSize::Smaller => "smaller".to_string(),
+            RelativeSize::Larger => write!(f, "larger"),
+            RelativeSize::Smaller => write!(f, "smaller"),
         }
     }
 }
@@ -1396,14 +1396,14 @@ pub enum FontWeight {
     Number(f64),
 }
 
-impl ToString for FontWeight {
-    fn to_string(&self) -> String {
+impl fmt::Display for FontWeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FontWeight::Normal => "normal".to_string(),
-            FontWeight::Bold => "bold".to_string(),
-            FontWeight::Bolder => "bolder".to_string(),
-            FontWeight::Lighter => "lighter".to_string(),
-            FontWeight::Number(number) => number.to_string(),
+            FontWeight::Normal => write!(f, "normal"),
+            FontWeight::Bold => write!(f, "bold"),
+            FontWeight::Bolder => write!(f, "bolder"),
+            FontWeight::Lighter => write!(f, "lighter"),
+            FontWeight::Number(number) => write!(f, "{}", number),
         }
     }
 }
