@@ -1576,7 +1576,7 @@ impl fmt::Display for Marker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Marker::None => write!(f, "none"),
-            Marker::Url(_) => todo!(),
+            Marker::Url(url) => write!(f, "url({})", url),
         }
     }
 }
@@ -3435,6 +3435,23 @@ impl FromStr for PrimitiveUnits {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct KeyPoint(pub f64);
+
+impl fmt::Display for KeyPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for KeyPoint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.trim().parse::<f64>().map(KeyPoint).map_err(|_| ())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Attribute {
     Xmlns(String),
     // Core(Global) Attributes
@@ -3625,7 +3642,7 @@ pub enum Attribute {
     OnToggle(String),
 
     // Element Specific
-    KeyPoints(String),
+    KeyPoints(Vec<KeyPoint>),
     Path(Path),
     Rotate(Rotate),
 
@@ -3882,81 +3899,100 @@ impl TryFrom<(&String, &String)> for Attribute {
             "repeatDur" => todo!(),
             "additive" => todo!(),
             "accumulate" => todo!(),
-            "onAfterPrint" => todo!(),
-            "onBeforePrint" => todo!(),
-            "onBeforeUnload" => todo!(),
-            "onError" => todo!(),
-            "onHashChange" => todo!(),
-            "onLoad" => todo!(),
-            "onMessage" => todo!(),
-            "onOffline" => todo!(),
-            "onOnline" => todo!(),
-            "onPageHide" => todo!(),
-            "onPageShow" => todo!(),
-            "onPopState" => todo!(),
-            "onResize" => todo!(),
-            "onStorage" => todo!(),
-            "onUnload" => todo!(),
-            "onBlur" => todo!(),
-            "onChange" => todo!(),
-            "onContextMenu" => todo!(),
-            "onFocus" => todo!(),
-            "onInput" => todo!(),
-            "onInvalid" => todo!(),
-            "onReset" => todo!(),
-            "onSearch" => todo!(),
-            "onSelect" => todo!(),
-            "onSubmit" => todo!(),
-            "onKeyDown" => todo!(),
-            "onKeyPress" => todo!(),
-            "onKeyUp" => todo!(),
-            "onClick" => todo!(),
-            "onDoubleClick" => todo!(),
-            "onMouseDown" => todo!(),
-            "onMouseMove" => todo!(),
-            "onMouseOut" => todo!(),
-            "onMouseOver" => todo!(),
-            "onMouseUp" => todo!(),
-            "onWheel" => todo!(),
-            "onDrag" => todo!(),
-            "onDragEnd" => todo!(),
-            "onDragEnter" => todo!(),
-            "onDragLeave" => todo!(),
-            "onDragOver" => todo!(),
-            "onDragStart" => todo!(),
-            "onDrop" => todo!(),
-            "onScroll" => todo!(),
-            "onCopy" => todo!(),
-            "onCut" => todo!(),
-            "onPaste" => todo!(),
-            "onAbort" => todo!(),
-            "onCanPlay" => todo!(),
-            "onCanPlayThrough" => todo!(),
-            "onCueChange" => todo!(),
-            "onDurationChange" => todo!(),
-            "onEmptied" => todo!(),
-            "onEnded" => todo!(),
-            "onLoadedData" => todo!(),
-            "onLoadedMetadata" => todo!(),
-            "onLoadStart" => todo!(),
-            "onPause" => todo!(),
-            "onPlay" => todo!(),
-            "onPlaying" => todo!(),
-            "onProgress" => todo!(),
-            "onRateChange" => todo!(),
-            "onSeeked" => todo!(),
-            "onSeeking" => todo!(),
-            "onStalled" => todo!(),
-            "onSuspend" => todo!(),
-            "onTimeUpdate" => todo!(),
-            "onVolumeChange" => todo!(),
-            "onWaiting" => todo!(),
-            "onToggle" => todo!(),
+            "onAfterPrint" => Ok(Attribute::OnAfterPrint(value.clone())),
+            "onBeforePrint" => Ok(Attribute::OnBeforePrint(value.clone())),
+            "onBeforeUnload" => Ok(Attribute::OnBeforeUnload(value.clone())),
+            "onError" => Ok(Attribute::OnError(value.clone())),
+            "onHashChange" => Ok(Attribute::OnHashChange(value.clone())),
+            "onLoad" => Ok(Attribute::OnLoad(value.clone())),
+            "onMessage" => Ok(Attribute::OnMessage(value.clone())),
+            "onOffline" => Ok(Attribute::OnOffline(value.clone())),
+            "onOnline" => Ok(Attribute::OnOnline(value.clone())),
+            "onPageHide" => Ok(Attribute::OnPageHide(value.clone())),
+            "onPageShow" => Ok(Attribute::OnPageShow(value.clone())),
+            "onPopState" => Ok(Attribute::OnPopState(value.clone())),
+            "onResize" => Ok(Attribute::OnResize(value.clone())),
+            "onStorage" => Ok(Attribute::OnStorage(value.clone())),
+            "onUnload" => Ok(Attribute::OnUnload(value.clone())),
+            "onBlur" => Ok(Attribute::OnBlur(value.clone())),
+            "onChange" => Ok(Attribute::OnChange(value.clone())),
+            "onContextMenu" => Ok(Attribute::OnContextMenu(value.clone())),
+            "onFocus" => Ok(Attribute::OnFocus(value.clone())),
+            "onInput" => Ok(Attribute::OnInput(value.clone())),
+            "onInvalid" => Ok(Attribute::OnInvalid(value.clone())),
+            "onReset" => Ok(Attribute::OnReset(value.clone())),
+            "onSearch" => Ok(Attribute::OnSearch(value.clone())),
+            "onSelect" => Ok(Attribute::OnSelect(value.clone())),
+            "onSubmit" => Ok(Attribute::OnSubmit(value.clone())),
+            "onKeyDown" => Ok(Attribute::OnKeyDown(value.clone())),
+            "onKeyPress" => Ok(Attribute::OnKeyPress(value.clone())),
+            "onKeyUp" => Ok(Attribute::OnKeyUp(value.clone())),
+            "onClick" => Ok(Attribute::OnClick(value.clone())),
+            "onDoubleClick" => Ok(Attribute::OnDoubleClick(value.clone())),
+            "onMouseDown" => Ok(Attribute::OnMouseDown(value.clone())),
+            "onMouseMove" => Ok(Attribute::OnMouseMove(value.clone())),
+            "onMouseOut" => Ok(Attribute::OnMouseOut(value.clone())),
+            "onMouseOver" => Ok(Attribute::OnMouseOver(value.clone())),
+            "onMouseUp" => Ok(Attribute::OnMouseUp(value.clone())),
+            "onWheel" => Ok(Attribute::OnWheel(value.clone())),
+            "onDrag" => Ok(Attribute::OnDrag(value.clone())),
+            "onDragEnd" => Ok(Attribute::OnDragEnd(value.clone())),
+            "onDragEnter" => Ok(Attribute::OnDragEnter(value.clone())),
+            "onDragLeave" => Ok(Attribute::OnDragLeave(value.clone())),
+            "onDragOver" => Ok(Attribute::OnDragOver(value.clone())),
+            "onDragStart" => Ok(Attribute::OnDragStart(value.clone())),
+            "onDrop" => Ok(Attribute::OnDrop(value.clone())),
+            "onScroll" => Ok(Attribute::OnScroll(value.clone())),
+            "onCopy" => Ok(Attribute::OnCopy(value.clone())),
+            "onCut" => Ok(Attribute::OnCut(value.clone())),
+            "onPaste" => Ok(Attribute::OnPaste(value.clone())),
+            "onAbort" => Ok(Attribute::OnAbort(value.clone())),
+            "onCanPlay" => Ok(Attribute::OnCanPlay(value.clone())),
+            "onCanPlayThrough" => Ok(Attribute::OnCanPlayThrough(value.clone())),
+            "onCueChange" => Ok(Attribute::OnCueChange(value.clone())),
+            "onDurationChange" => Ok(Attribute::OnDurationChange(value.clone())),
+            "onEmptied" => Ok(Attribute::OnEmptied(value.clone())),
+            "onEnded" => Ok(Attribute::OnEnded(value.clone())),
+            "onLoadedData" => Ok(Attribute::OnLoadedData(value.clone())),
+            "onLoadedMetadata" => Ok(Attribute::OnLoadedMetadata(value.clone())),
+            "onLoadStart" => Ok(Attribute::OnLoadStart(value.clone())),
+            "onPause" => Ok(Attribute::OnPause(value.clone())),
+            "onPlay" => Ok(Attribute::OnPlay(value.clone())),
+            "onPlaying" => Ok(Attribute::OnPlaying(value.clone())),
+            "onProgress" => Ok(Attribute::OnProgress(value.clone())),
+            "onRateChange" => Ok(Attribute::OnRateChange(value.clone())),
+            "onSeeked" => Ok(Attribute::OnSeeked(value.clone())),
+            "onSeeking" => Ok(Attribute::OnSeeking(value.clone())),
+            "onStalled" => Ok(Attribute::OnStalled(value.clone())),
+            "onSuspend" => Ok(Attribute::OnSuspend(value.clone())),
+            "onTimeUpdate" => Ok(Attribute::OnTimeUpdate(value.clone())),
+            "onVolumeChange" => Ok(Attribute::OnVolumeChange(value.clone())),
+            "onWaiting" => Ok(Attribute::OnWaiting(value.clone())),
+            "onToggle" => Ok(Attribute::OnToggle(value.clone())),
+            "keyPoints" => Ok(Attribute::KeyPoints(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
             _ => {
                 return Err(());
             }
         }
     }
+}
+
+fn write_semicolon_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
+where
+    W: fmt::Write,
+    I: Iterator,
+    I::Item: fmt::Display,
+{
+    write!(f, "=\"")?;
+    for (i, item) in iter.enumerate() {
+        if i > 0 {
+            write!(f, ";")?;
+        }
+        write!(f, "{}", item)?;
+    }
+    write!(f, "\"")
 }
 
 fn write_space_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
@@ -4968,77 +5004,77 @@ impl Attribute {
             Attribute::RepeatDur => todo!(),
             Attribute::Additive => todo!(),
             Attribute::Accumulate => todo!(),
-            Attribute::OnAfterPrint(_) => todo!(),
-            Attribute::OnBeforePrint(_) => todo!(),
-            Attribute::OnBeforeUnload(_) => todo!(),
-            Attribute::OnError(_) => todo!(),
-            Attribute::OnHashChange(_) => todo!(),
-            Attribute::OnLoad(_) => todo!(),
-            Attribute::OnMessage(_) => todo!(),
-            Attribute::OnOffline(_) => todo!(),
-            Attribute::OnOnline(_) => todo!(),
-            Attribute::OnPageHide(_) => todo!(),
-            Attribute::OnPageShow(_) => todo!(),
-            Attribute::OnPopState(_) => todo!(),
-            Attribute::OnResize(_) => todo!(),
-            Attribute::OnStorage(_) => todo!(),
-            Attribute::OnUnload(_) => todo!(),
-            Attribute::OnBlur(_) => todo!(),
-            Attribute::OnChange(_) => todo!(),
-            Attribute::OnContextMenu(_) => todo!(),
-            Attribute::OnFocus(_) => todo!(),
-            Attribute::OnInput(_) => todo!(),
-            Attribute::OnInvalid(_) => todo!(),
-            Attribute::OnReset(_) => todo!(),
-            Attribute::OnSearch(_) => todo!(),
-            Attribute::OnSelect(_) => todo!(),
-            Attribute::OnSubmit(_) => todo!(),
-            Attribute::OnKeyDown(_) => todo!(),
-            Attribute::OnKeyPress(_) => todo!(),
-            Attribute::OnKeyUp(_) => todo!(),
-            Attribute::OnClick(_) => todo!(),
-            Attribute::OnDoubleClick(_) => todo!(),
-            Attribute::OnMouseDown(_) => todo!(),
-            Attribute::OnMouseMove(_) => todo!(),
-            Attribute::OnMouseOut(_) => todo!(),
-            Attribute::OnMouseOver(_) => todo!(),
-            Attribute::OnMouseUp(_) => todo!(),
-            Attribute::OnWheel(_) => todo!(),
-            Attribute::OnDrag(_) => todo!(),
-            Attribute::OnDragEnd(_) => todo!(),
-            Attribute::OnDragEnter(_) => todo!(),
-            Attribute::OnDragLeave(_) => todo!(),
-            Attribute::OnDragOver(_) => todo!(),
-            Attribute::OnDragStart(_) => todo!(),
-            Attribute::OnDrop(_) => todo!(),
-            Attribute::OnScroll(_) => todo!(),
-            Attribute::OnCopy(_) => todo!(),
-            Attribute::OnCut(_) => todo!(),
-            Attribute::OnPaste(_) => todo!(),
-            Attribute::OnAbort(_) => todo!(),
-            Attribute::OnCanPlay(_) => todo!(),
-            Attribute::OnCanPlayThrough(_) => todo!(),
-            Attribute::OnCueChange(_) => todo!(),
-            Attribute::OnDurationChange(_) => todo!(),
-            Attribute::OnEmptied(_) => todo!(),
-            Attribute::OnEnded(_) => todo!(),
-            Attribute::OnLoadedData(_) => todo!(),
-            Attribute::OnLoadedMetadata(_) => todo!(),
-            Attribute::OnLoadStart(_) => todo!(),
-            Attribute::OnPause(_) => todo!(),
-            Attribute::OnPlay(_) => todo!(),
-            Attribute::OnPlaying(_) => todo!(),
-            Attribute::OnProgress(_) => todo!(),
-            Attribute::OnRateChange(_) => todo!(),
-            Attribute::OnSeeked(_) => todo!(),
-            Attribute::OnSeeking(_) => todo!(),
-            Attribute::OnStalled(_) => todo!(),
-            Attribute::OnSuspend(_) => todo!(),
-            Attribute::OnTimeUpdate(_) => todo!(),
-            Attribute::OnVolumeChange(_) => todo!(),
-            Attribute::OnWaiting(_) => todo!(),
-            Attribute::OnToggle(_) => todo!(),
-            Attribute::KeyPoints(_) => todo!(),
+            Attribute::OnAfterPrint(v)
+            | Attribute::OnBeforePrint(v)
+            | Attribute::OnBeforeUnload(v)
+            | Attribute::OnError(v)
+            | Attribute::OnHashChange(v)
+            | Attribute::OnLoad(v)
+            | Attribute::OnMessage(v)
+            | Attribute::OnOffline(v)
+            | Attribute::OnOnline(v)
+            | Attribute::OnPageHide(v)
+            | Attribute::OnPageShow(v)
+            | Attribute::OnPopState(v)
+            | Attribute::OnResize(v)
+            | Attribute::OnStorage(v)
+            | Attribute::OnUnload(v)
+            | Attribute::OnBlur(v)
+            | Attribute::OnChange(v)
+            | Attribute::OnContextMenu(v)
+            | Attribute::OnFocus(v)
+            | Attribute::OnInput(v)
+            | Attribute::OnInvalid(v)
+            | Attribute::OnReset(v)
+            | Attribute::OnSearch(v)
+            | Attribute::OnSelect(v)
+            | Attribute::OnSubmit(v)
+            | Attribute::OnKeyDown(v)
+            | Attribute::OnKeyPress(v)
+            | Attribute::OnKeyUp(v)
+            | Attribute::OnClick(v)
+            | Attribute::OnDoubleClick(v)
+            | Attribute::OnMouseDown(v)
+            | Attribute::OnMouseMove(v)
+            | Attribute::OnMouseOut(v)
+            | Attribute::OnMouseOver(v)
+            | Attribute::OnMouseUp(v)
+            | Attribute::OnWheel(v)
+            | Attribute::OnDrag(v)
+            | Attribute::OnDragEnd(v)
+            | Attribute::OnDragEnter(v)
+            | Attribute::OnDragLeave(v)
+            | Attribute::OnDragOver(v)
+            | Attribute::OnDragStart(v)
+            | Attribute::OnDrop(v)
+            | Attribute::OnScroll(v)
+            | Attribute::OnCopy(v)
+            | Attribute::OnCut(v)
+            | Attribute::OnPaste(v)
+            | Attribute::OnAbort(v)
+            | Attribute::OnCanPlay(v)
+            | Attribute::OnCanPlayThrough(v)
+            | Attribute::OnCueChange(v)
+            | Attribute::OnDurationChange(v)
+            | Attribute::OnEmptied(v)
+            | Attribute::OnEnded(v)
+            | Attribute::OnLoadedData(v)
+            | Attribute::OnLoadedMetadata(v)
+            | Attribute::OnLoadStart(v)
+            | Attribute::OnPause(v)
+            | Attribute::OnPlay(v)
+            | Attribute::OnPlaying(v)
+            | Attribute::OnProgress(v)
+            | Attribute::OnRateChange(v)
+            | Attribute::OnSeeked(v)
+            | Attribute::OnSeeking(v)
+            | Attribute::OnStalled(v)
+            | Attribute::OnSuspend(v)
+            | Attribute::OnTimeUpdate(v)
+            | Attribute::OnVolumeChange(v)
+            | Attribute::OnWaiting(v)
+            | Attribute::OnToggle(v) => write!(f, "=\"{}\"", v),
+            Attribute::KeyPoints(v) => write_semicolon_separated(f, v.iter()),
             Attribute::Path(paths) => write_space_separated(f, paths.0.iter()),
             Attribute::Rotate(v) => write!(f, "=\"{}\"", v),
             Attribute::CalcMode => todo!(),
