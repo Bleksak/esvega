@@ -1,5 +1,16 @@
 # TODO
 
+## Attribute type precision: R
+
+`R(LengthOrPercentageOrNumber)` is widened like `X`/`Y`/`Width`/`Height`. The precise
+types per element are:
+- `<circle r>` — `LengthOrPercentage`
+- `<radialGradient r>` — `LengthOrPercentage` (defaults to `50%`)
+
+A bare number is accepted by the widened type but is not technically valid per spec for
+either element. This would be fully resolved by the per-element attribute structs redesign
+(Option B below).
+
 ## Per-element attribute structs (Option B)
 
 ### What it is
