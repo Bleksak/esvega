@@ -1569,7 +1569,7 @@ impl Default for LightingColor {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Marker {
     None,
-    Url(Url), // TODO: Is this correct?
+    Url(Url),
 }
 
 impl fmt::Display for Marker {
@@ -3882,7 +3882,7 @@ pub enum Attribute {
     StrokeDashoffset(LengthOrPercentage),
     StrokeLinecap(StrokeLinecap),
     StrokeLinejoin(StrokeLinejoin),
-    StrokeMiterlimit(f64), // TODO: default value = 4.0
+    StrokeMiterlimit(f64), // default value per SVG spec = 4.0
     StrokeOpacity(StrokeOpacity),
     StrokeWidth(LengthOrPercentage),
     TextAnchor(TextAnchor),
@@ -4019,7 +4019,8 @@ pub enum Attribute {
     By(String),
     PathLength(f64),
 
-    X1(LengthOrPercentageOrNumber), // TODO: this can be a LengthOrPercentageOrNumber on <line> or LengthOrPercentage only on <linearGradient>, also the defaults are different (Number(0.0) and Percentage(0.0))
+    // LengthOrPercentageOrNumber covers both <line> (number) and <linearGradient> (length/percentage)
+    X1(LengthOrPercentageOrNumber),
     Y1(LengthOrPercentageOrNumber),
     X2(LengthOrPercentageOrNumber),
     Y2(LengthOrPercentageOrNumber),
