@@ -4945,8 +4945,23 @@ impl Attribute {
                             | Attribute::PrimitiveUnits(_)
                     )
             }
-            ElementType::ForeignObject => todo!(),
-            ElementType::View => todo!(),
+            ElementType::ForeignObject => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::X(_)
+                            | Attribute::Y(_)
+                            | Attribute::Width(_)
+                            | Attribute::Height(_)
+                    )
+            }
+            ElementType::View => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::ViewBox(_) | Attribute::PreserveAspectRatio(_)
+                    )
+            }
         }
     }
 
