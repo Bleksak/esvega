@@ -231,7 +231,6 @@ pub enum Cursor {
     Wait,
     Help,
     Inherit,
-    // TODO: add FuncURI, not sure what that is at the moment
 }
 
 impl fmt::Display for Cursor {
@@ -282,6 +281,41 @@ impl FromStr for Cursor {
             "inherit" => Ok(Cursor::Inherit),
             _ => Err(()),
         }
+    }
+}
+
+/// The value of the `cursor` attribute: zero or more `url()` fallbacks
+/// followed by a required keyword value.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CursorValue {
+    pub urls: Vec<Url>,
+    pub keyword: Cursor,
+}
+
+impl fmt::Display for CursorValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for url in &self.urls {
+            write!(f, "url({}), ", url)?;
+        }
+        write!(f, "{}", self.keyword)
+    }
+}
+
+impl FromStr for CursorValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(',').map(str::trim).collect();
+        let (url_parts, keyword_part) = parts.split_at(parts.len().saturating_sub(1));
+        let keyword = keyword_part.first().ok_or(())?.parse::<Cursor>()?;
+        let urls = url_parts
+            .iter()
+            .map(|p| {
+                let inner = p.strip_prefix("url(").and_then(|s| s.strip_suffix(')')).ok_or(())?;
+                inner.parse::<Url>()
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(CursorValue { urls, keyword })
     }
 }
 
@@ -3840,7 +3874,7 @@ pub enum Attribute {
     Color(Color),
     ColorInterpolation(ColorInterpolation),
     ColorInterpolationFilters(ColorInterpolationFilter),
-    Cursor(Cursor),
+    Cursor(CursorValue),
     Cx(LengthOrPercentage),
     Cy(LengthOrPercentage),
     D(Path),
@@ -4177,7 +4211,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "color-interpolation-filters" => {
                 Ok(Attribute::ColorInterpolationFilters(value.parse()?))
             }
-            "cursor" => Ok(Attribute::Cursor(value.parse()?)),
+            "cursor" => Ok(Attribute::Cursor(value.parse::<CursorValue>()?)),
             "cx" => Ok(Attribute::Cx(value.parse()?)),
             "cy" => Ok(Attribute::Cy(value.parse()?)),
             "d" => Ok(Attribute::D(value.parse()?)),
