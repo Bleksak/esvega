@@ -3452,6 +3452,42 @@ impl FromStr for KeyPoint {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum FeFuncType {
+    Identity,
+    Table,
+    Discrete,
+    Linear,
+    Gamma,
+}
+
+impl fmt::Display for FeFuncType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FeFuncType::Identity => write!(f, "identity"),
+            FeFuncType::Table => write!(f, "table"),
+            FeFuncType::Discrete => write!(f, "discrete"),
+            FeFuncType::Linear => write!(f, "linear"),
+            FeFuncType::Gamma => write!(f, "gamma"),
+        }
+    }
+}
+
+impl FromStr for FeFuncType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "identity" => Ok(FeFuncType::Identity),
+            "table" => Ok(FeFuncType::Table),
+            "discrete" => Ok(FeFuncType::Discrete),
+            "linear" => Ok(FeFuncType::Linear),
+            "gamma" => Ok(FeFuncType::Gamma),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Attribute {
     Xmlns(String),
     // Core(Global) Attributes
@@ -3538,14 +3574,13 @@ pub enum Attribute {
     Y(LengthOrPercentage), // TODO: here the type depends on the element used
 
     // Transfer Function Attributes
-    // TODO: The rest of the attributes are left out for now
-    Type,
-    TableValues,
-    Slope,
-    Intercept,
-    Amplitude,
-    Exponent,
-    Offset, // TODO: This one is maybe deprecated, where to find the documentation for it?
+    Type(FeFuncType),
+    TableValues(Vec<f64>),
+    Slope(f64),
+    Intercept(f64),
+    Amplitude(f64),
+    Exponent(f64),
+    Offset(f64),
 
     // Animation Attributes
     Href(String),
@@ -3887,13 +3922,15 @@ impl TryFrom<(&String, &String)> for Attribute {
             "y" => Ok(Attribute::Y(value.parse().unwrap_or(
                 LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
             ))),
-            "type" => todo!(),
-            "tableValues" => todo!(),
-            "slope" => todo!(),
-            "intercept" => todo!(),
-            "amplitude" => todo!(),
-            "exponent" => todo!(),
-            "offset" => todo!(),
+            "type" => Ok(Attribute::Type(value.parse()?)),
+            "tableValues" => Ok(Attribute::TableValues(
+                value.split_whitespace().map(|s| s.parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+            )),
+            "slope" => Ok(Attribute::Slope(value.parse::<f64>().map_err(|_| ())?)),
+            "intercept" => Ok(Attribute::Intercept(value.parse::<f64>().map_err(|_| ())?)),
+            "amplitude" => Ok(Attribute::Amplitude(value.parse::<f64>().map_err(|_| ())?)),
+            "exponent" => Ok(Attribute::Exponent(value.parse::<f64>().map_err(|_| ())?)),
+            "offset" => Ok(Attribute::Offset(value.parse::<f64>().map_err(|_| ())?)),
             "href" => Ok(Attribute::Href(value.clone())),
             "attributeType" => todo!(),
             "attributeName" => todo!(),
@@ -4098,13 +4135,13 @@ impl Attribute {
             Attribute::WritingMode(_) => "writing-mode",
             Attribute::X(_) => "x",
             Attribute::Y(_) => "y",
-            Attribute::Type => "type",
-            Attribute::TableValues => "tableValues",
-            Attribute::Slope => "slope",
-            Attribute::Intercept => "intercept",
-            Attribute::Amplitude => "amplitude",
-            Attribute::Exponent => "exponent",
-            Attribute::Offset => "offset",
+            Attribute::Type(_) => "type",
+            Attribute::TableValues(_) => "tableValues",
+            Attribute::Slope(_) => "slope",
+            Attribute::Intercept(_) => "intercept",
+            Attribute::Amplitude(_) => "amplitude",
+            Attribute::Exponent(_) => "exponent",
+            Attribute::Offset(_) => "offset",
             Attribute::Href(_) => "href",
             Attribute::AttributeType => "attributeType",
             Attribute::AttributeName => "attributeName",
@@ -4480,7 +4517,7 @@ impl Attribute {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::By | Attribute::From | Attribute::To | Attribute::Type
+                        Attribute::By | Attribute::From | Attribute::To | Attribute::Type(_)
                     )
             }
             ElementType::MPath => self.is_global() || matches!(self, Attribute::Href(_)),
@@ -4551,7 +4588,7 @@ impl Attribute {
                             | Attribute::ReferrerPolicy(_)
                             | Attribute::Rel(_)
                             | Attribute::Target(_)
-                            | Attribute::Type
+                            | Attribute::Type(_)
                     )
             }
             ElementType::Defs => self.is_global(),
@@ -4648,7 +4685,7 @@ impl Attribute {
             ElementType::FeColorMatrix => {
                 self.is_global()
                     || self.is_filter_primitive()
-                    || matches!(self, Attribute::In(_) | Attribute::Type | Attribute::Values)
+                    || matches!(self, Attribute::In(_) | Attribute::Type(_) | Attribute::Values)
             }
             ElementType::FeComponentTransfer => {
                 self.is_global() || self.is_filter_primitive() || matches!(self, Attribute::In(_))
@@ -4784,7 +4821,7 @@ impl Attribute {
                             | Attribute::NumOctaves(_)
                             | Attribute::Seed(_)
                             | Attribute::StitchTiles(_)
-                            | Attribute::Type
+                            | Attribute::Type(_)
                     )
             }
             ElementType::LinearGradient => {
@@ -4821,7 +4858,7 @@ impl Attribute {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::Offset | Attribute::StopColor(_) | Attribute::StopOpacity(_)
+                        Attribute::Offset(_) | Attribute::StopColor(_) | Attribute::StopOpacity(_)
                     )
             }
             ElementType::Image => {
@@ -4898,13 +4935,13 @@ impl Attribute {
                     || matches!(
                         self,
                         Attribute::Href(_)
-                            | Attribute::Type
+                            | Attribute::Type(_)
                             | Attribute::CrossOrigin(_)
                             | Attribute::FetchPriority(_)
                     )
             }
             ElementType::Style => {
-                self.is_global() || matches!(self, Attribute::Type)
+                self.is_global() || matches!(self, Attribute::Type(_))
             }
             ElementType::TextPath => {
                 self.is_global()
@@ -5043,13 +5080,13 @@ impl Attribute {
             Attribute::WritingMode(v) => write!(f, "=\"{}\"", v),
             Attribute::X(v) => write!(f, "=\"{}\"", v),
             Attribute::Y(v) => write!(f, "=\"{}\"", v),
-            Attribute::Type => todo!(),
-            Attribute::TableValues => todo!(),
-            Attribute::Slope => todo!(),
-            Attribute::Intercept => todo!(),
-            Attribute::Amplitude => todo!(),
-            Attribute::Exponent => todo!(),
-            Attribute::Offset => todo!(),
+            Attribute::Type(v) => write!(f, "=\"{}\"", v),
+            Attribute::TableValues(v) => write_space_separated(f, v.iter()),
+            Attribute::Slope(v) => write!(f, "=\"{}\"", v),
+            Attribute::Intercept(v) => write!(f, "=\"{}\"", v),
+            Attribute::Amplitude(v) => write!(f, "=\"{}\"", v),
+            Attribute::Exponent(v) => write!(f, "=\"{}\"", v),
+            Attribute::Offset(v) => write!(f, "=\"{}\"", v),
             Attribute::Href(v) => write!(f, "=\"{}\"", v),
             Attribute::AttributeType => todo!(),
             Attribute::AttributeName => todo!(),
