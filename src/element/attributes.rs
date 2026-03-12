@@ -3487,6 +3487,271 @@ impl FromStr for FeFuncType {
     }
 }
 
+/// Corresponds to the `attributeType` animation attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAttributeType {
+    Css,
+    Xml,
+    Auto,
+}
+
+impl fmt::Display for AnimationAttributeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAttributeType::Css => write!(f, "CSS"),
+            AnimationAttributeType::Xml => write!(f, "XML"),
+            AnimationAttributeType::Auto => write!(f, "auto"),
+        }
+    }
+}
+
+impl FromStr for AnimationAttributeType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "CSS" => Ok(AnimationAttributeType::Css),
+            "XML" => Ok(AnimationAttributeType::Xml),
+            "auto" => Ok(AnimationAttributeType::Auto),
+            _ => Err(()),
+        }
+    }
+}
+
+/// A SMIL clock value stored as fractional seconds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClockValue(pub f64);
+
+impl fmt::Display for ClockValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}s", self.0)
+    }
+}
+
+impl FromStr for ClockValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        // Timecount with metric suffix
+        if let Some(h) = s.strip_suffix("h") {
+            return h.trim().parse::<f64>().map(|v| ClockValue(v * 3600.0)).map_err(|_| ());
+        }
+        if let Some(m) = s.strip_suffix("min") {
+            return m.trim().parse::<f64>().map(|v| ClockValue(v * 60.0)).map_err(|_| ());
+        }
+        if let Some(ms) = s.strip_suffix("ms") {
+            return ms.trim().parse::<f64>().map(|v| ClockValue(v / 1000.0)).map_err(|_| ());
+        }
+        if let Some(sec) = s.strip_suffix('s') {
+            return sec.trim().parse::<f64>().map(ClockValue).map_err(|_| ());
+        }
+        // Full clock: h:mm:ss[.frac] or partial clock: mm:ss[.frac]
+        let parts: Vec<&str> = s.splitn(3, ':').collect();
+        match parts.as_slice() {
+            [mm, ss] => {
+                let minutes = mm.trim().parse::<f64>().map_err(|_| ())?;
+                let seconds = ss.trim().parse::<f64>().map_err(|_| ())?;
+                Ok(ClockValue(minutes * 60.0 + seconds))
+            }
+            [hh, mm, ss] => {
+                let hours = hh.trim().parse::<f64>().map_err(|_| ())?;
+                let minutes = mm.trim().parse::<f64>().map_err(|_| ())?;
+                let seconds = ss.trim().parse::<f64>().map_err(|_| ())?;
+                Ok(ClockValue(hours * 3600.0 + minutes * 60.0 + seconds))
+            }
+            _ => s.parse::<f64>().map(ClockValue).map_err(|_| ()),
+        }
+    }
+}
+
+/// A single value in a SMIL `begin` or `end` attribute list.
+#[derive(Clone, Debug, PartialEq)]
+pub enum BeginEndValue {
+    /// A signed offset in seconds.
+    Offset(f64),
+    Indefinite,
+    /// Catch-all for syncbase, event, accessKey, wallclock, etc.
+    Raw(String),
+}
+
+impl fmt::Display for BeginEndValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BeginEndValue::Offset(secs) => write!(f, "{}s", secs),
+            BeginEndValue::Indefinite => write!(f, "indefinite"),
+            BeginEndValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for BeginEndValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s == "indefinite" {
+            return Ok(BeginEndValue::Indefinite);
+        }
+        // Try to parse as a signed clock value
+        let (sign, rest) = if let Some(r) = s.strip_prefix('-') {
+            (-1.0_f64, r.trim())
+        } else if let Some(r) = s.strip_prefix('+') {
+            (1.0_f64, r.trim())
+        } else {
+            (1.0_f64, s)
+        };
+        if let Ok(clock) = rest.parse::<ClockValue>() {
+            return Ok(BeginEndValue::Offset(sign * clock.0));
+        }
+        Ok(BeginEndValue::Raw(s.to_string()))
+    }
+}
+
+/// The value of a `dur`, `max`, or `repeatDur` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DurValue {
+    Clock(ClockValue),
+    Indefinite,
+    Media,
+}
+
+impl fmt::Display for DurValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DurValue::Clock(v) => write!(f, "{}", v),
+            DurValue::Indefinite => write!(f, "indefinite"),
+            DurValue::Media => write!(f, "media"),
+        }
+    }
+}
+
+impl FromStr for DurValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "indefinite" => Ok(DurValue::Indefinite),
+            "media" => Ok(DurValue::Media),
+            other => other.parse::<ClockValue>().map(DurValue::Clock),
+        }
+    }
+}
+
+/// The value of the `repeatCount` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum RepeatCount {
+    Count(f64),
+    Indefinite,
+}
+
+impl fmt::Display for RepeatCount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepeatCount::Count(n) => write!(f, "{}", n),
+            RepeatCount::Indefinite => write!(f, "indefinite"),
+        }
+    }
+}
+
+impl FromStr for RepeatCount {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "indefinite" => Ok(RepeatCount::Indefinite),
+            other => other.parse::<f64>().map(RepeatCount::Count).map_err(|_| ()),
+        }
+    }
+}
+
+/// The value of the `restart` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationRestart {
+    Always,
+    WhenNotActive,
+    Never,
+}
+
+impl fmt::Display for AnimationRestart {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationRestart::Always => write!(f, "always"),
+            AnimationRestart::WhenNotActive => write!(f, "whenNotActive"),
+            AnimationRestart::Never => write!(f, "never"),
+        }
+    }
+}
+
+impl FromStr for AnimationRestart {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "always" => Ok(AnimationRestart::Always),
+            "whenNotActive" => Ok(AnimationRestart::WhenNotActive),
+            "never" => Ok(AnimationRestart::Never),
+            _ => Err(()),
+        }
+    }
+}
+
+/// The value of the `additive` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAdditive {
+    Replace,
+    Sum,
+}
+
+impl fmt::Display for AnimationAdditive {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAdditive::Replace => write!(f, "replace"),
+            AnimationAdditive::Sum => write!(f, "sum"),
+        }
+    }
+}
+
+impl FromStr for AnimationAdditive {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "replace" => Ok(AnimationAdditive::Replace),
+            "sum" => Ok(AnimationAdditive::Sum),
+            _ => Err(()),
+        }
+    }
+}
+
+/// The value of the `accumulate` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAccumulate {
+    None,
+    Sum,
+}
+
+impl fmt::Display for AnimationAccumulate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAccumulate::None => write!(f, "none"),
+            AnimationAccumulate::Sum => write!(f, "sum"),
+        }
+    }
+}
+
+impl FromStr for AnimationAccumulate {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "none" => Ok(AnimationAccumulate::None),
+            "sum" => Ok(AnimationAccumulate::Sum),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Attribute {
     Xmlns(String),
@@ -3584,18 +3849,18 @@ pub enum Attribute {
 
     // Animation Attributes
     Href(String),
-    AttributeType,
-    AttributeName,
-    Begin,
-    Dur,
-    End,
-    Min,
-    Max,
-    Restart,
-    RepeatCount,
-    RepeatDur,
-    Additive,
-    Accumulate,
+    AttributeType(AnimationAttributeType),
+    AttributeName(String),
+    Begin(Vec<BeginEndValue>),
+    Dur(DurValue),
+    End(Vec<BeginEndValue>),
+    Min(ClockValue),
+    Max(DurValue),
+    Restart(AnimationRestart),
+    RepeatCount(RepeatCount),
+    RepeatDur(DurValue),
+    Additive(AnimationAdditive),
+    Accumulate(AnimationAccumulate),
 
     // Event Attributes (taken from https://www.w3schools.com/tags/ref_eventattributes.asp)
     OnAfterPrint(String),
@@ -3932,18 +4197,22 @@ impl TryFrom<(&String, &String)> for Attribute {
             "exponent" => Ok(Attribute::Exponent(value.parse::<f64>().map_err(|_| ())?)),
             "offset" => Ok(Attribute::Offset(value.parse::<f64>().map_err(|_| ())?)),
             "href" => Ok(Attribute::Href(value.clone())),
-            "attributeType" => todo!(),
-            "attributeName" => todo!(),
-            "begin" => todo!(),
-            "dur" => todo!(),
-            "end" => todo!(),
-            "min" => todo!(),
-            "max" => todo!(),
-            "restart" => todo!(),
-            "repeatCount" => todo!(),
-            "repeatDur" => todo!(),
-            "additive" => todo!(),
-            "accumulate" => todo!(),
+            "attributeType" => Ok(Attribute::AttributeType(value.parse()?)),
+            "attributeName" => Ok(Attribute::AttributeName(value.clone())),
+            "begin" => Ok(Attribute::Begin(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "dur" => Ok(Attribute::Dur(value.parse()?)),
+            "end" => Ok(Attribute::End(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "min" => Ok(Attribute::Min(value.parse()?)),
+            "max" => Ok(Attribute::Max(value.parse()?)),
+            "restart" => Ok(Attribute::Restart(value.parse()?)),
+            "repeatCount" => Ok(Attribute::RepeatCount(value.parse()?)),
+            "repeatDur" => Ok(Attribute::RepeatDur(value.parse()?)),
+            "additive" => Ok(Attribute::Additive(value.parse()?)),
+            "accumulate" => Ok(Attribute::Accumulate(value.parse()?)),
             "onAfterPrint" => Ok(Attribute::OnAfterPrint(value.clone())),
             "onBeforePrint" => Ok(Attribute::OnBeforePrint(value.clone())),
             "onBeforeUnload" => Ok(Attribute::OnBeforeUnload(value.clone())),
@@ -4143,18 +4412,18 @@ impl Attribute {
             Attribute::Exponent(_) => "exponent",
             Attribute::Offset(_) => "offset",
             Attribute::Href(_) => "href",
-            Attribute::AttributeType => "attributeType",
-            Attribute::AttributeName => "attributeName",
-            Attribute::Begin => "begin",
-            Attribute::Dur => "dur",
-            Attribute::End => "end",
-            Attribute::Min => "min",
-            Attribute::Max => "max",
-            Attribute::Restart => "restart",
-            Attribute::RepeatCount => "repeatCount",
-            Attribute::RepeatDur => "repeatDur",
-            Attribute::Additive => "additive",
-            Attribute::Accumulate => "accumulate",
+            Attribute::AttributeType(_) => "attributeType",
+            Attribute::AttributeName(_) => "attributeName",
+            Attribute::Begin(_) => "begin",
+            Attribute::Dur(_) => "dur",
+            Attribute::End(_) => "end",
+            Attribute::Min(_) => "min",
+            Attribute::Max(_) => "max",
+            Attribute::Restart(_) => "restart",
+            Attribute::RepeatCount(_) => "repeatCount",
+            Attribute::RepeatDur(_) => "repeatDur",
+            Attribute::Additive(_) => "additive",
+            Attribute::Accumulate(_) => "accumulate",
             Attribute::OnAfterPrint(_) => "onAfterPrint",
             Attribute::OnBeforePrint(_) => "onBeforePrint",
             Attribute::OnBeforeUnload(_) => "onBeforeUnload",
@@ -4427,14 +4696,14 @@ impl Attribute {
     pub fn is_animation_timing(&self) -> bool {
         matches!(
             self,
-            Attribute::Begin
-                | Attribute::Dur
-                | Attribute::End
-                | Attribute::Min
-                | Attribute::Max
-                | Attribute::Restart
-                | Attribute::RepeatCount
-                | Attribute::RepeatDur
+            Attribute::Begin(_)
+                | Attribute::Dur(_)
+                | Attribute::End(_)
+                | Attribute::Min(_)
+                | Attribute::Max(_)
+                | Attribute::Restart(_)
+                | Attribute::RepeatCount(_)
+                | Attribute::RepeatDur(_)
                 | Attribute::Fill(_)
         )
     }
@@ -4455,7 +4724,7 @@ impl Attribute {
 
     #[inline]
     pub fn is_animation_addition(&self) -> bool {
-        matches!(self, Attribute::Accumulate | Attribute::Additive)
+        matches!(self, Attribute::Accumulate(_) | Attribute::Additive(_))
     }
 
     #[inline]
@@ -4510,7 +4779,7 @@ impl Attribute {
                         Attribute::KeyPoints(_)
                             | Attribute::Path(_)
                             | Attribute::Rotate(_)
-                            | Attribute::AttributeName // TODO: OnBegin, OnEnd, OnRepeat events
+                            | Attribute::AttributeName(_) // TODO: OnBegin, OnEnd, OnRepeat events
                     )
             }
             ElementType::AnimateTransform => {
@@ -5088,18 +5357,18 @@ impl Attribute {
             Attribute::Exponent(v) => write!(f, "=\"{}\"", v),
             Attribute::Offset(v) => write!(f, "=\"{}\"", v),
             Attribute::Href(v) => write!(f, "=\"{}\"", v),
-            Attribute::AttributeType => todo!(),
-            Attribute::AttributeName => todo!(),
-            Attribute::Begin => todo!(),
-            Attribute::Dur => todo!(),
-            Attribute::End => todo!(),
-            Attribute::Min => todo!(),
-            Attribute::Max => todo!(),
-            Attribute::Restart => todo!(),
-            Attribute::RepeatCount => todo!(),
-            Attribute::RepeatDur => todo!(),
-            Attribute::Additive => todo!(),
-            Attribute::Accumulate => todo!(),
+            Attribute::AttributeType(v) => write!(f, "=\"{}\"", v),
+            Attribute::AttributeName(v) => write!(f, "=\"{}\"", v),
+            Attribute::Begin(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::Dur(v) => write!(f, "=\"{}\"", v),
+            Attribute::End(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::Min(v) => write!(f, "=\"{}\"", v),
+            Attribute::Max(v) => write!(f, "=\"{}\"", v),
+            Attribute::Restart(v) => write!(f, "=\"{}\"", v),
+            Attribute::RepeatCount(v) => write!(f, "=\"{}\"", v),
+            Attribute::RepeatDur(v) => write!(f, "=\"{}\"", v),
+            Attribute::Additive(v) => write!(f, "=\"{}\"", v),
+            Attribute::Accumulate(v) => write!(f, "=\"{}\"", v),
             Attribute::OnAfterPrint(v)
             | Attribute::OnBeforePrint(v)
             | Attribute::OnBeforeUnload(v)
