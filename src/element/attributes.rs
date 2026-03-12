@@ -4860,8 +4860,19 @@ impl Attribute {
             ElementType::ClipPath => {
                 self.is_global() || matches!(self, Attribute::ClipPathUnits(_))
             }
-            ElementType::Script => todo!(),
-            ElementType::Style => todo!(),
+            ElementType::Script => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::Href(_)
+                            | Attribute::Type
+                            | Attribute::CrossOrigin(_)
+                            | Attribute::FetchPriority(_)
+                    )
+            }
+            ElementType::Style => {
+                self.is_global() || matches!(self, Attribute::Type)
+            }
             ElementType::TextPath => {
                 self.is_global()
                     || matches!(
