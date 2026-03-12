@@ -319,6 +319,76 @@ impl FromStr for CursorValue {
     }
 }
 
+/// The value of the `clip-path` presentation attribute.
+/// `none | url(#id) | <basic-shape> || <geometry-box>` (Raw for complex CSS shapes).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClipPathValue {
+    None,
+    Url(Url),
+    /// CSS basic shape or geometry box (e.g. `circle(50%)`, `inset(10px)`)
+    Raw(String),
+}
+
+impl fmt::Display for ClipPathValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ClipPathValue::None => write!(f, "none"),
+            ClipPathValue::Url(url) => write!(f, "url({})", url),
+            ClipPathValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for ClipPathValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s.eq_ignore_ascii_case("none") {
+            return Ok(ClipPathValue::None);
+        }
+        if let Some(inner) = s.strip_prefix("url(").and_then(|s| s.strip_suffix(')')) {
+            return Ok(ClipPathValue::Url(inner.parse()?));
+        }
+        Ok(ClipPathValue::Raw(s.to_string()))
+    }
+}
+
+/// The value of the `filter` presentation attribute.
+/// `none | <url> | <filter-function>+` (Raw for CSS filter functions).
+#[derive(Clone, Debug, PartialEq)]
+pub enum FilterValue {
+    None,
+    Url(Url),
+    /// CSS filter functions (e.g. `blur(4px)`, `brightness(50%) contrast(200%)`)
+    Raw(String),
+}
+
+impl fmt::Display for FilterValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FilterValue::None => write!(f, "none"),
+            FilterValue::Url(url) => write!(f, "url({})", url),
+            FilterValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for FilterValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s.eq_ignore_ascii_case("none") {
+            return Ok(FilterValue::None);
+        }
+        if let Some(inner) = s.strip_prefix("url(").and_then(|s| s.strip_suffix(')')) {
+            return Ok(FilterValue::Url(inner.parse()?));
+        }
+        Ok(FilterValue::Raw(s.to_string()))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum MoveTo {
     Absolute((Number, Number)), // M x y
@@ -3869,7 +3939,7 @@ pub enum Attribute {
     // Presentation Attributes
     AlignmentBaseline(AlignmentBaseline),
     BaselineShift(BaselineShift),
-    ClipPath(String), // TODO: figure out how this works
+    ClipPath(ClipPathValue),
     ClipRule(ClipRule),
     Color(Color),
     ColorInterpolation(ColorInterpolation),
@@ -3884,7 +3954,7 @@ pub enum Attribute {
     Fill(Fill),
     FillOpacity(Percentage),
     FillRule(FillRule),
-    Filter(String), // TODO: implement this
+    Filter(FilterValue),
     FloodColor(Color),
     FloodOpacity(f64),  // value between 0 and 1
     FontFamily(String), // TODO: implement proper font family parsing
@@ -3900,7 +3970,7 @@ pub enum Attribute {
     MarkerEnd(Marker),
     MarkerMid(Marker),
     MarkerStart(Marker),
-    Mask(String), // TODO: implement this
+    Mask(String), // complex CSS shorthand (mask-image, mask-mode, mask-position, mask-size, mask-repeat, mask-origin, mask-clip, mask-composite) — kept as String
     MaskType(MaskType),
     Opacity(Opacity),
     Overflow(Overflow),
@@ -4204,7 +4274,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "systemLanguage" => Ok(Attribute::SystemLanguage(value.clone())),
             "alignment-baseline" => Ok(Attribute::AlignmentBaseline(value.parse()?)),
             "baseline-shift" => Ok(Attribute::BaselineShift(value.parse()?)),
-            "clip-path" => Ok(Attribute::ClipPath(value.clone())),
+            "clip-path" => Ok(Attribute::ClipPath(value.parse()?)),
             "clip-rule" => Ok(Attribute::ClipRule(value.parse()?)),
             "color" => Ok(Attribute::Color(value.parse()?)),
             "color-interpolation" => Ok(Attribute::ColorInterpolation(value.parse()?)),
@@ -4221,7 +4291,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "fill" => Ok(Attribute::Fill(value.parse()?)),
             "fill-opacity" => Ok(Attribute::FillOpacity(value.parse()?)),
             "fill-rule" => Ok(Attribute::FillRule(value.parse()?)),
-            "filter" => Ok(Attribute::Filter(value.clone())),
+            "filter" => Ok(Attribute::Filter(value.parse()?)),
             "flood-color" => Ok(Attribute::FloodColor(value.parse()?)),
             "flood-opacity" => Ok(Attribute::FloodOpacity(value.parse().map_err(|_| ())?)),
             "font-family" => Ok(Attribute::FontFamily(value.clone())),
