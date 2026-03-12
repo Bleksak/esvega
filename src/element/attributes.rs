@@ -4109,6 +4109,11 @@ pub enum Attribute {
 
     OnToggle(String),
 
+    // Animation Event Attributes
+    OnBegin(String),
+    OnEnd(String),
+    OnRepeat(String),
+
     // Element Specific
     KeyPoints(Vec<KeyPoint>),
     Path(Path),
@@ -4455,6 +4460,9 @@ impl TryFrom<(&String, &String)> for Attribute {
             "onVolumeChange" => Ok(Attribute::OnVolumeChange(value.clone())),
             "onWaiting" => Ok(Attribute::OnWaiting(value.clone())),
             "onToggle" => Ok(Attribute::OnToggle(value.clone())),
+            "onbegin" => Ok(Attribute::OnBegin(value.clone())),
+            "onend" => Ok(Attribute::OnEnd(value.clone())),
+            "onrepeat" => Ok(Attribute::OnRepeat(value.clone())),
             "keyPoints" => Ok(Attribute::KeyPoints(
                 value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
             )),
@@ -4679,6 +4687,9 @@ impl Attribute {
             Attribute::OnVolumeChange(_) => "onVolumeChange",
             Attribute::OnWaiting(_) => "onWaiting",
             Attribute::OnToggle(_) => "onToggle",
+            Attribute::OnBegin(_) => "onbegin",
+            Attribute::OnEnd(_) => "onend",
+            Attribute::OnRepeat(_) => "onrepeat",
             Attribute::KeyPoints(_) => "keyPoints",
             Attribute::Path(_) => "path",
             Attribute::Rotate(_) => "rotate",
@@ -4964,7 +4975,10 @@ impl Attribute {
                         Attribute::KeyPoints(_)
                             | Attribute::Path(_)
                             | Attribute::Rotate(_)
-                            | Attribute::AttributeName(_) // TODO: OnBegin, OnEnd, OnRepeat events
+                            | Attribute::AttributeName(_)
+                            | Attribute::OnBegin(_)
+                            | Attribute::OnEnd(_)
+                            | Attribute::OnRepeat(_)
                     )
             }
             ElementType::AnimateTransform => {
@@ -5623,7 +5637,10 @@ impl Attribute {
             | Attribute::OnTimeUpdate(v)
             | Attribute::OnVolumeChange(v)
             | Attribute::OnWaiting(v)
-            | Attribute::OnToggle(v) => write!(f, "=\"{}\"", v),
+            | Attribute::OnToggle(v)
+            | Attribute::OnBegin(v)
+            | Attribute::OnEnd(v)
+            | Attribute::OnRepeat(v) => write!(f, "=\"{}\"", v),
             Attribute::KeyPoints(v) => write_semicolon_separated(f, v.iter()),
             Attribute::Path(paths) => write_space_separated(f, paths.0.iter()),
             Attribute::Rotate(v) => write!(f, "=\"{}\"", v),
