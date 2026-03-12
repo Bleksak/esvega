@@ -3726,6 +3726,14 @@ pub enum Attribute {
     SpecularConstant(f64),
     SpecularExponent(f64),
 
+    Azimuth(f64),
+    Elevation(f64),
+    Z(f64),
+    PointsAtX(f64),
+    PointsAtY(f64),
+    PointsAtZ(f64),
+    LimitingConeAngle(f64),
+
     BaseFrequency(f64, Option<f64>),
     NumOctaves(u64),
     Seed(f64),
@@ -4246,6 +4254,13 @@ impl Attribute {
             Attribute::Radius(_, _) => "radius",
             Attribute::SpecularConstant(_) => "specularConstant",
             Attribute::SpecularExponent(_) => "specularExponent",
+            Attribute::Azimuth(_) => "azimuth",
+            Attribute::Elevation(_) => "elevation",
+            Attribute::Z(_) => "z",
+            Attribute::PointsAtX(_) => "pointsAtX",
+            Attribute::PointsAtY(_) => "pointsAtY",
+            Attribute::PointsAtZ(_) => "pointsAtZ",
+            Attribute::LimitingConeAngle(_) => "limitingConeAngle",
             Attribute::BaseFrequency(_, _) => "baseFrequency",
             Attribute::NumOctaves(_) => "numOctaves",
             Attribute::Seed(_) => "seed",
@@ -4854,9 +4869,27 @@ impl Attribute {
                             | Attribute::Height(_)
                     )
             }
-            ElementType::FeDistantLight => todo!(),
-            ElementType::FePointLight => todo!(),
-            ElementType::FeSpotLight => todo!(),
+            ElementType::FeDistantLight => {
+                self.is_global() || matches!(self, Attribute::Azimuth(_) | Attribute::Elevation(_))
+            }
+            ElementType::FePointLight => {
+                self.is_global()
+                    || matches!(self, Attribute::X(_) | Attribute::Y(_) | Attribute::Z(_))
+            }
+            ElementType::FeSpotLight => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::X(_)
+                            | Attribute::Y(_)
+                            | Attribute::Z(_)
+                            | Attribute::PointsAtX(_)
+                            | Attribute::PointsAtY(_)
+                            | Attribute::PointsAtZ(_)
+                            | Attribute::SpecularExponent(_)
+                            | Attribute::LimitingConeAngle(_)
+                    )
+            }
             ElementType::ClipPath => {
                 self.is_global() || matches!(self, Attribute::ClipPathUnits(_))
             }
@@ -5154,6 +5187,13 @@ impl Attribute {
             Attribute::Radius(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
             Attribute::SpecularConstant(v) => write!(f, "=\"{}\"", v),
             Attribute::SpecularExponent(v) => write!(f, "=\"{}\"", v),
+            Attribute::Azimuth(v) => write!(f, "=\"{}\"", v),
+            Attribute::Elevation(v) => write!(f, "=\"{}\"", v),
+            Attribute::Z(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtX(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtY(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtZ(v) => write!(f, "=\"{}\"", v),
+            Attribute::LimitingConeAngle(v) => write!(f, "=\"{}\"", v),
             Attribute::BaseFrequency(a, None) => write!(f, "=\"{}\"", a),
             Attribute::BaseFrequency(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
             Attribute::NumOctaves(v) => write!(f, "=\"{}\"", v),
