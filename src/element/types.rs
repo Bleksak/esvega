@@ -1,5 +1,3 @@
-// TODO: implement PartialOrd and PartialEq for all types
-
 use std::fmt;
 use std::str::FromStr;
 
