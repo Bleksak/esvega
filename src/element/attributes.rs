@@ -3871,7 +3871,8 @@ pub enum Attribute {
     Opacity(Opacity),
     Overflow(Overflow),
     PointerEvents(PointerEvents),
-    R(LengthOrPercentage), // TODO: this is either a RectRadius, or CircleRadius? maybe more
+    // LengthOrPercentageOrNumber covers both <circle> r (length/percentage) and <radialGradient> r (length/percentage/number)
+    R(LengthOrPercentageOrNumber),
     Rx(EllipsisRadius),
     Ry(EllipsisRadius),
     ShapeRendering(ShapeRendering),
@@ -4062,7 +4063,7 @@ pub enum Attribute {
     K3(f64),
     K4(f64),
 
-    Order(u64), // TODO: if it's a valid f64 then it must be truncated to u32
+    Order(u32),
     KernelMatrix(Vec<f64>),
     Divisor(f64),
     Bias(f64),
@@ -4210,6 +4211,9 @@ impl TryFrom<(&String, &String)> for Attribute {
             "overflow" => Ok(Attribute::Overflow(value.parse()?)),
             "pointer-events" => Ok(Attribute::PointerEvents(value.parse()?)),
             "r" => Ok(Attribute::R(value.parse()?)),
+            "order" => Ok(Attribute::Order(
+                value.parse::<f64>().map(|v| v as u32).map_err(|_| ())?,
+            )),
             "rx" => Ok(Attribute::Rx(value.parse()?)),
             "ry" => Ok(Attribute::Ry(value.parse()?)),
             "shape-rendering" => Ok(Attribute::ShapeRendering(value.parse()?)),
