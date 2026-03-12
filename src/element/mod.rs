@@ -4,6 +4,7 @@ use std::{fmt::{self, Display}, str::FromStr};
 use crate::element::attributes::Attribute;
 
 pub mod attributes;
+pub mod lang;
 pub mod types;
 
 #[derive(Clone, Debug, PartialEq)]

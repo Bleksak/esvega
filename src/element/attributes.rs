@@ -4,6 +4,7 @@ use crate::{
     Element,
     element::{
         ElementType,
+        lang::LanguageTag,
         types::{
             AbsoluteLength, AbsoluteSize, Color, FontWeight, Length, LengthOrPercentage, Paint,
             Percentage, RelativeSize, Url,
@@ -3928,13 +3929,13 @@ pub enum Attribute {
     Id(String),
     Class(Vec<String>),
     Style(String),
-    Lang(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    Lang(LanguageTag),
     Tabindex(i64),
 
     // Conditional Processing Attributes
     RequiredExtensions(Vec<String>), // Value is a space-separated list of URL references
     // identifying the required extensions
-    SystemLanguage(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    SystemLanguage(Vec<LanguageTag>),
 
     // Presentation Attributes
     AlignmentBaseline(AlignmentBaseline),
@@ -4138,7 +4139,7 @@ pub enum Attribute {
     Points(Vec<Point>),
 
     Download(String),
-    HrefLang(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    HrefLang(LanguageTag),
     InterestFor(String), // TODO: https://developer.mozilla.org/en-US/docs/Web/API/Popover_API/Using_interest_invokers
     Ping(Vec<Url>),
     ReferrerPolicy(ReferrerPolicy),
@@ -4267,7 +4268,7 @@ impl TryFrom<(&String, &String)> for Attribute {
                     .collect(),
             )),
             "style" => Ok(Attribute::Style(value.clone())),
-            "lang" => Ok(Attribute::Lang(value.clone())),
+            "lang" => Ok(Attribute::Lang(value.parse()?)),
             "tabindex" => Ok(Attribute::Tabindex(value.parse().unwrap_or(0))),
             "requiredExtensions" => {
                 let extensions = value
@@ -4276,7 +4277,9 @@ impl TryFrom<(&String, &String)> for Attribute {
                     .collect();
                 Ok(Attribute::RequiredExtensions(extensions))
             }
-            "systemLanguage" => Ok(Attribute::SystemLanguage(value.clone())),
+            "systemLanguage" => Ok(Attribute::SystemLanguage(
+                value.split(',').map(|s| s.trim().parse()).collect::<Result<_, _>>()?,
+            )),
             "alignment-baseline" => Ok(Attribute::AlignmentBaseline(value.parse()?)),
             "baseline-shift" => Ok(Attribute::BaselineShift(value.parse()?)),
             "clip-path" => Ok(Attribute::ClipPath(value.parse()?)),
@@ -4374,6 +4377,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "exponent" => Ok(Attribute::Exponent(value.parse::<f64>().map_err(|_| ())?)),
             "offset" => Ok(Attribute::Offset(value.parse::<f64>().map_err(|_| ())?)),
             "href" => Ok(Attribute::Href(value.clone())),
+            "hreflang" => Ok(Attribute::HrefLang(value.parse()?)),
             "attributeType" => Ok(Attribute::AttributeType(value.parse()?)),
             "attributeName" => Ok(Attribute::AttributeName(value.clone())),
             "begin" => Ok(Attribute::Begin(
@@ -4512,6 +4516,22 @@ where
     for (i, item) in iter.enumerate() {
         if i > 0 {
             write!(f, " ")?;
+        }
+        write!(f, "{}", item)?;
+    }
+    write!(f, "\"")
+}
+
+fn write_comma_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
+where
+    W: fmt::Write,
+    I: Iterator,
+    I::Item: fmt::Display,
+{
+    write!(f, "=\"")?;
+    for (i, item) in iter.enumerate() {
+        if i > 0 {
+            write!(f, ",")?;
         }
         write!(f, "{}", item)?;
     }
@@ -5480,7 +5500,7 @@ impl Attribute {
             Attribute::Lang(s) => write!(f, "=\"{}\"", s),
             Attribute::Tabindex(n) => write!(f, "=\"{}\"", n),
             Attribute::RequiredExtensions(items) => write_space_separated(f, items.iter()),
-            Attribute::SystemLanguage(s) => write!(f, "=\"{}\"", s),
+            Attribute::SystemLanguage(v) => write_comma_separated(f, v.iter()),
             Attribute::AlignmentBaseline(v) => write!(f, "=\"{}\"", v.as_str()),
             Attribute::BaselineShift(v) => write!(f, "=\"{}\"", v),
             Attribute::ClipPath(v) => write!(f, "=\"{}\"", v),
