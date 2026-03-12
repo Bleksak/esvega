@@ -3882,7 +3882,7 @@ pub enum Attribute {
     StrokeDashoffset(LengthOrPercentage),
     StrokeLinecap(StrokeLinecap),
     StrokeLinejoin(StrokeLinejoin),
-    StrokeMiterlimit(f64), // default value per SVG spec = 4.0
+    StrokeMiterlimit(f64),
     StrokeOpacity(StrokeOpacity),
     StrokeWidth(LengthOrPercentage),
     TextAnchor(TextAnchor),
@@ -4226,7 +4226,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "stroke-dashoffset" => Ok(Attribute::StrokeDashoffset(value.parse()?)),
             "stroke-linecap" => Ok(Attribute::StrokeLinecap(value.parse()?)),
             "stroke-linejoin" => Ok(Attribute::StrokeLinejoin(value.parse()?)),
-            "stroke-miterlimit" => Ok(Attribute::StrokeMiterlimit(value.parse().map_err(|_| ())?)),
+            "stroke-miterlimit" => Ok(Attribute::StrokeMiterlimit(value.parse().unwrap_or(4.0))),
             "stroke-opacity" => Ok(Attribute::StrokeOpacity(value.parse()?)),
             "stroke-width" => Ok(Attribute::StrokeWidth(value.parse()?)),
             "text-anchor" => Ok(Attribute::TextAnchor(value.parse()?)),
