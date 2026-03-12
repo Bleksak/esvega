@@ -14,235 +14,8 @@ pub struct Element {
 }
 
 impl Element {
-    pub fn write_svg(&self, ast: &AST, f: &mut impl fmt::Write, indent: usize) -> fmt::Result {
-        for _ in 0..indent {
-            write!(f, "  ")?;
-        }
-
-        write!(f, "<{}", self.element_type)?;
-
-        let mut attrs = self.attributes.iter().peekable();
-        if attrs.peek().is_some() {
-            write!(f, " ")?;
-        }
-
-        while let Some(attr) = attrs.next() {
-            attr.write_svg(f)?;
-            if attrs.peek().is_some() {
-                write!(f, " ")?;
-            }
-        }
-
-        if self.children.is_empty() {
-            return write!(f, "/>");
-        }
-
-        write!(f, ">\n")?;
-
-        // NOTE(@bleksak): If this crashes some day, we need to rewrite it without recursion
-        let mut children = self.children.iter().peekable();
-
-        while let Some(child_id) = children.next() {
-            let Some(child) = ast.nodes.get(*child_id) else {
-                continue;
-            };
-
-            child.write_svg(ast, f, indent + 1)?;
-
-            if children.peek().is_some() {
-                write!(f, "\n")?;
-            }
-        }
-
-        for _ in 0..indent {
-            write!(f, "  ")?;
-        }
-
-        write!(f, "</{}>\n", self.element_type)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ElementType {
-    // Animation Elements
-    Animate,
-    AnimateMotion,
-    AnimateTransform,
-    MPath,
-    Set,
-
-    // Basic Shapes
-    Circle,
-    Ellipse,
-    Line,
-    Polygon,
-    PolyLine,
-    Rect,
-
-    // Container Elements
-    A,
-    Defs,
-    G,
-    Marker,
-    Mask,
-    Pattern,
-    Svg,
-    Switch,
-    Symbol,
-
-    // Descriptive Elements
-    Desc,
-    Metadata,
-    Title,
-
-    // Filter primitive Elements
-    FeBlend,
-    FeColorMatrix,
-    FeComponentTransfer,
-    FeComposite,
-    FeConvolveMatrix,
-    FeDiffuseLightning,
-    FeDisplacementMap,
-    FeDropShadow,
-    FeFlood,
-    FeFuncA,
-    FeFuncB,
-    FeFuncG,
-    FeFuncR,
-    FeGaussianBlur,
-    FeImage,
-    FeMerge,
-    FeMergeNode,
-    FeMorphology,
-    FeOffset,
-    FeSpecularLighting,
-    FeTile,
-    FeTurbulence,
-
-    // Gradient Elements
-    LinearGradient,
-    RadialGradient,
-    Stop,
-
-    // Graphics Elements
-    Image,
-    Path,
-    Text,
-    Use,
-
-    // Light Source Elements
-    FeDistantLight,
-    FePointLight,
-    FeSpotLight,
-
-    // Never rendered elements
-    ClipPath,
-    Script,
-    Style,
-
-    // Text Content Elements
-    TextPath,
-    TSpan,
-
-    // Uncategorized Elements
-    Filter,
-    ForeignObject,
-    View,
-}
-
-impl ElementType {
-    pub fn is_animation(&self) -> bool {
-        matches!(
-            self,
-            ElementType::Animate
-                | ElementType::AnimateMotion
-                | ElementType::AnimateTransform
-                | ElementType::MPath
-                | ElementType::Set
-        )
-    }
-
-    pub fn is_descriptive(&self) -> bool {
-        matches!(
-            self,
-            ElementType::Desc | ElementType::Metadata | ElementType::Title
-        )
-    }
-
-    pub fn is_shape(&self) -> bool {
-        matches!(
-            self,
-            ElementType::Circle
-                | ElementType::Ellipse
-                | ElementType::Line
-                | ElementType::Path
-                | ElementType::Polygon
-                | ElementType::PolyLine
-                | ElementType::Rect
-        )
-    }
-
-    pub fn is_structural(&self) -> bool {
-        matches!(
-            self,
-            ElementType::Defs
-                | ElementType::G
-                | ElementType::Svg
-                | ElementType::Symbol
-                | ElementType::Use
-        )
-    }
-
-    pub fn is_gradient(&self) -> bool {
-        matches!(
-            self,
-            ElementType::LinearGradient | ElementType::RadialGradient | ElementType::Stop
-        )
-    }
-
-    pub fn is_light_source(&self) -> bool {
-        matches!(
-            self,
-            ElementType::FeDistantLight | ElementType::FePointLight | ElementType::FeSpotLight
-        )
-    }
-
-    pub fn is_text_content_child(&self) -> bool {
-        matches!(self, ElementType::TextPath | ElementType::TSpan)
-    }
-
-    pub fn is_filter_primitive(&self) -> bool {
-        matches!(
-            self,
-            ElementType::FeBlend
-                | ElementType::FeColorMatrix
-                | ElementType::FeComponentTransfer
-                | ElementType::FeComposite
-                | ElementType::FeConvolveMatrix
-                | ElementType::FeDiffuseLightning
-                | ElementType::FeDisplacementMap
-                | ElementType::FeDropShadow
-                | ElementType::FeFlood
-                | ElementType::FeFuncA
-                | ElementType::FeFuncB
-                | ElementType::FeFuncG
-                | ElementType::FeFuncR
-                | ElementType::FeGaussianBlur
-                | ElementType::FeImage
-                | ElementType::FeMerge
-                | ElementType::FeMergeNode
-                | ElementType::FeMorphology
-                | ElementType::FeOffset
-                | ElementType::FeSpecularLighting
-                | ElementType::FeTile
-                | ElementType::FeTurbulence
-        )
-    }
-
-    // TODO: This should probably accept a reference to the parent element and also be a method on
-    // Element
     pub fn is_allowed_as_child(&self, element: &ElementType) -> bool {
-        match self {
+        match self.element_type {
             ElementType::Animate => element.is_descriptive(),
             ElementType::AnimateMotion => {
                 element.is_descriptive() || matches!(element, ElementType::MPath)
@@ -638,6 +411,232 @@ impl ElementType {
             ElementType::View => element.is_descriptive(),
         }
     }
+
+    pub fn write_svg(&self, ast: &AST, f: &mut impl fmt::Write, indent: usize) -> fmt::Result {
+        for _ in 0..indent {
+            write!(f, "  ")?;
+        }
+
+        write!(f, "<{}", self.element_type)?;
+
+        let mut attrs = self.attributes.iter().peekable();
+        if attrs.peek().is_some() {
+            write!(f, " ")?;
+        }
+
+        while let Some(attr) = attrs.next() {
+            attr.write_svg(f)?;
+            if attrs.peek().is_some() {
+                write!(f, " ")?;
+            }
+        }
+
+        if self.children.is_empty() {
+            return write!(f, "/>");
+        }
+
+        write!(f, ">\n")?;
+
+        // NOTE(@bleksak): If this crashes some day, we need to rewrite it without recursion
+        let mut children = self.children.iter().peekable();
+
+        while let Some(child_id) = children.next() {
+            let Some(child) = ast.nodes.get(*child_id) else {
+                continue;
+            };
+
+            child.write_svg(ast, f, indent + 1)?;
+
+            if children.peek().is_some() {
+                write!(f, "\n")?;
+            }
+        }
+
+        for _ in 0..indent {
+            write!(f, "  ")?;
+        }
+
+        write!(f, "</{}>\n", self.element_type)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ElementType {
+    // Animation Elements
+    Animate,
+    AnimateMotion,
+    AnimateTransform,
+    MPath,
+    Set,
+
+    // Basic Shapes
+    Circle,
+    Ellipse,
+    Line,
+    Polygon,
+    PolyLine,
+    Rect,
+
+    // Container Elements
+    A,
+    Defs,
+    G,
+    Marker,
+    Mask,
+    Pattern,
+    Svg,
+    Switch,
+    Symbol,
+
+    // Descriptive Elements
+    Desc,
+    Metadata,
+    Title,
+
+    // Filter primitive Elements
+    FeBlend,
+    FeColorMatrix,
+    FeComponentTransfer,
+    FeComposite,
+    FeConvolveMatrix,
+    FeDiffuseLightning,
+    FeDisplacementMap,
+    FeDropShadow,
+    FeFlood,
+    FeFuncA,
+    FeFuncB,
+    FeFuncG,
+    FeFuncR,
+    FeGaussianBlur,
+    FeImage,
+    FeMerge,
+    FeMergeNode,
+    FeMorphology,
+    FeOffset,
+    FeSpecularLighting,
+    FeTile,
+    FeTurbulence,
+
+    // Gradient Elements
+    LinearGradient,
+    RadialGradient,
+    Stop,
+
+    // Graphics Elements
+    Image,
+    Path,
+    Text,
+    Use,
+
+    // Light Source Elements
+    FeDistantLight,
+    FePointLight,
+    FeSpotLight,
+
+    // Never rendered elements
+    ClipPath,
+    Script,
+    Style,
+
+    // Text Content Elements
+    TextPath,
+    TSpan,
+
+    // Uncategorized Elements
+    Filter,
+    ForeignObject,
+    View,
+}
+
+impl ElementType {
+    pub fn is_animation(&self) -> bool {
+        matches!(
+            self,
+            ElementType::Animate
+                | ElementType::AnimateMotion
+                | ElementType::AnimateTransform
+                | ElementType::MPath
+                | ElementType::Set
+        )
+    }
+
+    pub fn is_descriptive(&self) -> bool {
+        matches!(
+            self,
+            ElementType::Desc | ElementType::Metadata | ElementType::Title
+        )
+    }
+
+    pub fn is_shape(&self) -> bool {
+        matches!(
+            self,
+            ElementType::Circle
+                | ElementType::Ellipse
+                | ElementType::Line
+                | ElementType::Path
+                | ElementType::Polygon
+                | ElementType::PolyLine
+                | ElementType::Rect
+        )
+    }
+
+    pub fn is_structural(&self) -> bool {
+        matches!(
+            self,
+            ElementType::Defs
+                | ElementType::G
+                | ElementType::Svg
+                | ElementType::Symbol
+                | ElementType::Use
+        )
+    }
+
+    pub fn is_gradient(&self) -> bool {
+        matches!(
+            self,
+            ElementType::LinearGradient | ElementType::RadialGradient | ElementType::Stop
+        )
+    }
+
+    pub fn is_light_source(&self) -> bool {
+        matches!(
+            self,
+            ElementType::FeDistantLight | ElementType::FePointLight | ElementType::FeSpotLight
+        )
+    }
+
+    pub fn is_text_content_child(&self) -> bool {
+        matches!(self, ElementType::TextPath | ElementType::TSpan)
+    }
+
+    pub fn is_filter_primitive(&self) -> bool {
+        matches!(
+            self,
+            ElementType::FeBlend
+                | ElementType::FeColorMatrix
+                | ElementType::FeComponentTransfer
+                | ElementType::FeComposite
+                | ElementType::FeConvolveMatrix
+                | ElementType::FeDiffuseLightning
+                | ElementType::FeDisplacementMap
+                | ElementType::FeDropShadow
+                | ElementType::FeFlood
+                | ElementType::FeFuncA
+                | ElementType::FeFuncB
+                | ElementType::FeFuncG
+                | ElementType::FeFuncR
+                | ElementType::FeGaussianBlur
+                | ElementType::FeImage
+                | ElementType::FeMerge
+                | ElementType::FeMergeNode
+                | ElementType::FeMorphology
+                | ElementType::FeOffset
+                | ElementType::FeSpecularLighting
+                | ElementType::FeTile
+                | ElementType::FeTurbulence
+        )
+    }
+
 
     pub fn as_str(&self) -> &str {
         match self {
