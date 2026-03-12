@@ -3487,6 +3487,70 @@ impl FromStr for FeFuncType {
     }
 }
 
+/// The value of the `calcMode` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CalcMode {
+    Discrete,
+    Linear,
+    Paced,
+    Spline,
+}
+
+impl fmt::Display for CalcMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CalcMode::Discrete => write!(f, "discrete"),
+            CalcMode::Linear => write!(f, "linear"),
+            CalcMode::Paced => write!(f, "paced"),
+            CalcMode::Spline => write!(f, "spline"),
+        }
+    }
+}
+
+impl FromStr for CalcMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "discrete" => Ok(CalcMode::Discrete),
+            "linear" => Ok(CalcMode::Linear),
+            "paced" => Ok(CalcMode::Paced),
+            "spline" => Ok(CalcMode::Spline),
+            _ => Err(()),
+        }
+    }
+}
+
+/// A single cubic Bézier control point for `keySplines` (x1 y1 x2 y2, all 0–1).
+#[derive(Clone, Debug, PartialEq)]
+pub struct KeySpline {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+impl fmt::Display for KeySpline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {} {}", self.x1, self.y1, self.x2, self.y2)
+    }
+}
+
+impl FromStr for KeySpline {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<f64> = s
+            .split_whitespace()
+            .map(|v| v.parse::<f64>().map_err(|_| ()))
+            .collect::<Result<_, _>>()?;
+        match parts.as_slice() {
+            [x1, y1, x2, y2] => Ok(KeySpline { x1: *x1, y1: *y1, x2: *x2, y2: *y2 }),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Corresponds to the `attributeType` animation attribute.
 #[derive(Clone, Debug, PartialEq)]
 pub enum AnimationAttributeType {
@@ -3947,13 +4011,13 @@ pub enum Attribute {
     Rotate(Rotate),
 
     // Animation Value Attributes
-    CalcMode,
-    Values,
-    KeyTimes,
-    KeySplines,
-    From,
-    To,
-    By,
+    CalcMode(CalcMode),
+    Values(Vec<String>),
+    KeyTimes(Vec<f64>),
+    KeySplines(Vec<KeySpline>),
+    From(String),
+    To(String),
+    By(String),
     PathLength(f64),
 
     X1(LengthOrPercentageOrNumber), // TODO: this can be a LengthOrPercentageOrNumber on <line> or LengthOrPercentage only on <linearGradient>, also the defaults are different (Number(0.0) and Percentage(0.0))
@@ -4286,6 +4350,19 @@ impl TryFrom<(&String, &String)> for Attribute {
             "keyPoints" => Ok(Attribute::KeyPoints(
                 value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
             )),
+            "calcMode" => Ok(Attribute::CalcMode(value.parse()?)),
+            "values" => Ok(Attribute::Values(
+                value.split(';').map(|s| s.trim().to_string()).collect(),
+            )),
+            "keyTimes" => Ok(Attribute::KeyTimes(
+                value.split(';').map(|s| s.trim().parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+            )),
+            "keySplines" => Ok(Attribute::KeySplines(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "from" => Ok(Attribute::From(value.clone())),
+            "to" => Ok(Attribute::To(value.clone())),
+            "by" => Ok(Attribute::By(value.clone())),
             _ => {
                 return Err(());
             }
@@ -4497,13 +4574,13 @@ impl Attribute {
             Attribute::KeyPoints(_) => "keyPoints",
             Attribute::Path(_) => "path",
             Attribute::Rotate(_) => "rotate",
-            Attribute::CalcMode => "calcMode",
-            Attribute::Values => "values",
-            Attribute::KeyTimes => "keyTimes",
-            Attribute::KeySplines => "keySplines",
-            Attribute::From => "from",
-            Attribute::To => "to",
-            Attribute::By => "by",
+            Attribute::CalcMode(_) => "calcMode",
+            Attribute::Values(_) => "values",
+            Attribute::KeyTimes(_) => "keyTimes",
+            Attribute::KeySplines(_) => "keySplines",
+            Attribute::From(_) => "from",
+            Attribute::To(_) => "to",
+            Attribute::By(_) => "by",
             Attribute::PathLength(_) => "pathLength",
             Attribute::X1(_) => "x1",
             Attribute::Y1(_) => "y1",
@@ -4712,13 +4789,13 @@ impl Attribute {
     pub fn is_animation_value(&self) -> bool {
         matches!(
             self,
-            Attribute::CalcMode
-                | Attribute::Values
-                | Attribute::KeyTimes
-                | Attribute::KeySplines
-                | Attribute::From
-                | Attribute::To
-                | Attribute::By
+            Attribute::CalcMode(_)
+                | Attribute::Values(_)
+                | Attribute::KeyTimes(_)
+                | Attribute::KeySplines(_)
+                | Attribute::From(_)
+                | Attribute::To(_)
+                | Attribute::By(_)
         )
     }
 
@@ -4786,11 +4863,11 @@ impl Attribute {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::By | Attribute::From | Attribute::To | Attribute::Type(_)
+                        Attribute::By(_) | Attribute::From(_) | Attribute::To(_) | Attribute::Type(_)
                     )
             }
             ElementType::MPath => self.is_global() || matches!(self, Attribute::Href(_)),
-            ElementType::Set => matches!(self, Attribute::To),
+            ElementType::Set => matches!(self, Attribute::To(_)),
             ElementType::Circle => {
                 self.is_global()
                     || self.applies_to_shape()
@@ -4954,7 +5031,7 @@ impl Attribute {
             ElementType::FeColorMatrix => {
                 self.is_global()
                     || self.is_filter_primitive()
-                    || matches!(self, Attribute::In(_) | Attribute::Type(_) | Attribute::Values)
+                    || matches!(self, Attribute::In(_) | Attribute::Type(_) | Attribute::Values(_))
             }
             ElementType::FeComponentTransfer => {
                 self.is_global() || self.is_filter_primitive() || matches!(self, Attribute::In(_))
@@ -5442,13 +5519,13 @@ impl Attribute {
             Attribute::KeyPoints(v) => write_semicolon_separated(f, v.iter()),
             Attribute::Path(paths) => write_space_separated(f, paths.0.iter()),
             Attribute::Rotate(v) => write!(f, "=\"{}\"", v),
-            Attribute::CalcMode => todo!(),
-            Attribute::Values => todo!(),
-            Attribute::KeyTimes => todo!(),
-            Attribute::KeySplines => todo!(),
-            Attribute::From => todo!(),
-            Attribute::To => todo!(),
-            Attribute::By => todo!(),
+            Attribute::CalcMode(v) => write!(f, "=\"{}\"", v),
+            Attribute::Values(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::KeyTimes(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::KeySplines(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::From(v) => write!(f, "=\"{}\"", v),
+            Attribute::To(v) => write!(f, "=\"{}\"", v),
+            Attribute::By(v) => write!(f, "=\"{}\"", v),
             Attribute::PathLength(v) => write!(f, "=\"{}\"", v),
             Attribute::X1(v) => write!(f, "=\"{}\"", v),
             Attribute::Y1(v) => write!(f, "=\"{}\"", v),
