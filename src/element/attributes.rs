@@ -3859,7 +3859,7 @@ pub enum Attribute {
     FontStyle(FontStyle),
     FontVariant(String), // TODO: implement proper font variant parsing
     FontWeight(FontWeight),
-    Height(LengthOrPercentage), // TODO: here the type depends on the element used
+    Height(LengthOrPercentageOrNumber),
     ImageRendering(ImageRendering),
     LetterSpacing(LetterSpacing),
     LightingColor(LightingColor),
@@ -3894,13 +3894,12 @@ pub enum Attribute {
     UnicodeBidi(UnicodeBidi),
     VectorEffect(VectorEffect),
     Visibility(Visibility),
-    Width(LengthOrPercentage), // TODO: here the type depends on the element used, for example
-    // pattern accepts only Length type
+    Width(LengthOrPercentageOrNumber),
     WhiteSpace(WhiteSpace),
     WordSpacing(WordSpacing),
     WritingMode(WritingMode),
-    X(LengthOrPercentage), // TODO: here the type depends on the element used
-    Y(LengthOrPercentage), // TODO: here the type depends on the element used
+    X(LengthOrPercentageOrNumber),
+    Y(LengthOrPercentageOrNumber),
 
     // Transfer Function Attributes
     Type(FeFuncType),
@@ -4196,7 +4195,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "font-variant" => Ok(Attribute::FontVariant(value.clone())),
             "font-weight" => Ok(Attribute::FontWeight(value.parse()?)),
             "height" => Ok(Attribute::Height(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
             ))),
             "image-rendering" => Ok(Attribute::ImageRendering(value.parse()?)),
             "letter-spacing" => Ok(Attribute::LetterSpacing(value.parse()?)),
@@ -4240,16 +4239,16 @@ impl TryFrom<(&String, &String)> for Attribute {
             "viewBox" => Ok(Attribute::ViewBox(value.parse()?)),
             "visibility" => Ok(Attribute::Visibility(value.parse()?)),
             "width" => Ok(Attribute::Width(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
             ))),
             "white-space" => Ok(Attribute::WhiteSpace(value.parse()?)),
             "word-spacing" => Ok(Attribute::WordSpacing(value.parse()?)),
             "writing-mode" => Ok(Attribute::WritingMode(value.parse()?)),
             "x" => Ok(Attribute::X(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
             ))),
             "y" => Ok(Attribute::Y(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
             ))),
             "type" => Ok(Attribute::Type(value.parse()?)),
             "tableValues" => Ok(Attribute::TableValues(
