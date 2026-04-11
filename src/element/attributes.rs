@@ -4,6 +4,7 @@ use crate::{
     Element,
     element::{
         ElementType,
+        lang::LanguageTag,
         types::{
             AbsoluteLength, AbsoluteSize, Color, FontWeight, Length, LengthOrPercentage, Paint,
             Percentage, RelativeSize, Url,
@@ -231,7 +232,6 @@ pub enum Cursor {
     Wait,
     Help,
     Inherit,
-    // TODO: add FuncURI, not sure what that is at the moment
 }
 
 impl fmt::Display for Cursor {
@@ -282,6 +282,111 @@ impl FromStr for Cursor {
             "inherit" => Ok(Cursor::Inherit),
             _ => Err(()),
         }
+    }
+}
+
+/// The value of the `cursor` attribute: zero or more `url()` fallbacks
+/// followed by a required keyword value.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CursorValue {
+    pub urls: Vec<Url>,
+    pub keyword: Cursor,
+}
+
+impl fmt::Display for CursorValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for url in &self.urls {
+            write!(f, "url({}), ", url)?;
+        }
+        write!(f, "{}", self.keyword)
+    }
+}
+
+impl FromStr for CursorValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(',').map(str::trim).collect();
+        let (url_parts, keyword_part) = parts.split_at(parts.len().saturating_sub(1));
+        let keyword = keyword_part.first().ok_or(())?.parse::<Cursor>()?;
+        let urls = url_parts
+            .iter()
+            .map(|p| {
+                let inner = p.strip_prefix("url(").and_then(|s| s.strip_suffix(')')).ok_or(())?;
+                inner.parse::<Url>()
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(CursorValue { urls, keyword })
+    }
+}
+
+/// The value of the `clip-path` presentation attribute.
+/// `none | url(#id) | <basic-shape> || <geometry-box>` (Raw for complex CSS shapes).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClipPathValue {
+    None,
+    Url(Url),
+    /// CSS basic shape or geometry box (e.g. `circle(50%)`, `inset(10px)`)
+    Raw(String),
+}
+
+impl fmt::Display for ClipPathValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ClipPathValue::None => write!(f, "none"),
+            ClipPathValue::Url(url) => write!(f, "url({})", url),
+            ClipPathValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for ClipPathValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s.eq_ignore_ascii_case("none") {
+            return Ok(ClipPathValue::None);
+        }
+        if let Some(inner) = s.strip_prefix("url(").and_then(|s| s.strip_suffix(')')) {
+            return Ok(ClipPathValue::Url(inner.parse()?));
+        }
+        Ok(ClipPathValue::Raw(s.to_string()))
+    }
+}
+
+/// The value of the `filter` presentation attribute.
+/// `none | <url> | <filter-function>+` (Raw for CSS filter functions).
+#[derive(Clone, Debug, PartialEq)]
+pub enum FilterValue {
+    None,
+    Url(Url),
+    /// CSS filter functions (e.g. `blur(4px)`, `brightness(50%) contrast(200%)`)
+    Raw(String),
+}
+
+impl fmt::Display for FilterValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FilterValue::None => write!(f, "none"),
+            FilterValue::Url(url) => write!(f, "url({})", url),
+            FilterValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for FilterValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s.eq_ignore_ascii_case("none") {
+            return Ok(FilterValue::None);
+        }
+        if let Some(inner) = s.strip_prefix("url(").and_then(|s| s.strip_suffix(')')) {
+            return Ok(FilterValue::Url(inner.parse()?));
+        }
+        Ok(FilterValue::Raw(s.to_string()))
     }
 }
 
@@ -1569,14 +1674,14 @@ impl Default for LightingColor {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Marker {
     None,
-    Url(Url), // TODO: Is this correct?
+    Url(Url),
 }
 
 impl fmt::Display for Marker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Marker::None => write!(f, "none"),
-            Marker::Url(_) => todo!(),
+            Marker::Url(url) => write!(f, "url({})", url),
         }
     }
 }
@@ -3435,6 +3540,388 @@ impl FromStr for PrimitiveUnits {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct KeyPoint(pub f64);
+
+impl fmt::Display for KeyPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for KeyPoint {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.trim().parse::<f64>().map(KeyPoint).map_err(|_| ())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FeFuncType {
+    Identity,
+    Table,
+    Discrete,
+    Linear,
+    Gamma,
+}
+
+impl fmt::Display for FeFuncType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FeFuncType::Identity => write!(f, "identity"),
+            FeFuncType::Table => write!(f, "table"),
+            FeFuncType::Discrete => write!(f, "discrete"),
+            FeFuncType::Linear => write!(f, "linear"),
+            FeFuncType::Gamma => write!(f, "gamma"),
+        }
+    }
+}
+
+impl FromStr for FeFuncType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "identity" => Ok(FeFuncType::Identity),
+            "table" => Ok(FeFuncType::Table),
+            "discrete" => Ok(FeFuncType::Discrete),
+            "linear" => Ok(FeFuncType::Linear),
+            "gamma" => Ok(FeFuncType::Gamma),
+            _ => Err(()),
+        }
+    }
+}
+
+/// The value of the `calcMode` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CalcMode {
+    Discrete,
+    Linear,
+    Paced,
+    Spline,
+}
+
+impl fmt::Display for CalcMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CalcMode::Discrete => write!(f, "discrete"),
+            CalcMode::Linear => write!(f, "linear"),
+            CalcMode::Paced => write!(f, "paced"),
+            CalcMode::Spline => write!(f, "spline"),
+        }
+    }
+}
+
+impl FromStr for CalcMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "discrete" => Ok(CalcMode::Discrete),
+            "linear" => Ok(CalcMode::Linear),
+            "paced" => Ok(CalcMode::Paced),
+            "spline" => Ok(CalcMode::Spline),
+            _ => Err(()),
+        }
+    }
+}
+
+/// A single cubic Bézier control point for `keySplines` (x1 y1 x2 y2, all 0–1).
+#[derive(Clone, Debug, PartialEq)]
+pub struct KeySpline {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+impl fmt::Display for KeySpline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {} {}", self.x1, self.y1, self.x2, self.y2)
+    }
+}
+
+impl FromStr for KeySpline {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<f64> = s
+            .split_whitespace()
+            .map(|v| v.parse::<f64>().map_err(|_| ()))
+            .collect::<Result<_, _>>()?;
+        match parts.as_slice() {
+            [x1, y1, x2, y2] => Ok(KeySpline { x1: *x1, y1: *y1, x2: *x2, y2: *y2 }),
+            _ => Err(()),
+        }
+    }
+}
+
+/// Corresponds to the `attributeType` animation attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAttributeType {
+    Css,
+    Xml,
+    Auto,
+}
+
+impl fmt::Display for AnimationAttributeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAttributeType::Css => write!(f, "CSS"),
+            AnimationAttributeType::Xml => write!(f, "XML"),
+            AnimationAttributeType::Auto => write!(f, "auto"),
+        }
+    }
+}
+
+impl FromStr for AnimationAttributeType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "CSS" => Ok(AnimationAttributeType::Css),
+            "XML" => Ok(AnimationAttributeType::Xml),
+            "auto" => Ok(AnimationAttributeType::Auto),
+            _ => Err(()),
+        }
+    }
+}
+
+/// A SMIL clock value stored as fractional seconds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClockValue(pub f64);
+
+impl fmt::Display for ClockValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}s", self.0)
+    }
+}
+
+impl FromStr for ClockValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        // Timecount with metric suffix
+        if let Some(h) = s.strip_suffix("h") {
+            return h.trim().parse::<f64>().map(|v| ClockValue(v * 3600.0)).map_err(|_| ());
+        }
+        if let Some(m) = s.strip_suffix("min") {
+            return m.trim().parse::<f64>().map(|v| ClockValue(v * 60.0)).map_err(|_| ());
+        }
+        if let Some(ms) = s.strip_suffix("ms") {
+            return ms.trim().parse::<f64>().map(|v| ClockValue(v / 1000.0)).map_err(|_| ());
+        }
+        if let Some(sec) = s.strip_suffix('s') {
+            return sec.trim().parse::<f64>().map(ClockValue).map_err(|_| ());
+        }
+        // Full clock: h:mm:ss[.frac] or partial clock: mm:ss[.frac]
+        let parts: Vec<&str> = s.splitn(3, ':').collect();
+        match parts.as_slice() {
+            [mm, ss] => {
+                let minutes = mm.trim().parse::<f64>().map_err(|_| ())?;
+                let seconds = ss.trim().parse::<f64>().map_err(|_| ())?;
+                Ok(ClockValue(minutes * 60.0 + seconds))
+            }
+            [hh, mm, ss] => {
+                let hours = hh.trim().parse::<f64>().map_err(|_| ())?;
+                let minutes = mm.trim().parse::<f64>().map_err(|_| ())?;
+                let seconds = ss.trim().parse::<f64>().map_err(|_| ())?;
+                Ok(ClockValue(hours * 3600.0 + minutes * 60.0 + seconds))
+            }
+            _ => s.parse::<f64>().map(ClockValue).map_err(|_| ()),
+        }
+    }
+}
+
+/// A single value in a SMIL `begin` or `end` attribute list.
+#[derive(Clone, Debug, PartialEq)]
+pub enum BeginEndValue {
+    /// A signed offset in seconds.
+    Offset(f64),
+    Indefinite,
+    /// Catch-all for syncbase, event, accessKey, wallclock, etc.
+    Raw(String),
+}
+
+impl fmt::Display for BeginEndValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BeginEndValue::Offset(secs) => write!(f, "{}s", secs),
+            BeginEndValue::Indefinite => write!(f, "indefinite"),
+            BeginEndValue::Raw(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for BeginEndValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        if s == "indefinite" {
+            return Ok(BeginEndValue::Indefinite);
+        }
+        // Try to parse as a signed clock value
+        let (sign, rest) = if let Some(r) = s.strip_prefix('-') {
+            (-1.0_f64, r.trim())
+        } else if let Some(r) = s.strip_prefix('+') {
+            (1.0_f64, r.trim())
+        } else {
+            (1.0_f64, s)
+        };
+        if let Ok(clock) = rest.parse::<ClockValue>() {
+            return Ok(BeginEndValue::Offset(sign * clock.0));
+        }
+        Ok(BeginEndValue::Raw(s.to_string()))
+    }
+}
+
+/// The value of a `dur`, `max`, or `repeatDur` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DurValue {
+    Clock(ClockValue),
+    Indefinite,
+    Media,
+}
+
+impl fmt::Display for DurValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DurValue::Clock(v) => write!(f, "{}", v),
+            DurValue::Indefinite => write!(f, "indefinite"),
+            DurValue::Media => write!(f, "media"),
+        }
+    }
+}
+
+impl FromStr for DurValue {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "indefinite" => Ok(DurValue::Indefinite),
+            "media" => Ok(DurValue::Media),
+            other => other.parse::<ClockValue>().map(DurValue::Clock),
+        }
+    }
+}
+
+/// The value of the `repeatCount` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum RepeatCount {
+    Count(f64),
+    Indefinite,
+}
+
+impl fmt::Display for RepeatCount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepeatCount::Count(n) => write!(f, "{}", n),
+            RepeatCount::Indefinite => write!(f, "indefinite"),
+        }
+    }
+}
+
+impl FromStr for RepeatCount {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "indefinite" => Ok(RepeatCount::Indefinite),
+            other => other.parse::<f64>().map(RepeatCount::Count).map_err(|_| ()),
+        }
+    }
+}
+
+/// The value of the `restart` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationRestart {
+    Always,
+    WhenNotActive,
+    Never,
+}
+
+impl fmt::Display for AnimationRestart {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationRestart::Always => write!(f, "always"),
+            AnimationRestart::WhenNotActive => write!(f, "whenNotActive"),
+            AnimationRestart::Never => write!(f, "never"),
+        }
+    }
+}
+
+impl FromStr for AnimationRestart {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "always" => Ok(AnimationRestart::Always),
+            "whenNotActive" => Ok(AnimationRestart::WhenNotActive),
+            "never" => Ok(AnimationRestart::Never),
+            _ => Err(()),
+        }
+    }
+}
+
+/// The value of the `additive` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAdditive {
+    Replace,
+    Sum,
+}
+
+impl fmt::Display for AnimationAdditive {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAdditive::Replace => write!(f, "replace"),
+            AnimationAdditive::Sum => write!(f, "sum"),
+        }
+    }
+}
+
+impl FromStr for AnimationAdditive {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "replace" => Ok(AnimationAdditive::Replace),
+            "sum" => Ok(AnimationAdditive::Sum),
+            _ => Err(()),
+        }
+    }
+}
+
+/// The value of the `accumulate` attribute.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AnimationAccumulate {
+    None,
+    Sum,
+}
+
+impl fmt::Display for AnimationAccumulate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnimationAccumulate::None => write!(f, "none"),
+            AnimationAccumulate::Sum => write!(f, "sum"),
+        }
+    }
+}
+
+impl FromStr for AnimationAccumulate {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "none" => Ok(AnimationAccumulate::None),
+            "sum" => Ok(AnimationAccumulate::Sum),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Attribute {
     Xmlns(String),
     // Core(Global) Attributes
@@ -3442,23 +3929,23 @@ pub enum Attribute {
     Id(String),
     Class(Vec<String>),
     Style(String),
-    Lang(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    Lang(LanguageTag),
     Tabindex(i64),
 
     // Conditional Processing Attributes
     RequiredExtensions(Vec<String>), // Value is a space-separated list of URL references
     // identifying the required extensions
-    SystemLanguage(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    SystemLanguage(Vec<LanguageTag>),
 
     // Presentation Attributes
     AlignmentBaseline(AlignmentBaseline),
     BaselineShift(BaselineShift),
-    ClipPath(String), // TODO: figure out how this works
+    ClipPath(ClipPathValue),
     ClipRule(ClipRule),
     Color(Color),
     ColorInterpolation(ColorInterpolation),
     ColorInterpolationFilters(ColorInterpolationFilter),
-    Cursor(Cursor),
+    Cursor(CursorValue),
     Cx(LengthOrPercentage),
     Cy(LengthOrPercentage),
     D(Path),
@@ -3468,7 +3955,7 @@ pub enum Attribute {
     Fill(Fill),
     FillOpacity(Percentage),
     FillRule(FillRule),
-    Filter(String), // TODO: implement this
+    Filter(FilterValue),
     FloodColor(Color),
     FloodOpacity(f64),  // value between 0 and 1
     FontFamily(String), // TODO: implement proper font family parsing
@@ -3477,19 +3964,20 @@ pub enum Attribute {
     FontStyle(FontStyle),
     FontVariant(String), // TODO: implement proper font variant parsing
     FontWeight(FontWeight),
-    Height(LengthOrPercentage), // TODO: here the type depends on the element used
+    Height(LengthOrPercentageOrNumber),
     ImageRendering(ImageRendering),
     LetterSpacing(LetterSpacing),
     LightingColor(LightingColor),
     MarkerEnd(Marker),
     MarkerMid(Marker),
     MarkerStart(Marker),
-    Mask(String), // TODO: implement this
+    Mask(String), // complex CSS shorthand (mask-image, mask-mode, mask-position, mask-size, mask-repeat, mask-origin, mask-clip, mask-composite) — kept as String
     MaskType(MaskType),
     Opacity(Opacity),
     Overflow(Overflow),
     PointerEvents(PointerEvents),
-    R(LengthOrPercentage), // TODO: this is either a RectRadius, or CircleRadius? maybe more
+    // LengthOrPercentageOrNumber covers both <circle> r (length/percentage) and <radialGradient> r (length/percentage/number)
+    R(LengthOrPercentageOrNumber),
     Rx(EllipsisRadius),
     Ry(EllipsisRadius),
     ShapeRendering(ShapeRendering),
@@ -3500,7 +3988,7 @@ pub enum Attribute {
     StrokeDashoffset(LengthOrPercentage),
     StrokeLinecap(StrokeLinecap),
     StrokeLinejoin(StrokeLinejoin),
-    StrokeMiterlimit(f64), // TODO: default value = 4.0
+    StrokeMiterlimit(f64),
     StrokeOpacity(StrokeOpacity),
     StrokeWidth(LengthOrPercentage),
     TextAnchor(TextAnchor),
@@ -3512,38 +4000,36 @@ pub enum Attribute {
     UnicodeBidi(UnicodeBidi),
     VectorEffect(VectorEffect),
     Visibility(Visibility),
-    Width(LengthOrPercentage), // TODO: here the type depends on the element used, for example
-    // pattern accepts only Length type
+    Width(LengthOrPercentageOrNumber),
     WhiteSpace(WhiteSpace),
     WordSpacing(WordSpacing),
     WritingMode(WritingMode),
-    X(LengthOrPercentage), // TODO: here the type depends on the element used
-    Y(LengthOrPercentage), // TODO: here the type depends on the element used
+    X(LengthOrPercentageOrNumber),
+    Y(LengthOrPercentageOrNumber),
 
     // Transfer Function Attributes
-    // TODO: The rest of the attributes are left out for now
-    Type,
-    TableValues,
-    Slope,
-    Intercept,
-    Amplitude,
-    Exponent,
-    Offset, // TODO: This one is maybe deprecated, where to find the documentation for it?
+    Type(FeFuncType),
+    TableValues(Vec<f64>),
+    Slope(f64),
+    Intercept(f64),
+    Amplitude(f64),
+    Exponent(f64),
+    Offset(f64),
 
     // Animation Attributes
     Href(String),
-    AttributeType,
-    AttributeName,
-    Begin,
-    Dur,
-    End,
-    Min,
-    Max,
-    Restart,
-    RepeatCount,
-    RepeatDur,
-    Additive,
-    Accumulate,
+    AttributeType(AnimationAttributeType),
+    AttributeName(String),
+    Begin(Vec<BeginEndValue>),
+    Dur(DurValue),
+    End(Vec<BeginEndValue>),
+    Min(ClockValue),
+    Max(DurValue),
+    Restart(AnimationRestart),
+    RepeatCount(RepeatCount),
+    RepeatDur(DurValue),
+    Additive(AnimationAdditive),
+    Accumulate(AnimationAccumulate),
 
     // Event Attributes (taken from https://www.w3schools.com/tags/ref_eventattributes.asp)
     OnAfterPrint(String),
@@ -3624,22 +4110,28 @@ pub enum Attribute {
 
     OnToggle(String),
 
+    // Animation Event Attributes
+    OnBegin(String),
+    OnEnd(String),
+    OnRepeat(String),
+
     // Element Specific
-    KeyPoints(String),
+    KeyPoints(Vec<KeyPoint>),
     Path(Path),
     Rotate(Rotate),
 
     // Animation Value Attributes
-    CalcMode,
-    Values,
-    KeyTimes,
-    KeySplines,
-    From,
-    To,
-    By,
+    CalcMode(CalcMode),
+    Values(Vec<String>),
+    KeyTimes(Vec<f64>),
+    KeySplines(Vec<KeySpline>),
+    From(String),
+    To(String),
+    By(String),
     PathLength(f64),
 
-    X1(LengthOrPercentageOrNumber), // TODO: this can be a LengthOrPercentageOrNumber on <line> or LengthOrPercentage only on <linearGradient>, also the defaults are different (Number(0.0) and Percentage(0.0))
+    // LengthOrPercentageOrNumber covers both <line> (number) and <linearGradient> (length/percentage)
+    X1(LengthOrPercentageOrNumber),
     Y1(LengthOrPercentageOrNumber),
     X2(LengthOrPercentageOrNumber),
     Y2(LengthOrPercentageOrNumber),
@@ -3647,7 +4139,7 @@ pub enum Attribute {
     Points(Vec<Point>),
 
     Download(String),
-    HrefLang(String), // TODO: this should be a BCP47 language tag as specified in: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
+    HrefLang(LanguageTag),
     InterestFor(String), // TODO: https://developer.mozilla.org/en-US/docs/Web/API/Popover_API/Using_interest_invokers
     Ping(Vec<Url>),
     ReferrerPolicy(ReferrerPolicy),
@@ -3681,7 +4173,7 @@ pub enum Attribute {
     K3(f64),
     K4(f64),
 
-    Order(u64), // TODO: if it's a valid f64 then it must be truncated to u32
+    Order(u32),
     KernelMatrix(Vec<f64>),
     Divisor(f64),
     Bias(f64),
@@ -3708,6 +4200,14 @@ pub enum Attribute {
 
     SpecularConstant(f64),
     SpecularExponent(f64),
+
+    Azimuth(f64),
+    Elevation(f64),
+    Z(f64),
+    PointsAtX(f64),
+    PointsAtY(f64),
+    PointsAtZ(f64),
+    LimitingConeAngle(f64),
 
     BaseFrequency(f64, Option<f64>),
     NumOctaves(u64),
@@ -3768,7 +4268,7 @@ impl TryFrom<(&String, &String)> for Attribute {
                     .collect(),
             )),
             "style" => Ok(Attribute::Style(value.clone())),
-            "lang" => Ok(Attribute::Lang(value.clone())),
+            "lang" => Ok(Attribute::Lang(value.parse()?)),
             "tabindex" => Ok(Attribute::Tabindex(value.parse().unwrap_or(0))),
             "requiredExtensions" => {
                 let extensions = value
@@ -3777,17 +4277,19 @@ impl TryFrom<(&String, &String)> for Attribute {
                     .collect();
                 Ok(Attribute::RequiredExtensions(extensions))
             }
-            "systemLanguage" => Ok(Attribute::SystemLanguage(value.clone())),
+            "systemLanguage" => Ok(Attribute::SystemLanguage(
+                value.split(',').map(|s| s.trim().parse()).collect::<Result<_, _>>()?,
+            )),
             "alignment-baseline" => Ok(Attribute::AlignmentBaseline(value.parse()?)),
             "baseline-shift" => Ok(Attribute::BaselineShift(value.parse()?)),
-            "clip-path" => Ok(Attribute::ClipPath(value.clone())),
+            "clip-path" => Ok(Attribute::ClipPath(value.parse()?)),
             "clip-rule" => Ok(Attribute::ClipRule(value.parse()?)),
             "color" => Ok(Attribute::Color(value.parse()?)),
             "color-interpolation" => Ok(Attribute::ColorInterpolation(value.parse()?)),
             "color-interpolation-filters" => {
                 Ok(Attribute::ColorInterpolationFilters(value.parse()?))
             }
-            "cursor" => Ok(Attribute::Cursor(value.parse()?)),
+            "cursor" => Ok(Attribute::Cursor(value.parse::<CursorValue>()?)),
             "cx" => Ok(Attribute::Cx(value.parse()?)),
             "cy" => Ok(Attribute::Cy(value.parse()?)),
             "d" => Ok(Attribute::D(value.parse()?)),
@@ -3797,7 +4299,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "fill" => Ok(Attribute::Fill(value.parse()?)),
             "fill-opacity" => Ok(Attribute::FillOpacity(value.parse()?)),
             "fill-rule" => Ok(Attribute::FillRule(value.parse()?)),
-            "filter" => Ok(Attribute::Filter(value.clone())),
+            "filter" => Ok(Attribute::Filter(value.parse()?)),
             "flood-color" => Ok(Attribute::FloodColor(value.parse()?)),
             "flood-opacity" => Ok(Attribute::FloodOpacity(value.parse().map_err(|_| ())?)),
             "font-family" => Ok(Attribute::FontFamily(value.clone())),
@@ -3807,7 +4309,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "font-variant" => Ok(Attribute::FontVariant(value.clone())),
             "font-weight" => Ok(Attribute::FontWeight(value.parse()?)),
             "height" => Ok(Attribute::Height(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
             ))),
             "image-rendering" => Ok(Attribute::ImageRendering(value.parse()?)),
             "letter-spacing" => Ok(Attribute::LetterSpacing(value.parse()?)),
@@ -3821,6 +4323,9 @@ impl TryFrom<(&String, &String)> for Attribute {
             "overflow" => Ok(Attribute::Overflow(value.parse()?)),
             "pointer-events" => Ok(Attribute::PointerEvents(value.parse()?)),
             "r" => Ok(Attribute::R(value.parse()?)),
+            "order" => Ok(Attribute::Order(
+                value.parse::<f64>().map(|v| v as u32).map_err(|_| ())?,
+            )),
             "rx" => Ok(Attribute::Rx(value.parse()?)),
             "ry" => Ok(Attribute::Ry(value.parse()?)),
             "shape-rendering" => Ok(Attribute::ShapeRendering(value.parse()?)),
@@ -3837,7 +4342,7 @@ impl TryFrom<(&String, &String)> for Attribute {
             "stroke-dashoffset" => Ok(Attribute::StrokeDashoffset(value.parse()?)),
             "stroke-linecap" => Ok(Attribute::StrokeLinecap(value.parse()?)),
             "stroke-linejoin" => Ok(Attribute::StrokeLinejoin(value.parse()?)),
-            "stroke-miterlimit" => Ok(Attribute::StrokeMiterlimit(value.parse().map_err(|_| ())?)),
+            "stroke-miterlimit" => Ok(Attribute::StrokeMiterlimit(value.parse().unwrap_or(4.0))),
             "stroke-opacity" => Ok(Attribute::StrokeOpacity(value.parse()?)),
             "stroke-width" => Ok(Attribute::StrokeWidth(value.parse()?)),
             "text-anchor" => Ok(Attribute::TextAnchor(value.parse()?)),
@@ -3851,112 +4356,154 @@ impl TryFrom<(&String, &String)> for Attribute {
             "viewBox" => Ok(Attribute::ViewBox(value.parse()?)),
             "visibility" => Ok(Attribute::Visibility(value.parse()?)),
             "width" => Ok(Attribute::Width(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(1.0))),
             ))),
             "white-space" => Ok(Attribute::WhiteSpace(value.parse()?)),
             "word-spacing" => Ok(Attribute::WordSpacing(value.parse()?)),
             "writing-mode" => Ok(Attribute::WritingMode(value.parse()?)),
             "x" => Ok(Attribute::X(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
             ))),
             "y" => Ok(Attribute::Y(value.parse().unwrap_or(
-                LengthOrPercentage::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
+                LengthOrPercentageOrNumber::Length(Length::Absolute(AbsoluteLength::Px(0.0))),
             ))),
-            "type" => todo!(),
-            "tableValues" => todo!(),
-            "slope" => todo!(),
-            "intercept" => todo!(),
-            "amplitude" => todo!(),
-            "exponent" => todo!(),
-            "offset" => todo!(),
+            "type" => Ok(Attribute::Type(value.parse()?)),
+            "tableValues" => Ok(Attribute::TableValues(
+                value.split_whitespace().map(|s| s.parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+            )),
+            "slope" => Ok(Attribute::Slope(value.parse::<f64>().map_err(|_| ())?)),
+            "intercept" => Ok(Attribute::Intercept(value.parse::<f64>().map_err(|_| ())?)),
+            "amplitude" => Ok(Attribute::Amplitude(value.parse::<f64>().map_err(|_| ())?)),
+            "exponent" => Ok(Attribute::Exponent(value.parse::<f64>().map_err(|_| ())?)),
+            "offset" => Ok(Attribute::Offset(value.parse::<f64>().map_err(|_| ())?)),
             "href" => Ok(Attribute::Href(value.clone())),
-            "attributeType" => todo!(),
-            "attributeName" => todo!(),
-            "begin" => todo!(),
-            "dur" => todo!(),
-            "end" => todo!(),
-            "min" => todo!(),
-            "max" => todo!(),
-            "restart" => todo!(),
-            "repeatCount" => todo!(),
-            "repeatDur" => todo!(),
-            "additive" => todo!(),
-            "accumulate" => todo!(),
-            "onAfterPrint" => todo!(),
-            "onBeforePrint" => todo!(),
-            "onBeforeUnload" => todo!(),
-            "onError" => todo!(),
-            "onHashChange" => todo!(),
-            "onLoad" => todo!(),
-            "onMessage" => todo!(),
-            "onOffline" => todo!(),
-            "onOnline" => todo!(),
-            "onPageHide" => todo!(),
-            "onPageShow" => todo!(),
-            "onPopState" => todo!(),
-            "onResize" => todo!(),
-            "onStorage" => todo!(),
-            "onUnload" => todo!(),
-            "onBlur" => todo!(),
-            "onChange" => todo!(),
-            "onContextMenu" => todo!(),
-            "onFocus" => todo!(),
-            "onInput" => todo!(),
-            "onInvalid" => todo!(),
-            "onReset" => todo!(),
-            "onSearch" => todo!(),
-            "onSelect" => todo!(),
-            "onSubmit" => todo!(),
-            "onKeyDown" => todo!(),
-            "onKeyPress" => todo!(),
-            "onKeyUp" => todo!(),
-            "onClick" => todo!(),
-            "onDoubleClick" => todo!(),
-            "onMouseDown" => todo!(),
-            "onMouseMove" => todo!(),
-            "onMouseOut" => todo!(),
-            "onMouseOver" => todo!(),
-            "onMouseUp" => todo!(),
-            "onWheel" => todo!(),
-            "onDrag" => todo!(),
-            "onDragEnd" => todo!(),
-            "onDragEnter" => todo!(),
-            "onDragLeave" => todo!(),
-            "onDragOver" => todo!(),
-            "onDragStart" => todo!(),
-            "onDrop" => todo!(),
-            "onScroll" => todo!(),
-            "onCopy" => todo!(),
-            "onCut" => todo!(),
-            "onPaste" => todo!(),
-            "onAbort" => todo!(),
-            "onCanPlay" => todo!(),
-            "onCanPlayThrough" => todo!(),
-            "onCueChange" => todo!(),
-            "onDurationChange" => todo!(),
-            "onEmptied" => todo!(),
-            "onEnded" => todo!(),
-            "onLoadedData" => todo!(),
-            "onLoadedMetadata" => todo!(),
-            "onLoadStart" => todo!(),
-            "onPause" => todo!(),
-            "onPlay" => todo!(),
-            "onPlaying" => todo!(),
-            "onProgress" => todo!(),
-            "onRateChange" => todo!(),
-            "onSeeked" => todo!(),
-            "onSeeking" => todo!(),
-            "onStalled" => todo!(),
-            "onSuspend" => todo!(),
-            "onTimeUpdate" => todo!(),
-            "onVolumeChange" => todo!(),
-            "onWaiting" => todo!(),
-            "onToggle" => todo!(),
+            "hreflang" => Ok(Attribute::HrefLang(value.parse()?)),
+            "attributeType" => Ok(Attribute::AttributeType(value.parse()?)),
+            "attributeName" => Ok(Attribute::AttributeName(value.clone())),
+            "begin" => Ok(Attribute::Begin(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "dur" => Ok(Attribute::Dur(value.parse()?)),
+            "end" => Ok(Attribute::End(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "min" => Ok(Attribute::Min(value.parse()?)),
+            "max" => Ok(Attribute::Max(value.parse()?)),
+            "restart" => Ok(Attribute::Restart(value.parse()?)),
+            "repeatCount" => Ok(Attribute::RepeatCount(value.parse()?)),
+            "repeatDur" => Ok(Attribute::RepeatDur(value.parse()?)),
+            "additive" => Ok(Attribute::Additive(value.parse()?)),
+            "accumulate" => Ok(Attribute::Accumulate(value.parse()?)),
+            "onAfterPrint" => Ok(Attribute::OnAfterPrint(value.clone())),
+            "onBeforePrint" => Ok(Attribute::OnBeforePrint(value.clone())),
+            "onBeforeUnload" => Ok(Attribute::OnBeforeUnload(value.clone())),
+            "onError" => Ok(Attribute::OnError(value.clone())),
+            "onHashChange" => Ok(Attribute::OnHashChange(value.clone())),
+            "onLoad" => Ok(Attribute::OnLoad(value.clone())),
+            "onMessage" => Ok(Attribute::OnMessage(value.clone())),
+            "onOffline" => Ok(Attribute::OnOffline(value.clone())),
+            "onOnline" => Ok(Attribute::OnOnline(value.clone())),
+            "onPageHide" => Ok(Attribute::OnPageHide(value.clone())),
+            "onPageShow" => Ok(Attribute::OnPageShow(value.clone())),
+            "onPopState" => Ok(Attribute::OnPopState(value.clone())),
+            "onResize" => Ok(Attribute::OnResize(value.clone())),
+            "onStorage" => Ok(Attribute::OnStorage(value.clone())),
+            "onUnload" => Ok(Attribute::OnUnload(value.clone())),
+            "onBlur" => Ok(Attribute::OnBlur(value.clone())),
+            "onChange" => Ok(Attribute::OnChange(value.clone())),
+            "onContextMenu" => Ok(Attribute::OnContextMenu(value.clone())),
+            "onFocus" => Ok(Attribute::OnFocus(value.clone())),
+            "onInput" => Ok(Attribute::OnInput(value.clone())),
+            "onInvalid" => Ok(Attribute::OnInvalid(value.clone())),
+            "onReset" => Ok(Attribute::OnReset(value.clone())),
+            "onSearch" => Ok(Attribute::OnSearch(value.clone())),
+            "onSelect" => Ok(Attribute::OnSelect(value.clone())),
+            "onSubmit" => Ok(Attribute::OnSubmit(value.clone())),
+            "onKeyDown" => Ok(Attribute::OnKeyDown(value.clone())),
+            "onKeyPress" => Ok(Attribute::OnKeyPress(value.clone())),
+            "onKeyUp" => Ok(Attribute::OnKeyUp(value.clone())),
+            "onClick" => Ok(Attribute::OnClick(value.clone())),
+            "onDoubleClick" => Ok(Attribute::OnDoubleClick(value.clone())),
+            "onMouseDown" => Ok(Attribute::OnMouseDown(value.clone())),
+            "onMouseMove" => Ok(Attribute::OnMouseMove(value.clone())),
+            "onMouseOut" => Ok(Attribute::OnMouseOut(value.clone())),
+            "onMouseOver" => Ok(Attribute::OnMouseOver(value.clone())),
+            "onMouseUp" => Ok(Attribute::OnMouseUp(value.clone())),
+            "onWheel" => Ok(Attribute::OnWheel(value.clone())),
+            "onDrag" => Ok(Attribute::OnDrag(value.clone())),
+            "onDragEnd" => Ok(Attribute::OnDragEnd(value.clone())),
+            "onDragEnter" => Ok(Attribute::OnDragEnter(value.clone())),
+            "onDragLeave" => Ok(Attribute::OnDragLeave(value.clone())),
+            "onDragOver" => Ok(Attribute::OnDragOver(value.clone())),
+            "onDragStart" => Ok(Attribute::OnDragStart(value.clone())),
+            "onDrop" => Ok(Attribute::OnDrop(value.clone())),
+            "onScroll" => Ok(Attribute::OnScroll(value.clone())),
+            "onCopy" => Ok(Attribute::OnCopy(value.clone())),
+            "onCut" => Ok(Attribute::OnCut(value.clone())),
+            "onPaste" => Ok(Attribute::OnPaste(value.clone())),
+            "onAbort" => Ok(Attribute::OnAbort(value.clone())),
+            "onCanPlay" => Ok(Attribute::OnCanPlay(value.clone())),
+            "onCanPlayThrough" => Ok(Attribute::OnCanPlayThrough(value.clone())),
+            "onCueChange" => Ok(Attribute::OnCueChange(value.clone())),
+            "onDurationChange" => Ok(Attribute::OnDurationChange(value.clone())),
+            "onEmptied" => Ok(Attribute::OnEmptied(value.clone())),
+            "onEnded" => Ok(Attribute::OnEnded(value.clone())),
+            "onLoadedData" => Ok(Attribute::OnLoadedData(value.clone())),
+            "onLoadedMetadata" => Ok(Attribute::OnLoadedMetadata(value.clone())),
+            "onLoadStart" => Ok(Attribute::OnLoadStart(value.clone())),
+            "onPause" => Ok(Attribute::OnPause(value.clone())),
+            "onPlay" => Ok(Attribute::OnPlay(value.clone())),
+            "onPlaying" => Ok(Attribute::OnPlaying(value.clone())),
+            "onProgress" => Ok(Attribute::OnProgress(value.clone())),
+            "onRateChange" => Ok(Attribute::OnRateChange(value.clone())),
+            "onSeeked" => Ok(Attribute::OnSeeked(value.clone())),
+            "onSeeking" => Ok(Attribute::OnSeeking(value.clone())),
+            "onStalled" => Ok(Attribute::OnStalled(value.clone())),
+            "onSuspend" => Ok(Attribute::OnSuspend(value.clone())),
+            "onTimeUpdate" => Ok(Attribute::OnTimeUpdate(value.clone())),
+            "onVolumeChange" => Ok(Attribute::OnVolumeChange(value.clone())),
+            "onWaiting" => Ok(Attribute::OnWaiting(value.clone())),
+            "onToggle" => Ok(Attribute::OnToggle(value.clone())),
+            "onbegin" => Ok(Attribute::OnBegin(value.clone())),
+            "onend" => Ok(Attribute::OnEnd(value.clone())),
+            "onrepeat" => Ok(Attribute::OnRepeat(value.clone())),
+            "keyPoints" => Ok(Attribute::KeyPoints(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "calcMode" => Ok(Attribute::CalcMode(value.parse()?)),
+            "values" => Ok(Attribute::Values(
+                value.split(';').map(|s| s.trim().to_string()).collect(),
+            )),
+            "keyTimes" => Ok(Attribute::KeyTimes(
+                value.split(';').map(|s| s.trim().parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+            )),
+            "keySplines" => Ok(Attribute::KeySplines(
+                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+            )),
+            "from" => Ok(Attribute::From(value.clone())),
+            "to" => Ok(Attribute::To(value.clone())),
+            "by" => Ok(Attribute::By(value.clone())),
             _ => {
                 return Err(());
             }
         }
     }
+}
+
+fn write_semicolon_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
+where
+    W: fmt::Write,
+    I: Iterator,
+    I::Item: fmt::Display,
+{
+    write!(f, "=\"")?;
+    for (i, item) in iter.enumerate() {
+        if i > 0 {
+            write!(f, ";")?;
+        }
+        write!(f, "{}", item)?;
+    }
+    write!(f, "\"")
 }
 
 fn write_space_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
@@ -3969,6 +4516,22 @@ where
     for (i, item) in iter.enumerate() {
         if i > 0 {
             write!(f, " ")?;
+        }
+        write!(f, "{}", item)?;
+    }
+    write!(f, "\"")
+}
+
+fn write_comma_separated<W, I>(f: &mut W, iter: I) -> fmt::Result
+where
+    W: fmt::Write,
+    I: Iterator,
+    I::Item: fmt::Display,
+{
+    write!(f, "=\"")?;
+    for (i, item) in iter.enumerate() {
+        if i > 0 {
+            write!(f, ",")?;
         }
         write!(f, "{}", item)?;
     }
@@ -4054,26 +4617,26 @@ impl Attribute {
             Attribute::WritingMode(_) => "writing-mode",
             Attribute::X(_) => "x",
             Attribute::Y(_) => "y",
-            Attribute::Type => "type",
-            Attribute::TableValues => "tableValues",
-            Attribute::Slope => "slope",
-            Attribute::Intercept => "intercept",
-            Attribute::Amplitude => "amplitude",
-            Attribute::Exponent => "exponent",
-            Attribute::Offset => "offset",
+            Attribute::Type(_) => "type",
+            Attribute::TableValues(_) => "tableValues",
+            Attribute::Slope(_) => "slope",
+            Attribute::Intercept(_) => "intercept",
+            Attribute::Amplitude(_) => "amplitude",
+            Attribute::Exponent(_) => "exponent",
+            Attribute::Offset(_) => "offset",
             Attribute::Href(_) => "href",
-            Attribute::AttributeType => "attributeType",
-            Attribute::AttributeName => "attributeName",
-            Attribute::Begin => "begin",
-            Attribute::Dur => "dur",
-            Attribute::End => "end",
-            Attribute::Min => "min",
-            Attribute::Max => "max",
-            Attribute::Restart => "restart",
-            Attribute::RepeatCount => "repeatCount",
-            Attribute::RepeatDur => "repeatDur",
-            Attribute::Additive => "additive",
-            Attribute::Accumulate => "accumulate",
+            Attribute::AttributeType(_) => "attributeType",
+            Attribute::AttributeName(_) => "attributeName",
+            Attribute::Begin(_) => "begin",
+            Attribute::Dur(_) => "dur",
+            Attribute::End(_) => "end",
+            Attribute::Min(_) => "min",
+            Attribute::Max(_) => "max",
+            Attribute::Restart(_) => "restart",
+            Attribute::RepeatCount(_) => "repeatCount",
+            Attribute::RepeatDur(_) => "repeatDur",
+            Attribute::Additive(_) => "additive",
+            Attribute::Accumulate(_) => "accumulate",
             Attribute::OnAfterPrint(_) => "onAfterPrint",
             Attribute::OnBeforePrint(_) => "onBeforePrint",
             Attribute::OnBeforeUnload(_) => "onBeforeUnload",
@@ -4144,16 +4707,19 @@ impl Attribute {
             Attribute::OnVolumeChange(_) => "onVolumeChange",
             Attribute::OnWaiting(_) => "onWaiting",
             Attribute::OnToggle(_) => "onToggle",
+            Attribute::OnBegin(_) => "onbegin",
+            Attribute::OnEnd(_) => "onend",
+            Attribute::OnRepeat(_) => "onrepeat",
             Attribute::KeyPoints(_) => "keyPoints",
             Attribute::Path(_) => "path",
             Attribute::Rotate(_) => "rotate",
-            Attribute::CalcMode => "calcMode",
-            Attribute::Values => "values",
-            Attribute::KeyTimes => "keyTimes",
-            Attribute::KeySplines => "keySplines",
-            Attribute::From => "from",
-            Attribute::To => "to",
-            Attribute::By => "by",
+            Attribute::CalcMode(_) => "calcMode",
+            Attribute::Values(_) => "values",
+            Attribute::KeyTimes(_) => "keyTimes",
+            Attribute::KeySplines(_) => "keySplines",
+            Attribute::From(_) => "from",
+            Attribute::To(_) => "to",
+            Attribute::By(_) => "by",
             Attribute::PathLength(_) => "pathLength",
             Attribute::X1(_) => "x1",
             Attribute::Y1(_) => "y1",
@@ -4210,6 +4776,13 @@ impl Attribute {
             Attribute::Radius(_, _) => "radius",
             Attribute::SpecularConstant(_) => "specularConstant",
             Attribute::SpecularExponent(_) => "specularExponent",
+            Attribute::Azimuth(_) => "azimuth",
+            Attribute::Elevation(_) => "elevation",
+            Attribute::Z(_) => "z",
+            Attribute::PointsAtX(_) => "pointsAtX",
+            Attribute::PointsAtY(_) => "pointsAtY",
+            Attribute::PointsAtZ(_) => "pointsAtZ",
+            Attribute::LimitingConeAngle(_) => "limitingConeAngle",
             Attribute::BaseFrequency(_, _) => "baseFrequency",
             Attribute::NumOctaves(_) => "numOctaves",
             Attribute::Seed(_) => "seed",
@@ -4339,14 +4912,14 @@ impl Attribute {
     pub fn is_animation_timing(&self) -> bool {
         matches!(
             self,
-            Attribute::Begin
-                | Attribute::Dur
-                | Attribute::End
-                | Attribute::Min
-                | Attribute::Max
-                | Attribute::Restart
-                | Attribute::RepeatCount
-                | Attribute::RepeatDur
+            Attribute::Begin(_)
+                | Attribute::Dur(_)
+                | Attribute::End(_)
+                | Attribute::Min(_)
+                | Attribute::Max(_)
+                | Attribute::Restart(_)
+                | Attribute::RepeatCount(_)
+                | Attribute::RepeatDur(_)
                 | Attribute::Fill(_)
         )
     }
@@ -4355,19 +4928,19 @@ impl Attribute {
     pub fn is_animation_value(&self) -> bool {
         matches!(
             self,
-            Attribute::CalcMode
-                | Attribute::Values
-                | Attribute::KeyTimes
-                | Attribute::KeySplines
-                | Attribute::From
-                | Attribute::To
-                | Attribute::By
+            Attribute::CalcMode(_)
+                | Attribute::Values(_)
+                | Attribute::KeyTimes(_)
+                | Attribute::KeySplines(_)
+                | Attribute::From(_)
+                | Attribute::To(_)
+                | Attribute::By(_)
         )
     }
 
     #[inline]
     pub fn is_animation_addition(&self) -> bool {
-        matches!(self, Attribute::Accumulate | Attribute::Additive)
+        matches!(self, Attribute::Accumulate(_) | Attribute::Additive(_))
     }
 
     #[inline]
@@ -4422,18 +4995,21 @@ impl Attribute {
                         Attribute::KeyPoints(_)
                             | Attribute::Path(_)
                             | Attribute::Rotate(_)
-                            | Attribute::AttributeName // TODO: OnBegin, OnEnd, OnRepeat events
+                            | Attribute::AttributeName(_)
+                            | Attribute::OnBegin(_)
+                            | Attribute::OnEnd(_)
+                            | Attribute::OnRepeat(_)
                     )
             }
             ElementType::AnimateTransform => {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::By | Attribute::From | Attribute::To | Attribute::Type
+                        Attribute::By(_) | Attribute::From(_) | Attribute::To(_) | Attribute::Type(_)
                     )
             }
             ElementType::MPath => self.is_global() || matches!(self, Attribute::Href(_)),
-            ElementType::Set => matches!(self, Attribute::To),
+            ElementType::Set => matches!(self, Attribute::To(_)),
             ElementType::Circle => {
                 self.is_global()
                     || self.applies_to_shape()
@@ -4500,7 +5076,7 @@ impl Attribute {
                             | Attribute::ReferrerPolicy(_)
                             | Attribute::Rel(_)
                             | Attribute::Target(_)
-                            | Attribute::Type
+                            | Attribute::Type(_)
                     )
             }
             ElementType::Defs => self.is_global(),
@@ -4597,7 +5173,7 @@ impl Attribute {
             ElementType::FeColorMatrix => {
                 self.is_global()
                     || self.is_filter_primitive()
-                    || matches!(self, Attribute::In(_) | Attribute::Type | Attribute::Values)
+                    || matches!(self, Attribute::In(_) | Attribute::Type(_) | Attribute::Values(_))
             }
             ElementType::FeComponentTransfer => {
                 self.is_global() || self.is_filter_primitive() || matches!(self, Attribute::In(_))
@@ -4733,7 +5309,7 @@ impl Attribute {
                             | Attribute::NumOctaves(_)
                             | Attribute::Seed(_)
                             | Attribute::StitchTiles(_)
-                            | Attribute::Type
+                            | Attribute::Type(_)
                     )
             }
             ElementType::LinearGradient => {
@@ -4770,7 +5346,7 @@ impl Attribute {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::Offset | Attribute::StopColor(_) | Attribute::StopOpacity(_)
+                        Attribute::Offset(_) | Attribute::StopColor(_) | Attribute::StopOpacity(_)
                     )
             }
             ElementType::Image => {
@@ -4818,14 +5394,43 @@ impl Attribute {
                             | Attribute::Height(_)
                     )
             }
-            ElementType::FeDistantLight => todo!(),
-            ElementType::FePointLight => todo!(),
-            ElementType::FeSpotLight => todo!(),
+            ElementType::FeDistantLight => {
+                self.is_global() || matches!(self, Attribute::Azimuth(_) | Attribute::Elevation(_))
+            }
+            ElementType::FePointLight => {
+                self.is_global()
+                    || matches!(self, Attribute::X(_) | Attribute::Y(_) | Attribute::Z(_))
+            }
+            ElementType::FeSpotLight => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::X(_)
+                            | Attribute::Y(_)
+                            | Attribute::Z(_)
+                            | Attribute::PointsAtX(_)
+                            | Attribute::PointsAtY(_)
+                            | Attribute::PointsAtZ(_)
+                            | Attribute::SpecularExponent(_)
+                            | Attribute::LimitingConeAngle(_)
+                    )
+            }
             ElementType::ClipPath => {
                 self.is_global() || matches!(self, Attribute::ClipPathUnits(_))
             }
-            ElementType::Script => todo!(),
-            ElementType::Style => todo!(),
+            ElementType::Script => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::Href(_)
+                            | Attribute::Type(_)
+                            | Attribute::CrossOrigin(_)
+                            | Attribute::FetchPriority(_)
+                    )
+            }
+            ElementType::Style => {
+                self.is_global() || matches!(self, Attribute::Type(_))
+            }
             ElementType::TextPath => {
                 self.is_global()
                     || matches!(
@@ -4865,8 +5470,23 @@ impl Attribute {
                             | Attribute::PrimitiveUnits(_)
                     )
             }
-            ElementType::ForeignObject => todo!(),
-            ElementType::View => todo!(),
+            ElementType::ForeignObject => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::X(_)
+                            | Attribute::Y(_)
+                            | Attribute::Width(_)
+                            | Attribute::Height(_)
+                    )
+            }
+            ElementType::View => {
+                self.is_global()
+                    || matches!(
+                        self,
+                        Attribute::ViewBox(_) | Attribute::PreserveAspectRatio(_)
+                    )
+            }
         }
     }
 
@@ -4880,7 +5500,7 @@ impl Attribute {
             Attribute::Lang(s) => write!(f, "=\"{}\"", s),
             Attribute::Tabindex(n) => write!(f, "=\"{}\"", n),
             Attribute::RequiredExtensions(items) => write_space_separated(f, items.iter()),
-            Attribute::SystemLanguage(s) => write!(f, "=\"{}\"", s),
+            Attribute::SystemLanguage(v) => write_comma_separated(f, v.iter()),
             Attribute::AlignmentBaseline(v) => write!(f, "=\"{}\"", v.as_str()),
             Attribute::BaselineShift(v) => write!(f, "=\"{}\"", v),
             Attribute::ClipPath(v) => write!(f, "=\"{}\"", v),
@@ -4948,106 +5568,109 @@ impl Attribute {
             Attribute::WritingMode(v) => write!(f, "=\"{}\"", v),
             Attribute::X(v) => write!(f, "=\"{}\"", v),
             Attribute::Y(v) => write!(f, "=\"{}\"", v),
-            Attribute::Type => todo!(),
-            Attribute::TableValues => todo!(),
-            Attribute::Slope => todo!(),
-            Attribute::Intercept => todo!(),
-            Attribute::Amplitude => todo!(),
-            Attribute::Exponent => todo!(),
-            Attribute::Offset => todo!(),
+            Attribute::Type(v) => write!(f, "=\"{}\"", v),
+            Attribute::TableValues(v) => write_space_separated(f, v.iter()),
+            Attribute::Slope(v) => write!(f, "=\"{}\"", v),
+            Attribute::Intercept(v) => write!(f, "=\"{}\"", v),
+            Attribute::Amplitude(v) => write!(f, "=\"{}\"", v),
+            Attribute::Exponent(v) => write!(f, "=\"{}\"", v),
+            Attribute::Offset(v) => write!(f, "=\"{}\"", v),
             Attribute::Href(v) => write!(f, "=\"{}\"", v),
-            Attribute::AttributeType => todo!(),
-            Attribute::AttributeName => todo!(),
-            Attribute::Begin => todo!(),
-            Attribute::Dur => todo!(),
-            Attribute::End => todo!(),
-            Attribute::Min => todo!(),
-            Attribute::Max => todo!(),
-            Attribute::Restart => todo!(),
-            Attribute::RepeatCount => todo!(),
-            Attribute::RepeatDur => todo!(),
-            Attribute::Additive => todo!(),
-            Attribute::Accumulate => todo!(),
-            Attribute::OnAfterPrint(_) => todo!(),
-            Attribute::OnBeforePrint(_) => todo!(),
-            Attribute::OnBeforeUnload(_) => todo!(),
-            Attribute::OnError(_) => todo!(),
-            Attribute::OnHashChange(_) => todo!(),
-            Attribute::OnLoad(_) => todo!(),
-            Attribute::OnMessage(_) => todo!(),
-            Attribute::OnOffline(_) => todo!(),
-            Attribute::OnOnline(_) => todo!(),
-            Attribute::OnPageHide(_) => todo!(),
-            Attribute::OnPageShow(_) => todo!(),
-            Attribute::OnPopState(_) => todo!(),
-            Attribute::OnResize(_) => todo!(),
-            Attribute::OnStorage(_) => todo!(),
-            Attribute::OnUnload(_) => todo!(),
-            Attribute::OnBlur(_) => todo!(),
-            Attribute::OnChange(_) => todo!(),
-            Attribute::OnContextMenu(_) => todo!(),
-            Attribute::OnFocus(_) => todo!(),
-            Attribute::OnInput(_) => todo!(),
-            Attribute::OnInvalid(_) => todo!(),
-            Attribute::OnReset(_) => todo!(),
-            Attribute::OnSearch(_) => todo!(),
-            Attribute::OnSelect(_) => todo!(),
-            Attribute::OnSubmit(_) => todo!(),
-            Attribute::OnKeyDown(_) => todo!(),
-            Attribute::OnKeyPress(_) => todo!(),
-            Attribute::OnKeyUp(_) => todo!(),
-            Attribute::OnClick(_) => todo!(),
-            Attribute::OnDoubleClick(_) => todo!(),
-            Attribute::OnMouseDown(_) => todo!(),
-            Attribute::OnMouseMove(_) => todo!(),
-            Attribute::OnMouseOut(_) => todo!(),
-            Attribute::OnMouseOver(_) => todo!(),
-            Attribute::OnMouseUp(_) => todo!(),
-            Attribute::OnWheel(_) => todo!(),
-            Attribute::OnDrag(_) => todo!(),
-            Attribute::OnDragEnd(_) => todo!(),
-            Attribute::OnDragEnter(_) => todo!(),
-            Attribute::OnDragLeave(_) => todo!(),
-            Attribute::OnDragOver(_) => todo!(),
-            Attribute::OnDragStart(_) => todo!(),
-            Attribute::OnDrop(_) => todo!(),
-            Attribute::OnScroll(_) => todo!(),
-            Attribute::OnCopy(_) => todo!(),
-            Attribute::OnCut(_) => todo!(),
-            Attribute::OnPaste(_) => todo!(),
-            Attribute::OnAbort(_) => todo!(),
-            Attribute::OnCanPlay(_) => todo!(),
-            Attribute::OnCanPlayThrough(_) => todo!(),
-            Attribute::OnCueChange(_) => todo!(),
-            Attribute::OnDurationChange(_) => todo!(),
-            Attribute::OnEmptied(_) => todo!(),
-            Attribute::OnEnded(_) => todo!(),
-            Attribute::OnLoadedData(_) => todo!(),
-            Attribute::OnLoadedMetadata(_) => todo!(),
-            Attribute::OnLoadStart(_) => todo!(),
-            Attribute::OnPause(_) => todo!(),
-            Attribute::OnPlay(_) => todo!(),
-            Attribute::OnPlaying(_) => todo!(),
-            Attribute::OnProgress(_) => todo!(),
-            Attribute::OnRateChange(_) => todo!(),
-            Attribute::OnSeeked(_) => todo!(),
-            Attribute::OnSeeking(_) => todo!(),
-            Attribute::OnStalled(_) => todo!(),
-            Attribute::OnSuspend(_) => todo!(),
-            Attribute::OnTimeUpdate(_) => todo!(),
-            Attribute::OnVolumeChange(_) => todo!(),
-            Attribute::OnWaiting(_) => todo!(),
-            Attribute::OnToggle(_) => todo!(),
-            Attribute::KeyPoints(_) => todo!(),
+            Attribute::AttributeType(v) => write!(f, "=\"{}\"", v),
+            Attribute::AttributeName(v) => write!(f, "=\"{}\"", v),
+            Attribute::Begin(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::Dur(v) => write!(f, "=\"{}\"", v),
+            Attribute::End(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::Min(v) => write!(f, "=\"{}\"", v),
+            Attribute::Max(v) => write!(f, "=\"{}\"", v),
+            Attribute::Restart(v) => write!(f, "=\"{}\"", v),
+            Attribute::RepeatCount(v) => write!(f, "=\"{}\"", v),
+            Attribute::RepeatDur(v) => write!(f, "=\"{}\"", v),
+            Attribute::Additive(v) => write!(f, "=\"{}\"", v),
+            Attribute::Accumulate(v) => write!(f, "=\"{}\"", v),
+            Attribute::OnAfterPrint(v)
+            | Attribute::OnBeforePrint(v)
+            | Attribute::OnBeforeUnload(v)
+            | Attribute::OnError(v)
+            | Attribute::OnHashChange(v)
+            | Attribute::OnLoad(v)
+            | Attribute::OnMessage(v)
+            | Attribute::OnOffline(v)
+            | Attribute::OnOnline(v)
+            | Attribute::OnPageHide(v)
+            | Attribute::OnPageShow(v)
+            | Attribute::OnPopState(v)
+            | Attribute::OnResize(v)
+            | Attribute::OnStorage(v)
+            | Attribute::OnUnload(v)
+            | Attribute::OnBlur(v)
+            | Attribute::OnChange(v)
+            | Attribute::OnContextMenu(v)
+            | Attribute::OnFocus(v)
+            | Attribute::OnInput(v)
+            | Attribute::OnInvalid(v)
+            | Attribute::OnReset(v)
+            | Attribute::OnSearch(v)
+            | Attribute::OnSelect(v)
+            | Attribute::OnSubmit(v)
+            | Attribute::OnKeyDown(v)
+            | Attribute::OnKeyPress(v)
+            | Attribute::OnKeyUp(v)
+            | Attribute::OnClick(v)
+            | Attribute::OnDoubleClick(v)
+            | Attribute::OnMouseDown(v)
+            | Attribute::OnMouseMove(v)
+            | Attribute::OnMouseOut(v)
+            | Attribute::OnMouseOver(v)
+            | Attribute::OnMouseUp(v)
+            | Attribute::OnWheel(v)
+            | Attribute::OnDrag(v)
+            | Attribute::OnDragEnd(v)
+            | Attribute::OnDragEnter(v)
+            | Attribute::OnDragLeave(v)
+            | Attribute::OnDragOver(v)
+            | Attribute::OnDragStart(v)
+            | Attribute::OnDrop(v)
+            | Attribute::OnScroll(v)
+            | Attribute::OnCopy(v)
+            | Attribute::OnCut(v)
+            | Attribute::OnPaste(v)
+            | Attribute::OnAbort(v)
+            | Attribute::OnCanPlay(v)
+            | Attribute::OnCanPlayThrough(v)
+            | Attribute::OnCueChange(v)
+            | Attribute::OnDurationChange(v)
+            | Attribute::OnEmptied(v)
+            | Attribute::OnEnded(v)
+            | Attribute::OnLoadedData(v)
+            | Attribute::OnLoadedMetadata(v)
+            | Attribute::OnLoadStart(v)
+            | Attribute::OnPause(v)
+            | Attribute::OnPlay(v)
+            | Attribute::OnPlaying(v)
+            | Attribute::OnProgress(v)
+            | Attribute::OnRateChange(v)
+            | Attribute::OnSeeked(v)
+            | Attribute::OnSeeking(v)
+            | Attribute::OnStalled(v)
+            | Attribute::OnSuspend(v)
+            | Attribute::OnTimeUpdate(v)
+            | Attribute::OnVolumeChange(v)
+            | Attribute::OnWaiting(v)
+            | Attribute::OnToggle(v)
+            | Attribute::OnBegin(v)
+            | Attribute::OnEnd(v)
+            | Attribute::OnRepeat(v) => write!(f, "=\"{}\"", v),
+            Attribute::KeyPoints(v) => write_semicolon_separated(f, v.iter()),
             Attribute::Path(paths) => write_space_separated(f, paths.0.iter()),
             Attribute::Rotate(v) => write!(f, "=\"{}\"", v),
-            Attribute::CalcMode => todo!(),
-            Attribute::Values => todo!(),
-            Attribute::KeyTimes => todo!(),
-            Attribute::KeySplines => todo!(),
-            Attribute::From => todo!(),
-            Attribute::To => todo!(),
-            Attribute::By => todo!(),
+            Attribute::CalcMode(v) => write!(f, "=\"{}\"", v),
+            Attribute::Values(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::KeyTimes(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::KeySplines(v) => write_semicolon_separated(f, v.iter()),
+            Attribute::From(v) => write!(f, "=\"{}\"", v),
+            Attribute::To(v) => write!(f, "=\"{}\"", v),
+            Attribute::By(v) => write!(f, "=\"{}\"", v),
             Attribute::PathLength(v) => write!(f, "=\"{}\"", v),
             Attribute::X1(v) => write!(f, "=\"{}\"", v),
             Attribute::Y1(v) => write!(f, "=\"{}\"", v),
@@ -5107,6 +5730,13 @@ impl Attribute {
             Attribute::Radius(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
             Attribute::SpecularConstant(v) => write!(f, "=\"{}\"", v),
             Attribute::SpecularExponent(v) => write!(f, "=\"{}\"", v),
+            Attribute::Azimuth(v) => write!(f, "=\"{}\"", v),
+            Attribute::Elevation(v) => write!(f, "=\"{}\"", v),
+            Attribute::Z(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtX(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtY(v) => write!(f, "=\"{}\"", v),
+            Attribute::PointsAtZ(v) => write!(f, "=\"{}\"", v),
+            Attribute::LimitingConeAngle(v) => write!(f, "=\"{}\"", v),
             Attribute::BaseFrequency(a, None) => write!(f, "=\"{}\"", a),
             Attribute::BaseFrequency(a, Some(b)) => write!(f, "=\"{} {}\"", a, b),
             Attribute::NumOctaves(v) => write!(f, "=\"{}\"", v),

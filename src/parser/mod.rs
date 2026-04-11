@@ -163,11 +163,23 @@ impl StateMachine {
 
                 let element_id = self.element_stack.pop().unwrap();
                 if let Some(last_element_id) = self.element_stack.last() {
+                    let child_type = match self.ast.nodes.get(element_id).unwrap() {
+                        Node::Element(e) => e.element_type,
+                        _ => panic!("Node is supposed to be of type Element at this point"),
+                    };
+
                     let Node::Element(last_element) =
                         self.ast.nodes.get_mut(*last_element_id).unwrap()
                     else {
                         panic!("Node is supposed to be of type Element at this point");
                     };
+
+                    if !last_element.is_allowed_as_child(&child_type) {
+                        panic!(
+                            "<{}> is not allowed as a child of <{}>",
+                            child_type, last_element.element_type
+                        );
+                    }
 
                     last_element.children.push(element_id);
                 } else {
@@ -182,16 +194,18 @@ impl StateMachine {
                     panic!("Element stack is empty");
                 };
 
-                let Node::Element(element) = self.ast.nodes.get(element_id).unwrap() else {
-                    panic!("Node is supposed to be of type Element at this point");
+                let child_type = match self.ast.nodes.get(element_id).unwrap() {
+                    Node::Element(e) => {
+                        if e.element_type.as_str() != token.value {
+                            panic!(
+                                "Element stack does not match closing tag {} != {}",
+                                e.element_type, token.value
+                            );
+                        }
+                        e.element_type
+                    }
+                    _ => panic!("Node is supposed to be of type Element at this point"),
                 };
-
-                if element.element_type.as_str() != token.value {
-                    panic!(
-                        "Element stack does not match closing tag {} != {}",
-                        element.element_type, token.value
-                    );
-                }
 
                 if let Some(last_element_id) = self.element_stack.last_mut() {
                     let Node::Element(last_element) =
@@ -199,6 +213,13 @@ impl StateMachine {
                     else {
                         panic!("Node is supposed to be of type Element at this point");
                     };
+
+                    if !last_element.is_allowed_as_child(&child_type) {
+                        panic!(
+                            "<{}> is not allowed as a child of <{}>",
+                            child_type, last_element.element_type
+                        );
+                    }
 
                     last_element.children.push(element_id);
                 } else {
