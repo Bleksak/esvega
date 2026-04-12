@@ -1327,16 +1327,20 @@ pub enum AbsoluteSize {
 
 impl fmt::Display for AbsoluteSize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            AbsoluteSize::XXSmall => "xx-small",
-            AbsoluteSize::XSmall => "x-small",
-            AbsoluteSize::Small => "small",
-            AbsoluteSize::Medium => "medium",
-            AbsoluteSize::Large => "large",
-            AbsoluteSize::XLarge => "x-large",
-            AbsoluteSize::XXLarge => "xx-large",
-            AbsoluteSize::XXXLarge => "xxx-large",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                AbsoluteSize::XXSmall => "xx-small",
+                AbsoluteSize::XSmall => "x-small",
+                AbsoluteSize::Small => "small",
+                AbsoluteSize::Medium => "medium",
+                AbsoluteSize::Large => "large",
+                AbsoluteSize::XLarge => "x-large",
+                AbsoluteSize::XXLarge => "xx-large",
+                AbsoluteSize::XXXLarge => "xxx-large",
+            }
+        )
     }
 }
 
