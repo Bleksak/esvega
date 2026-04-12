@@ -1,5 +1,8 @@
 use crate::parser::ast::{AST, NodeId};
-use std::{fmt::{self, Display}, str::FromStr};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use crate::element::attributes::Attribute;
 
@@ -637,7 +640,6 @@ impl ElementType {
                 | ElementType::FeTurbulence
         )
     }
-
 
     pub fn as_str(&self) -> &str {
         match self {

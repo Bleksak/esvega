@@ -236,25 +236,29 @@ pub enum Cursor {
 
 impl fmt::Display for Cursor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Cursor::Auto => "auto",
-            Cursor::Crosshair => "crosshair",
-            Cursor::Default => "default",
-            Cursor::Pointer => "pointer",
-            Cursor::Move => "move",
-            Cursor::EResize => "e-resize",
-            Cursor::NEResize => "ne-resize",
-            Cursor::NWResize => "nw-resize",
-            Cursor::NResize => "n-resize",
-            Cursor::SEResize => "se-resize",
-            Cursor::SWResize => "sw-resize",
-            Cursor::SResize => "s-resize",
-            Cursor::WResize => "w-resize",
-            Cursor::Text => "text",
-            Cursor::Wait => "wait",
-            Cursor::Help => "help",
-            Cursor::Inherit => "inherit",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Cursor::Auto => "auto",
+                Cursor::Crosshair => "crosshair",
+                Cursor::Default => "default",
+                Cursor::Pointer => "pointer",
+                Cursor::Move => "move",
+                Cursor::EResize => "e-resize",
+                Cursor::NEResize => "ne-resize",
+                Cursor::NWResize => "nw-resize",
+                Cursor::NResize => "n-resize",
+                Cursor::SEResize => "se-resize",
+                Cursor::SWResize => "sw-resize",
+                Cursor::SResize => "s-resize",
+                Cursor::WResize => "w-resize",
+                Cursor::Text => "text",
+                Cursor::Wait => "wait",
+                Cursor::Help => "help",
+                Cursor::Inherit => "inherit",
+            }
+        )
     }
 }
 
@@ -312,7 +316,10 @@ impl FromStr for CursorValue {
         let urls = url_parts
             .iter()
             .map(|p| {
-                let inner = p.strip_prefix("url(").and_then(|s| s.strip_suffix(')')).ok_or(())?;
+                let inner = p
+                    .strip_prefix("url(")
+                    .and_then(|s| s.strip_suffix(')'))
+                    .ok_or(())?;
                 inner.parse::<Url>()
             })
             .collect::<Result<_, _>>()?;
@@ -502,12 +509,7 @@ impl fmt::Display for CubicBezierCurvePoint {
         write!(
             f,
             "{} {} {} {} {} {}",
-            self.x1,
-            self.y1,
-            self.x2,
-            self.y2,
-            self.x,
-            self.y,
+            self.x1, self.y1, self.x2, self.y2, self.x, self.y,
         )
     }
 }
@@ -522,14 +524,7 @@ pub struct SmoothCubicBezierCurvePoint {
 
 impl fmt::Display for SmoothCubicBezierCurvePoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.x2,
-            self.y2,
-            self.x,
-            self.y
-        )
+        write!(f, "{} {} {} {}", self.x2, self.y2, self.x, self.y)
     }
 }
 
@@ -602,14 +597,7 @@ pub struct QuadraticBezierCurvePoint {
 
 impl fmt::Display for QuadraticBezierCurvePoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.x1,
-            self.y1,
-            self.x,
-            self.y
-        )
+        write!(f, "{} {} {} {}", self.x1, self.y1, self.x, self.y)
     }
 }
 
@@ -757,7 +745,9 @@ impl fmt::Display for PathType {
             PathType::QuadraticBezierCurve(quadratic_bezier_curve) => {
                 write!(f, "{}", quadratic_bezier_curve)
             }
-            PathType::EllipticalArcCurve(elliptical_arc_curve) => write!(f, "{}", elliptical_arc_curve),
+            PathType::EllipticalArcCurve(elliptical_arc_curve) => {
+                write!(f, "{}", elliptical_arc_curve)
+            }
             PathType::ClosePath => write!(f, "Z"),
         }
     }
@@ -1316,36 +1306,40 @@ pub enum Display {
 
 impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Display::Inline => "inline",
-            Display::Block => "block",
-            Display::RunIn => "run-in",
-            Display::Flow => "flow",
-            Display::FlowRoot => "flow-root",
-            Display::Table => "table",
-            Display::Flex => "flex",
-            Display::Grid => "grid",
-            Display::Ruby => "ruby",
-            Display::ListItem => "list-item",
-            Display::TableRowGroup => "table-row-group",
-            Display::TableHeaderGroup => "table-header-group",
-            Display::TableFooterGroup => "table-footer-group",
-            Display::TableRow => "table-row",
-            Display::TableCell => "table-cell",
-            Display::TableColumnGroup => "table-column-group",
-            Display::TableColumn => "table-column",
-            Display::TableCaption => "table-caption",
-            Display::RubyBase => "ruby-base",
-            Display::RubyText => "ruby-text",
-            Display::RubyBaseContainer => "ruby-base-container",
-            Display::RubyTextContainer => "ruby-text-container",
-            Display::Contents => "contents",
-            Display::None => "none",
-            Display::InlineBlock => "inline-block",
-            Display::InlineTable => "inline-table",
-            Display::InlineFlex => "inline-flex",
-            Display::InlineGrid => "inline-grid",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Display::Inline => "inline",
+                Display::Block => "block",
+                Display::RunIn => "run-in",
+                Display::Flow => "flow",
+                Display::FlowRoot => "flow-root",
+                Display::Table => "table",
+                Display::Flex => "flex",
+                Display::Grid => "grid",
+                Display::Ruby => "ruby",
+                Display::ListItem => "list-item",
+                Display::TableRowGroup => "table-row-group",
+                Display::TableHeaderGroup => "table-header-group",
+                Display::TableFooterGroup => "table-footer-group",
+                Display::TableRow => "table-row",
+                Display::TableCell => "table-cell",
+                Display::TableColumnGroup => "table-column-group",
+                Display::TableColumn => "table-column",
+                Display::TableCaption => "table-caption",
+                Display::RubyBase => "ruby-base",
+                Display::RubyText => "ruby-text",
+                Display::RubyBaseContainer => "ruby-base-container",
+                Display::RubyTextContainer => "ruby-text-container",
+                Display::Contents => "contents",
+                Display::None => "none",
+                Display::InlineBlock => "inline-block",
+                Display::InlineTable => "inline-table",
+                Display::InlineFlex => "inline-flex",
+                Display::InlineGrid => "inline-grid",
+            }
+        )
     }
 }
 
@@ -1403,17 +1397,21 @@ pub enum DominantBaseline {
 
 impl fmt::Display for DominantBaseline {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            DominantBaseline::Auto => "auto",
-            DominantBaseline::TextBottom => "text-bottom",
-            DominantBaseline::Alphabetic => "alphabetic",
-            DominantBaseline::Ideographic => "ideographic",
-            DominantBaseline::Middle => "middle",
-            DominantBaseline::Central => "central",
-            DominantBaseline::Mathematical => "mathematical",
-            DominantBaseline::Hanging => "hanging",
-            DominantBaseline::TextTop => "text-top",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                DominantBaseline::Auto => "auto",
+                DominantBaseline::TextBottom => "text-bottom",
+                DominantBaseline::Alphabetic => "alphabetic",
+                DominantBaseline::Ideographic => "ideographic",
+                DominantBaseline::Middle => "middle",
+                DominantBaseline::Central => "central",
+                DominantBaseline::Mathematical => "mathematical",
+                DominantBaseline::Hanging => "hanging",
+                DominantBaseline::TextTop => "text-top",
+            }
+        )
     }
 }
 
@@ -1606,11 +1604,15 @@ pub enum ImageRendering {
 
 impl fmt::Display for ImageRendering {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            ImageRendering::Auto => "auto",
-            ImageRendering::OptimizeSpeed => "optimizeSpeed",
-            ImageRendering::OptimizeQuality => "optimizeQuality",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ImageRendering::Auto => "auto",
+                ImageRendering::OptimizeSpeed => "optimizeSpeed",
+                ImageRendering::OptimizeQuality => "optimizeQuality",
+            }
+        )
     }
 }
 
@@ -1878,12 +1880,16 @@ pub enum ShapeRendering {
 
 impl fmt::Display for ShapeRendering {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            ShapeRendering::Auto => "auto",
-            ShapeRendering::OptimizeSpeed => "optimizeSpeed",
-            ShapeRendering::CrispEdges => "crispEdges",
-            ShapeRendering::GeometricPrecision => "geometricPrecision",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ShapeRendering::Auto => "auto",
+                ShapeRendering::OptimizeSpeed => "optimizeSpeed",
+                ShapeRendering::CrispEdges => "crispEdges",
+                ShapeRendering::GeometricPrecision => "geometricPrecision",
+            }
+        )
     }
 }
 
@@ -1934,11 +1940,15 @@ pub enum StrokeLinecap {
 
 impl fmt::Display for StrokeLinecap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            StrokeLinecap::Butt => "butt",
-            StrokeLinecap::Round => "round",
-            StrokeLinecap::Square => "square",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                StrokeLinecap::Butt => "butt",
+                StrokeLinecap::Round => "round",
+                StrokeLinecap::Square => "square",
+            }
+        )
     }
 }
 
@@ -1967,13 +1977,17 @@ pub enum StrokeLinejoin {
 
 impl fmt::Display for StrokeLinejoin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            StrokeLinejoin::Arcs => "arcs",
-            StrokeLinejoin::Bevel => "bevel",
-            StrokeLinejoin::Miter => "miter",
-            StrokeLinejoin::MiterClip => "miter-clip",
-            StrokeLinejoin::Round => "round",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                StrokeLinejoin::Arcs => "arcs",
+                StrokeLinejoin::Bevel => "bevel",
+                StrokeLinejoin::Miter => "miter",
+                StrokeLinejoin::MiterClip => "miter-clip",
+                StrokeLinejoin::Round => "round",
+            }
+        )
     }
 }
 
@@ -2037,13 +2051,17 @@ pub enum VectorEffect {
 
 impl fmt::Display for VectorEffect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            VectorEffect::None => "none",
-            VectorEffect::NonScalingStroke => "non-scaling-stroke",
-            VectorEffect::NonScalingSize => "non-scaling-size",
-            VectorEffect::NonRotation => "non-rotation",
-            VectorEffect::FixedPosition => "fixeed-position",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                VectorEffect::None => "none",
+                VectorEffect::NonScalingStroke => "non-scaling-stroke",
+                VectorEffect::NonScalingSize => "non-scaling-size",
+                VectorEffect::NonRotation => "non-rotation",
+                VectorEffect::FixedPosition => "fixeed-position",
+            }
+        )
     }
 }
 
@@ -2072,11 +2090,15 @@ pub enum TextAnchor {
 
 impl fmt::Display for TextAnchor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            TextAnchor::Start => "start",
-            TextAnchor::Middle => "middle",
-            TextAnchor::End => "end",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                TextAnchor::Start => "start",
+                TextAnchor::Middle => "middle",
+                TextAnchor::End => "end",
+            }
+        )
     }
 }
 
@@ -2102,10 +2124,14 @@ pub enum TextOverflow {
 
 impl fmt::Display for TextOverflow {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            TextOverflow::Clip => "clip",
-            TextOverflow::Ellipsis => "ellipsis",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                TextOverflow::Clip => "clip",
+                TextOverflow::Ellipsis => "ellipsis",
+            }
+        )
     }
 }
 
@@ -2132,12 +2158,16 @@ pub enum TextRendering {
 
 impl fmt::Display for TextRendering {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            TextRendering::Auto => "auto",
-            TextRendering::OptimizeSpeed => "optimizeSpeed",
-            TextRendering::OptimizeLegibility => "optimizeLegibility",
-            TextRendering::GeometricPrecision => "geometricPrecision",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                TextRendering::Auto => "auto",
+                TextRendering::OptimizeSpeed => "optimizeSpeed",
+                TextRendering::OptimizeLegibility => "optimizeLegibility",
+                TextRendering::GeometricPrecision => "geometricPrecision",
+            }
+        )
     }
 }
 
@@ -2168,14 +2198,18 @@ pub enum UnicodeBidi {
 
 impl fmt::Display for UnicodeBidi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            UnicodeBidi::Normal => "normal",
-            UnicodeBidi::Embed => "embed",
-            UnicodeBidi::Isolate => "isolate",
-            UnicodeBidi::BidiOverride => "bidi-override",
-            UnicodeBidi::IsolateOverride => "isolate-override",
-            UnicodeBidi::Plaintext => "plaintext",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                UnicodeBidi::Normal => "normal",
+                UnicodeBidi::Embed => "embed",
+                UnicodeBidi::Isolate => "isolate",
+                UnicodeBidi::BidiOverride => "bidi-override",
+                UnicodeBidi::IsolateOverride => "isolate-override",
+                UnicodeBidi::Plaintext => "plaintext",
+            }
+        )
     }
 }
 
@@ -2205,11 +2239,15 @@ pub enum Visibility {
 
 impl fmt::Display for Visibility {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Visibility::Visible => "visible",
-            Visibility::Hidden => "hidden",
-            Visibility::Collapse => "collapse",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Visibility::Visible => "visible",
+                Visibility::Hidden => "hidden",
+                Visibility::Collapse => "collapse",
+            }
+        )
     }
 }
 
@@ -2239,14 +2277,18 @@ pub enum WhiteSpace {
 
 impl fmt::Display for WhiteSpace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            WhiteSpace::Normal => "normal",
-            WhiteSpace::Pre => "pre",
-            WhiteSpace::Nowrap => "nowrap",
-            WhiteSpace::PreWrap => "pre-wrap",
-            WhiteSpace::BreakSpace => "break-space",
-            WhiteSpace::PreLine => "pre-line",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                WhiteSpace::Normal => "normal",
+                WhiteSpace::Pre => "pre",
+                WhiteSpace::Nowrap => "nowrap",
+                WhiteSpace::PreWrap => "pre-wrap",
+                WhiteSpace::BreakSpace => "break-space",
+                WhiteSpace::PreLine => "pre-line",
+            }
+        )
     }
 }
 
@@ -2303,11 +2345,15 @@ pub enum WritingMode {
 
 impl fmt::Display for WritingMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            WritingMode::HorizontalTb => "horizontal-tb",
-            WritingMode::VerticalRl => "vertical-rl",
-            WritingMode::VerticalLr => "vertical-lr",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                WritingMode::HorizontalTb => "horizontal-tb",
+                WritingMode::VerticalRl => "vertical-rl",
+                WritingMode::VerticalLr => "vertical-lr",
+            }
+        )
     }
 }
 
@@ -2414,16 +2460,20 @@ pub enum ReferrerPolicy {
 
 impl fmt::Display for ReferrerPolicy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            ReferrerPolicy::NoReferrer => "no-referrer",
-            ReferrerPolicy::NoReferrerWhenDowngrade => "no-referrer-when-downgrade",
-            ReferrerPolicy::SameOrigin => "same-origin",
-            ReferrerPolicy::Origin => "origin",
-            ReferrerPolicy::StrictOrigin => "strict-origin",
-            ReferrerPolicy::OriginWhenCrossOrigin => "origin-when-cross-origin",
-            ReferrerPolicy::StrictOriginWhenCrossOrigin => "strict-origin-when-cross-origin",
-            ReferrerPolicy::UnsafeUrl => "unsafe-url",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ReferrerPolicy::NoReferrer => "no-referrer",
+                ReferrerPolicy::NoReferrerWhenDowngrade => "no-referrer-when-downgrade",
+                ReferrerPolicy::SameOrigin => "same-origin",
+                ReferrerPolicy::Origin => "origin",
+                ReferrerPolicy::StrictOrigin => "strict-origin",
+                ReferrerPolicy::OriginWhenCrossOrigin => "origin-when-cross-origin",
+                ReferrerPolicy::StrictOriginWhenCrossOrigin => "strict-origin-when-cross-origin",
+                ReferrerPolicy::UnsafeUrl => "unsafe-url",
+            }
+        )
     }
 }
 
@@ -2480,37 +2530,41 @@ pub enum RelType {
 
 impl fmt::Display for RelType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            RelType::Alternate => "alternate",
-            RelType::Author => "author",
-            RelType::Bookmark => "bookmark",
-            RelType::Canonical => "canonical",
-            RelType::CompressionDictionary => "compression-dictionary",
-            RelType::DnsPrefetch => "dns-prefetch",
-            RelType::External => "external",
-            RelType::Expect => "expect",
-            RelType::Help => "help",
-            RelType::Icon => "icon",
-            RelType::License => "license",
-            RelType::Manifest => "manifest",
-            RelType::Me => "me",
-            RelType::ModulePreload => "module-preload",
-            RelType::Next => "next",
-            RelType::NoFollow => "nofollow",
-            RelType::NoOpener => "noopener",
-            RelType::NoReferrer => "noreferrer",
-            RelType::Opener => "opener",
-            RelType::PingBack => "pingback",
-            RelType::PreConnect => "preconnect",
-            RelType::Prefetch => "prefetch",
-            RelType::Preload => "preload",
-            RelType::Prev => "prev",
-            RelType::PrivacyPolicy => "privacy-policy",
-            RelType::Search => "search",
-            RelType::StyleSheet => "stylesheet",
-            RelType::Tag => "tag",
-            RelType::TermsOfService => "terms-of-service",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                RelType::Alternate => "alternate",
+                RelType::Author => "author",
+                RelType::Bookmark => "bookmark",
+                RelType::Canonical => "canonical",
+                RelType::CompressionDictionary => "compression-dictionary",
+                RelType::DnsPrefetch => "dns-prefetch",
+                RelType::External => "external",
+                RelType::Expect => "expect",
+                RelType::Help => "help",
+                RelType::Icon => "icon",
+                RelType::License => "license",
+                RelType::Manifest => "manifest",
+                RelType::Me => "me",
+                RelType::ModulePreload => "module-preload",
+                RelType::Next => "next",
+                RelType::NoFollow => "nofollow",
+                RelType::NoOpener => "noopener",
+                RelType::NoReferrer => "noreferrer",
+                RelType::Opener => "opener",
+                RelType::PingBack => "pingback",
+                RelType::PreConnect => "preconnect",
+                RelType::Prefetch => "prefetch",
+                RelType::Preload => "preload",
+                RelType::Prev => "prev",
+                RelType::PrivacyPolicy => "privacy-policy",
+                RelType::Search => "search",
+                RelType::StyleSheet => "stylesheet",
+                RelType::Tag => "tag",
+                RelType::TermsOfService => "terms-of-service",
+            }
+        )
     }
 }
 
@@ -2564,12 +2618,16 @@ pub enum Target {
 
 impl fmt::Display for Target {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Target::Self_ => "_self",
-            Target::Parent => "parent",
-            Target::Top => "top",
-            Target::Blank => "blank",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Target::Self_ => "_self",
+                Target::Parent => "parent",
+                Target::Top => "top",
+                Target::Blank => "blank",
+            }
+        )
     }
 }
 
@@ -2596,10 +2654,14 @@ pub enum MarkerUnits {
 
 impl fmt::Display for MarkerUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
-            MarkerUnits::StrokeWidth => "strokeWidth",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                MarkerUnits::UserSpaceOnUse => "userSpaceOnUse",
+                MarkerUnits::StrokeWidth => "strokeWidth",
+            }
+        )
     }
 }
 
@@ -2680,27 +2742,31 @@ pub enum PreserveAspectRatio {
 
 impl fmt::Display for PreserveAspectRatio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            PreserveAspectRatio::None => "none",
-            PreserveAspectRatio::XMinYMinMeet => "xMinYMin meet",
-            PreserveAspectRatio::XMidYMinMeet => "xMidYMid meet",
-            PreserveAspectRatio::XMaxYMinMeet => "xMaxYMin meet",
-            PreserveAspectRatio::XMinYMidMeet => "xMinYMid meet",
-            PreserveAspectRatio::XMidYMidMeet => "xMidYMid meet",
-            PreserveAspectRatio::XMaxYMidMeet => "xMaxYMid meet",
-            PreserveAspectRatio::XMinYMaxMeet => "xMinYMax meet",
-            PreserveAspectRatio::XMidYMaxMeet => "xMidYMax meet",
-            PreserveAspectRatio::XMaxYMaxMeet => "xMaxYMax meet",
-            PreserveAspectRatio::XMinYMinSlice => "xMinYMin slice",
-            PreserveAspectRatio::XMidYMinSlice => "xMidYMid slice",
-            PreserveAspectRatio::XMaxYMinSlice => "xMaxYMin slice",
-            PreserveAspectRatio::XMinYMidSlice => "xMinYMid slice",
-            PreserveAspectRatio::XMidYMidSlice => "xMidYMid slice",
-            PreserveAspectRatio::XMaxYMidSlice => "xMaxYMid slice",
-            PreserveAspectRatio::XMinYMaxSlice => "xMinYMax slice",
-            PreserveAspectRatio::XMidYMaxSlice => "xMidYMax slice",
-            PreserveAspectRatio::XMaxYMaxSlice => "xMaxYMax slice",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PreserveAspectRatio::None => "none",
+                PreserveAspectRatio::XMinYMinMeet => "xMinYMin meet",
+                PreserveAspectRatio::XMidYMinMeet => "xMidYMid meet",
+                PreserveAspectRatio::XMaxYMinMeet => "xMaxYMin meet",
+                PreserveAspectRatio::XMinYMidMeet => "xMinYMid meet",
+                PreserveAspectRatio::XMidYMidMeet => "xMidYMid meet",
+                PreserveAspectRatio::XMaxYMidMeet => "xMaxYMid meet",
+                PreserveAspectRatio::XMinYMaxMeet => "xMinYMax meet",
+                PreserveAspectRatio::XMidYMaxMeet => "xMidYMax meet",
+                PreserveAspectRatio::XMaxYMaxMeet => "xMaxYMax meet",
+                PreserveAspectRatio::XMinYMinSlice => "xMinYMin slice",
+                PreserveAspectRatio::XMidYMinSlice => "xMidYMid slice",
+                PreserveAspectRatio::XMaxYMinSlice => "xMaxYMin slice",
+                PreserveAspectRatio::XMinYMidSlice => "xMinYMid slice",
+                PreserveAspectRatio::XMidYMidSlice => "xMidYMid slice",
+                PreserveAspectRatio::XMaxYMidSlice => "xMaxYMid slice",
+                PreserveAspectRatio::XMinYMaxSlice => "xMinYMax slice",
+                PreserveAspectRatio::XMidYMaxSlice => "xMidYMax slice",
+                PreserveAspectRatio::XMaxYMaxSlice => "xMaxYMax slice",
+            }
+        )
     }
 }
 
@@ -2840,10 +2906,14 @@ pub enum MaskContentUnits {
 
 impl fmt::Display for MaskContentUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            MaskContentUnits::UserSpaceOnUse => "userSpaceOnUse",
-            MaskContentUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                MaskContentUnits::UserSpaceOnUse => "userSpaceOnUse",
+                MaskContentUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -2868,10 +2938,14 @@ pub enum MaskUnits {
 
 impl fmt::Display for MaskUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            MaskUnits::UserSpaceOnUse => "userSpaceOnUse",
-            MaskUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                MaskUnits::UserSpaceOnUse => "userSpaceOnUse",
+                MaskUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -2896,10 +2970,14 @@ pub enum PatternContentUnits {
 
 impl fmt::Display for PatternContentUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            PatternContentUnits::UserSpaceOnUse => "userSpaceOnUse",
-            PatternContentUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PatternContentUnits::UserSpaceOnUse => "userSpaceOnUse",
+                PatternContentUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -2924,10 +3002,14 @@ pub enum PatternUnits {
 
 impl fmt::Display for PatternUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            PatternUnits::UserSpaceOnUse => "userSpaceOnUse",
-            PatternUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PatternUnits::UserSpaceOnUse => "userSpaceOnUse",
+                PatternUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -3008,24 +3090,28 @@ pub enum BlendMode {
 
 impl fmt::Display for BlendMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            BlendMode::Normal => "normal",
-            BlendMode::Multiply => "multiply",
-            BlendMode::Screen => "screen",
-            BlendMode::Overlay => "overlay",
-            BlendMode::Darken => "darken",
-            BlendMode::Lighten => "lighten",
-            BlendMode::ColorDodge => "color-dodge",
-            BlendMode::ColorBurn => "color-burn",
-            BlendMode::HardLight => "hard-light",
-            BlendMode::SoftLight => "soft-light",
-            BlendMode::Difference => "difference",
-            BlendMode::Exclusion => "exclusion",
-            BlendMode::Hue => "hue",
-            BlendMode::Saturation => "saturation",
-            BlendMode::Color => "color",
-            BlendMode::Luminosity => "luminosity",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                BlendMode::Normal => "normal",
+                BlendMode::Multiply => "multiply",
+                BlendMode::Screen => "screen",
+                BlendMode::Overlay => "overlay",
+                BlendMode::Darken => "darken",
+                BlendMode::Lighten => "lighten",
+                BlendMode::ColorDodge => "color-dodge",
+                BlendMode::ColorBurn => "color-burn",
+                BlendMode::HardLight => "hard-light",
+                BlendMode::SoftLight => "soft-light",
+                BlendMode::Difference => "difference",
+                BlendMode::Exclusion => "exclusion",
+                BlendMode::Hue => "hue",
+                BlendMode::Saturation => "saturation",
+                BlendMode::Color => "color",
+                BlendMode::Luminosity => "luminosity",
+            }
+        )
     }
 }
 
@@ -3069,15 +3155,19 @@ pub enum Operator {
 
 impl fmt::Display for Operator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Operator::Over => "over",
-            Operator::In => "in",
-            Operator::Out => "out",
-            Operator::Atop => "atop",
-            Operator::Xor => "xor",
-            Operator::Lighter => "lighter",
-            Operator::Arithmetic => "arithmetic",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Operator::Over => "over",
+                Operator::In => "in",
+                Operator::Out => "out",
+                Operator::Atop => "atop",
+                Operator::Xor => "xor",
+                Operator::Lighter => "lighter",
+                Operator::Arithmetic => "arithmetic",
+            }
+        )
     }
 }
 
@@ -3108,11 +3198,15 @@ pub enum EdgeMode {
 
 impl fmt::Display for EdgeMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            EdgeMode::Duplicate => "duplicate",
-            EdgeMode::Wrap => "wrap",
-            EdgeMode::None => "none",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                EdgeMode::Duplicate => "duplicate",
+                EdgeMode::Wrap => "wrap",
+                EdgeMode::None => "none",
+            }
+        )
     }
 }
 
@@ -3140,12 +3234,16 @@ pub enum ChannelSelector {
 
 impl fmt::Display for ChannelSelector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            ChannelSelector::R => "R",
-            ChannelSelector::G => "G",
-            ChannelSelector::B => "B",
-            ChannelSelector::A => "A",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ChannelSelector::R => "R",
+                ChannelSelector::G => "G",
+                ChannelSelector::B => "B",
+                ChannelSelector::A => "A",
+            }
+        )
     }
 }
 
@@ -3173,11 +3271,15 @@ pub enum CrossOrigin {
 
 impl fmt::Display for CrossOrigin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            CrossOrigin::Anonymous => "anonymous",
-            CrossOrigin::UseCredentials => "use-credentials",
-            CrossOrigin::Empty => "",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                CrossOrigin::Anonymous => "anonymous",
+                CrossOrigin::UseCredentials => "use-credentials",
+                CrossOrigin::Empty => "",
+            }
+        )
     }
 }
 
@@ -3203,10 +3305,14 @@ pub enum StitchTiles {
 
 impl fmt::Display for StitchTiles {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            StitchTiles::NoStitch => "noStitch",
-            StitchTiles::Stitch => "stitch",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                StitchTiles::NoStitch => "noStitch",
+                StitchTiles::Stitch => "stitch",
+            }
+        )
     }
 }
 
@@ -3231,10 +3337,14 @@ pub enum GradientUnits {
 
 impl fmt::Display for GradientUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            GradientUnits::UserSpaceOnUse => "userSpaceOnUse",
-            GradientUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                GradientUnits::UserSpaceOnUse => "userSpaceOnUse",
+                GradientUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -3260,11 +3370,15 @@ pub enum SpreadMethod {
 
 impl fmt::Display for SpreadMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            SpreadMethod::Pad => "pad",
-            SpreadMethod::Reflect => "reflect",
-            SpreadMethod::Repeat => "repeat",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                SpreadMethod::Pad => "pad",
+                SpreadMethod::Reflect => "reflect",
+                SpreadMethod::Repeat => "repeat",
+            }
+        )
     }
 }
 
@@ -3291,11 +3405,15 @@ pub enum Decoding {
 
 impl fmt::Display for Decoding {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Decoding::Auto => "auto",
-            Decoding::Synchronous => "sync",
-            Decoding::Asynchronous => "async",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Decoding::Auto => "auto",
+                Decoding::Synchronous => "sync",
+                Decoding::Asynchronous => "async",
+            }
+        )
     }
 }
 
@@ -3322,11 +3440,15 @@ pub enum FetchPriority {
 
 impl fmt::Display for FetchPriority {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            FetchPriority::Auto => "auto",
-            FetchPriority::High => "high",
-            FetchPriority::Low => "low",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                FetchPriority::Auto => "auto",
+                FetchPriority::High => "high",
+                FetchPriority::Low => "low",
+            }
+        )
     }
 }
 
@@ -3352,10 +3474,14 @@ pub enum LengthAdjust {
 
 impl fmt::Display for LengthAdjust {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            LengthAdjust::Spacing => "spacing",
-            LengthAdjust::SpacingAndGlyphs => "spacingAndGlyphs",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                LengthAdjust::Spacing => "spacing",
+                LengthAdjust::SpacingAndGlyphs => "spacingAndGlyphs",
+            }
+        )
     }
 }
 
@@ -3380,10 +3506,14 @@ pub enum ClipPathUnits {
 
 impl fmt::Display for ClipPathUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            ClipPathUnits::UserSpaceOnUse => "userSpaceOnUse",
-            ClipPathUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ClipPathUnits::UserSpaceOnUse => "userSpaceOnUse",
+                ClipPathUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -3408,10 +3538,14 @@ pub enum Method {
 
 impl fmt::Display for Method {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Method::Align => "align",
-            Method::Stretch => "stretch",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Method::Align => "align",
+                Method::Stretch => "stretch",
+            }
+        )
     }
 }
 
@@ -3436,10 +3570,14 @@ pub enum Side {
 
 impl fmt::Display for Side {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Side::Left => "left",
-            Side::Right => "right",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Side::Left => "left",
+                Side::Right => "right",
+            }
+        )
     }
 }
 
@@ -3464,10 +3602,14 @@ pub enum Spacing {
 
 impl fmt::Display for Spacing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            Spacing::Exact => "exact",
-            Spacing::Auto => "auto",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Spacing::Exact => "exact",
+                Spacing::Auto => "auto",
+            }
+        )
     }
 }
 
@@ -3492,10 +3634,14 @@ pub enum FilterUnits {
 
 impl fmt::Display for FilterUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            FilterUnits::UserSpaceOnUse => "userSpaceOnUse",
-            FilterUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                FilterUnits::UserSpaceOnUse => "userSpaceOnUse",
+                FilterUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -3520,10 +3666,14 @@ pub enum PrimitiveUnits {
 
 impl fmt::Display for PrimitiveUnits {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            PrimitiveUnits::UserSpaceOnUse => "userSpaceOnUse",
-            PrimitiveUnits::ObjectBoundingBox => "objectBoundingBox",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PrimitiveUnits::UserSpaceOnUse => "userSpaceOnUse",
+                PrimitiveUnits::ObjectBoundingBox => "objectBoundingBox",
+            }
+        )
     }
 }
 
@@ -3650,7 +3800,12 @@ impl FromStr for KeySpline {
             .map(|v| v.parse::<f64>().map_err(|_| ()))
             .collect::<Result<_, _>>()?;
         match parts.as_slice() {
-            [x1, y1, x2, y2] => Ok(KeySpline { x1: *x1, y1: *y1, x2: *x2, y2: *y2 }),
+            [x1, y1, x2, y2] => Ok(KeySpline {
+                x1: *x1,
+                y1: *y1,
+                x2: *x2,
+                y2: *y2,
+            }),
             _ => Err(()),
         }
     }
@@ -3704,13 +3859,25 @@ impl FromStr for ClockValue {
         let s = s.trim();
         // Timecount with metric suffix
         if let Some(h) = s.strip_suffix("h") {
-            return h.trim().parse::<f64>().map(|v| ClockValue(v * 3600.0)).map_err(|_| ());
+            return h
+                .trim()
+                .parse::<f64>()
+                .map(|v| ClockValue(v * 3600.0))
+                .map_err(|_| ());
         }
         if let Some(m) = s.strip_suffix("min") {
-            return m.trim().parse::<f64>().map(|v| ClockValue(v * 60.0)).map_err(|_| ());
+            return m
+                .trim()
+                .parse::<f64>()
+                .map(|v| ClockValue(v * 60.0))
+                .map_err(|_| ());
         }
         if let Some(ms) = s.strip_suffix("ms") {
-            return ms.trim().parse::<f64>().map(|v| ClockValue(v / 1000.0)).map_err(|_| ());
+            return ms
+                .trim()
+                .parse::<f64>()
+                .map(|v| ClockValue(v / 1000.0))
+                .map_err(|_| ());
         }
         if let Some(sec) = s.strip_suffix('s') {
             return sec.trim().parse::<f64>().map(ClockValue).map_err(|_| ());
@@ -4278,7 +4445,10 @@ impl TryFrom<(&String, &String)> for Attribute {
                 Ok(Attribute::RequiredExtensions(extensions))
             }
             "systemLanguage" => Ok(Attribute::SystemLanguage(
-                value.split(',').map(|s| s.trim().parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(',')
+                    .map(|s| s.trim().parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "alignment-baseline" => Ok(Attribute::AlignmentBaseline(value.parse()?)),
             "baseline-shift" => Ok(Attribute::BaselineShift(value.parse()?)),
@@ -4369,7 +4539,10 @@ impl TryFrom<(&String, &String)> for Attribute {
             ))),
             "type" => Ok(Attribute::Type(value.parse()?)),
             "tableValues" => Ok(Attribute::TableValues(
-                value.split_whitespace().map(|s| s.parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+                value
+                    .split_whitespace()
+                    .map(|s| s.parse::<f64>().map_err(|_| ()))
+                    .collect::<Result<_, _>>()?,
             )),
             "slope" => Ok(Attribute::Slope(value.parse::<f64>().map_err(|_| ())?)),
             "intercept" => Ok(Attribute::Intercept(value.parse::<f64>().map_err(|_| ())?)),
@@ -4381,11 +4554,17 @@ impl TryFrom<(&String, &String)> for Attribute {
             "attributeType" => Ok(Attribute::AttributeType(value.parse()?)),
             "attributeName" => Ok(Attribute::AttributeName(value.clone())),
             "begin" => Ok(Attribute::Begin(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "dur" => Ok(Attribute::Dur(value.parse()?)),
             "end" => Ok(Attribute::End(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "min" => Ok(Attribute::Min(value.parse()?)),
             "max" => Ok(Attribute::Max(value.parse()?)),
@@ -4468,17 +4647,26 @@ impl TryFrom<(&String, &String)> for Attribute {
             "onend" => Ok(Attribute::OnEnd(value.clone())),
             "onrepeat" => Ok(Attribute::OnRepeat(value.clone())),
             "keyPoints" => Ok(Attribute::KeyPoints(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "calcMode" => Ok(Attribute::CalcMode(value.parse()?)),
             "values" => Ok(Attribute::Values(
                 value.split(';').map(|s| s.trim().to_string()).collect(),
             )),
             "keyTimes" => Ok(Attribute::KeyTimes(
-                value.split(';').map(|s| s.trim().parse::<f64>().map_err(|_| ())).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.trim().parse::<f64>().map_err(|_| ()))
+                    .collect::<Result<_, _>>()?,
             )),
             "keySplines" => Ok(Attribute::KeySplines(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "from" => Ok(Attribute::From(value.clone())),
             "to" => Ok(Attribute::To(value.clone())),
@@ -5005,7 +5193,10 @@ impl Attribute {
                 self.is_global()
                     || matches!(
                         self,
-                        Attribute::By(_) | Attribute::From(_) | Attribute::To(_) | Attribute::Type(_)
+                        Attribute::By(_)
+                            | Attribute::From(_)
+                            | Attribute::To(_)
+                            | Attribute::Type(_)
                     )
             }
             ElementType::MPath => self.is_global() || matches!(self, Attribute::Href(_)),
@@ -5173,7 +5364,10 @@ impl Attribute {
             ElementType::FeColorMatrix => {
                 self.is_global()
                     || self.is_filter_primitive()
-                    || matches!(self, Attribute::In(_) | Attribute::Type(_) | Attribute::Values(_))
+                    || matches!(
+                        self,
+                        Attribute::In(_) | Attribute::Type(_) | Attribute::Values(_)
+                    )
             }
             ElementType::FeComponentTransfer => {
                 self.is_global() || self.is_filter_primitive() || matches!(self, Attribute::In(_))
@@ -5428,9 +5622,7 @@ impl Attribute {
                             | Attribute::FetchPriority(_)
                     )
             }
-            ElementType::Style => {
-                self.is_global() || matches!(self, Attribute::Type(_))
-            }
+            ElementType::Style => self.is_global() || matches!(self, Attribute::Type(_)),
             ElementType::TextPath => {
                 self.is_global()
                     || matches!(
