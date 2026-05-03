@@ -622,13 +622,138 @@ impl AST {
             Some(output)
         }
     }
+
+    pub fn validate(&self) -> Vec<ValidationIssue> {
+        let mut issues = Vec::new();
+
+        for node_id in &self.children {
+            self.validate_node(*node_id, None, &mut issues);
+        }
+
+        issues
+    }
+
+    fn validate_node(
+        &self,
+        node_id: NodeId,
+        parent_id: Option<NodeId>,
+        issues: &mut Vec<ValidationIssue>,
+    ) {
+        let node = match self.nodes.get(node_id) {
+            Some(node) => node,
+            None => {
+                issues.push(ValidationIssue::MissingNode(parent_id, node_id));
+                return;
+            }
+        };
+
+        let expected_parent = node.parent_id();
+        if expected_parent != parent_id {
+            issues.push(ValidationIssue::ParentMismatch(
+                node_id,
+                parent_id,
+                expected_parent,
+            ));
+        }
+
+        let element_type = if let Node::Element(element) = node {
+            Some(element.element_type.clone())
+        } else {
+            None
+        };
+
+        if let Some(ref child_type) = element_type {
+            if let Some(Node::Element(parent_element)) =
+                parent_id.and_then(|pid| self.nodes.get(pid))
+            {
+                if !parent_element.is_allowed_as_child(child_type) {
+                    issues.push(ValidationIssue::ChildNotAllowed(
+                        parent_id,
+                        parent_element.element_type.clone(),
+                        node_id,
+                        child_type.clone(),
+                    ));
+                }
+            }
+        }
+
+        if let Node::Element(element) = node {
+            for child_id in &element.children {
+                self.validate_node(*child_id, Some(node_id), issues);
+            }
+        }
+    }
+
+    pub fn validate_children_unique(&self, element_id: NodeId) -> bool {
+        let Some(Node::Element(element)) = self.nodes.get(element_id) else {
+            return false;
+        };
+
+        let mut seen = std::collections::HashSet::new();
+        for child_id in &element.children {
+            if !seen.insert(*child_id) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn find_root(&self) -> Option<NodeId> {
+        self.children.first().copied()
+    }
+
+    pub fn is_valid_root(&self, node_id: NodeId) -> bool {
+        matches!(
+            self.nodes.get(node_id),
+            Some(Node::Element(element)) if element.element_type == ElementType::Svg
+        )
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ValidationIssue {
+    ParentMismatch(NodeId, Option<NodeId>, Option<NodeId>),
+    ChildNotAllowed(Option<NodeId>, ElementType, NodeId, ElementType),
+    DuplicateChild(NodeId, ElementType),
+    MissingNode(Option<NodeId>, NodeId),
+}
+
+impl ValidationIssue {
+    pub fn message(&self) -> String {
+        match self {
+            ValidationIssue::ParentMismatch(node_id, expected, actual) => {
+                format!(
+                    "Node {:?} has parent {:?}, expected {:?}",
+                    node_id, actual, expected
+                )
+            }
+            ValidationIssue::ChildNotAllowed(parent_id, parent_type, child_id, child_type) => {
+                format!(
+                    "{:?} (node {:?}) cannot contain {:?} (node {:?})",
+                    parent_type, parent_id, child_type, child_id
+                )
+            }
+            ValidationIssue::DuplicateChild(element_id, element_type) => {
+                format!(
+                    "Element {:?} (node {:?}) has duplicate child references",
+                    element_type, element_id
+                )
+            }
+            ValidationIssue::MissingNode(parent_id, node_id) => {
+                format!(
+                    "Parent {:?} references missing child node {:?}",
+                    parent_id, node_id
+                )
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::element::attributes::Fill;
-    use crate::element::types::{Color, Paint, Percentage};
+    use crate::element::types::{Color, Paint as TypePaint, Percentage};
 
     fn make_element(element_type: ElementType) -> Element {
         Element {
@@ -1705,7 +1830,7 @@ mod tests {
 
         ast.set_attribute(
             rect_id,
-            Attribute::Fill(Fill::Paint(Paint::Color(Color::Rgb(255, 0, 0)))),
+            Attribute::Fill(Fill::Paint(TypePaint::Color(Color::Rgb(255, 0, 0)))),
         );
 
         assert!(ast.has_attribute(rect_id, "fill"));
@@ -1853,5 +1978,154 @@ mod tests {
         };
 
         assert_eq!(final_count, initial_count);
+    }
+
+    #[test]
+    fn validate_should_return_empty_for_valid_tree() {
+        let ast = build_sample_svg();
+        let issues = ast.validate();
+        assert!(issues.is_empty());
+    }
+
+    #[test]
+    fn validate_should_detect_parent_mismatch() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let text_id = {
+            let circle_node = ast.nodes.get(circle_id).unwrap();
+            if let Node::Element(element) = circle_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        if let Some(Node::Text(text_node)) = ast.nodes.get_mut(text_id) {
+            text_node.parent = Some(svg_id);
+        }
+
+        let issues = ast.validate();
+        assert_eq!(issues.len(), 1);
+        match &issues[0] {
+            ValidationIssue::ParentMismatch(id, expected, actual) => {
+                assert_eq!(*id, text_id);
+                assert_eq!(*expected, Some(circle_id));
+                assert_eq!(*actual, Some(svg_id));
+            }
+            _ => panic!("expected ParentMismatch: {:?}", issues),
+        }
+    }
+
+    #[test]
+    fn validate_should_detect_invalid_child() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+
+        let rect_id = make_element(ElementType::Rect);
+        let rect_node_id = ast.insert_node(Node::Element(rect_id));
+
+        ast.append_child(svg_id, rect_node_id);
+
+        let circle_id = make_element(ElementType::Circle);
+        let circle_node_id = ast.insert_node(Node::Element(circle_id));
+
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(rect_node_id) {
+            element.parent = Some(svg_id);
+        }
+
+        ast.append_child(rect_node_id, circle_node_id);
+
+        let issues = ast.validate();
+        let invalid_count = issues
+            .iter()
+            .filter(|i| matches!(i, ValidationIssue::ChildNotAllowed(..)))
+            .count();
+        assert!(invalid_count > 0);
+    }
+
+    #[test]
+    fn validate_should_find_duplicate_children() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.children.push(rect_id);
+        }
+
+        let unique = ast.validate_children_unique(svg_id);
+        assert!(!unique);
+    }
+
+    #[test]
+    fn validate_should_detect_all_issues() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.children.push(rect_id);
+        }
+
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(rect_id) {
+            element.parent = None;
+        }
+
+        let issues = ast.validate();
+        let has_parent_mismatch = issues
+            .iter()
+            .any(|i| matches!(i, ValidationIssue::ParentMismatch(..)));
+        assert!(has_parent_mismatch);
+    }
+
+    #[test]
+    fn validate_children_unique_should_return_true_for_no_duplicates() {
+        let ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let unique = ast.validate_children_unique(svg_id);
+        assert!(unique);
+    }
+
+    #[test]
+    fn find_root_should_return_root_node() {
+        let ast = build_sample_svg();
+        let root = ast.find_root();
+        assert!(root.is_some());
+    }
+
+    #[test]
+    fn is_valid_root_should_return_true_for_svg() {
+        let ast = build_sample_svg();
+        let root = ast.find_root();
+        if let Some(root_id) = root {
+            assert!(ast.is_valid_root(root_id));
+        }
     }
 }
