@@ -2,37 +2,68 @@ use crate::{Element, element::ElementType, element::attributes::Attribute};
 use slotmap::{SlotMap, new_key_type};
 use std::fmt;
 
+/// Arena-backed AST for SVG documents.
+///
+/// Stores all nodes (elements, text, comments, CDATA) in a `SlotMap` arena.
+/// Tracks root-level children in `children` and parent pointers on every node.
+#[derive(Debug, Default)]
+pub struct AST {
+    /// Arena containing all nodes.
+    pub nodes: SlotMap<NodeId, Node>,
+    /// Root-level children of the AST.
+    pub children: Vec<NodeId>,
+}
+
 new_key_type! {
+    /// A stable handle to a node in the AST arena.
     pub struct NodeId;
 }
 
+/// A text node in the SVG tree.
 #[derive(Clone, PartialEq, Debug)]
 pub struct TextNode {
+    /// The text content.
     pub content: String,
+    /// Parent node ID, or `None` for root-level text nodes.
     pub parent: Option<NodeId>,
 }
 
+/// A comment node (`<!-- ... -->`) in the SVG tree.
 #[derive(Clone, PartialEq, Debug)]
 pub struct CommentNode {
+    /// The comment text (without `<!--` / `-->` delimiters).
     pub content: String,
+    /// Parent node ID, or `None` for root-level comments.
     pub parent: Option<NodeId>,
 }
 
+/// A CDATA section node (`<![CDATA[...]]>`) in the SVG tree.
 #[derive(Clone, PartialEq, Debug)]
 pub struct CDataNode {
+    /// The CDATA content.
     pub content: String,
+    /// Parent node ID, or `None` for root-level CDATA.
     pub parent: Option<NodeId>,
 }
 
+/// A node in the SVG AST.
+///
+/// Wraps one of four variants: an [`Element`], [`TextNode`], [`CommentNode`],
+/// or [`CDataNode`]. Each variant carries a parent pointer.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Node {
+    /// A text node containing character data.
     Text(TextNode),
+    /// An SVG element with attributes and children.
     Element(Element),
+    /// An XML comment node.
     Comment(CommentNode),
+    /// A CDATA section node.
     CData(CDataNode),
 }
 
 impl Node {
+    /// Serializes this node to SVG format using the given writer.
     pub fn write_svg(&self, ast: &AST, f: &mut impl fmt::Write, indent: usize) -> fmt::Result {
         match self {
             Node::Text(text_node) => {
@@ -47,6 +78,7 @@ impl Node {
         }
     }
 
+    /// Returns a reference to the inner [`Element`] if this is an `Element` node.
     pub fn as_element(&self) -> Option<&Element> {
         match self {
             Node::Element(e) => Some(e),
@@ -54,6 +86,7 @@ impl Node {
         }
     }
 
+    /// Returns a mutable reference to the inner [`Element`] if this is an `Element` node.
     pub fn as_element_mut(&mut self) -> Option<&mut Element> {
         match self {
             Node::Element(e) => Some(e),
@@ -61,6 +94,7 @@ impl Node {
         }
     }
 
+    /// Returns the text content as a string slice if this is a `Text` node.
     pub fn as_text(&self) -> Option<&str> {
         match self {
             Node::Text(t) => Some(&t.content),
@@ -68,6 +102,7 @@ impl Node {
         }
     }
 
+    /// Returns a mutable reference to the text content if this is a `Text` node.
     pub fn as_text_mut(&mut self) -> Option<&mut String> {
         match self {
             Node::Text(t) => Some(&mut t.content),
@@ -75,6 +110,7 @@ impl Node {
         }
     }
 
+    /// Returns the comment content as a string slice if this is a `Comment` node.
     pub fn as_comment(&self) -> Option<&str> {
         match self {
             Node::Comment(c) => Some(&c.content),
@@ -82,6 +118,7 @@ impl Node {
         }
     }
 
+    /// Returns the CDATA content as a string slice if this is a `CData` node.
     pub fn as_cdata(&self) -> Option<&str> {
         match self {
             Node::CData(c) => Some(&c.content),
@@ -89,6 +126,7 @@ impl Node {
         }
     }
 
+    /// Returns the parent node ID, or `None` if this node has no parent.
     pub fn parent_id(&self) -> Option<NodeId> {
         match self {
             Node::Text(t) => t.parent,
@@ -99,13 +137,20 @@ impl Node {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct AST {
-    pub nodes: SlotMap<NodeId, Node>,
-    pub children: Vec<NodeId>,
-}
-
+/// Arena-backed SVG AST.
+///
+/// Stores all nodes in a `SlotMap` arena, tracks root-level children in `children`,
+/// and maintains parent pointers on every node.
+///
+/// # Example
+///
+/// ```
+/// use esvega::parser::ast::AST;
+///
+/// let mut ast = AST::default();
+/// ```
 impl AST {
+    /// Serializes the entire AST to an SVG string.
     pub fn to_svg(&self) -> String {
         let mut s = String::new();
         for node_id in &self.children {
@@ -117,10 +162,22 @@ impl AST {
         s
     }
 
+    /// Inserts a node into the arena and returns its ID.
+    ///
+    /// The node is not attached to any parent — use [`append_child`], [`prepend_child`],
+    /// or [`insert_child_at`] to attach it to an element.
+    ///
+    /// [`append_child`]: AST::append_child
+    /// [`prepend_child`]: AST::prepend_child
+    /// [`insert_child_at`]: AST::insert_child_at
     pub fn insert_node(&mut self, node: Node) -> NodeId {
         self.nodes.insert(node)
     }
 
+    /// Removes a node from the arena and detaches it from its parent.
+    ///
+    /// Returns the removed node, or `None` if the ID is invalid.
+    /// Parent pointers and children lists are updated to reflect the removal.
     pub fn remove_node(&mut self, id: NodeId) -> Option<Node> {
         let node = self.nodes.remove(id)?;
         let parent_id = match &node {
@@ -142,14 +199,22 @@ impl AST {
         Some(node)
     }
 
+    /// Returns a shared reference to the node with the given ID, or `None` if it does not exist.
     pub fn get_node(&self, id: NodeId) -> Option<&Node> {
         self.nodes.get(id)
     }
 
+    /// Returns a mutable reference to the node with the given ID, or `None` if it does not exist.
     pub fn get_node_mut(&mut self, id: NodeId) -> Option<&mut Node> {
         self.nodes.get_mut(id)
     }
 
+    /// Replaces a node at `old_id` with `new_node`.
+    ///
+    /// The new node takes the same parent and position as the old one.
+    /// The old node is removed from the arena.
+    ///
+    /// Returns the ID of the newly inserted node.
     pub fn replace_node(&mut self, old_id: NodeId, new_node: Node) -> NodeId {
         let parent_id = self.get_parent_id(old_id);
 
@@ -174,6 +239,13 @@ impl AST {
         new_id
     }
 
+    /// Deep-clones a node and all its descendants.
+    ///
+    /// Returns the ID of the cloned node. The clone has no parent —
+    /// use [`append_child`] or [`prepend_child`] to attach it.
+    ///
+    /// [`append_child`]: AST::append_child
+    /// [`prepend_child`]: AST::prepend_child
     pub fn clone_node(&mut self, id: NodeId) -> NodeId {
         let node = self.nodes.get(id).expect("Node must exist").clone();
         self.clone_subtree(node)
@@ -226,6 +298,10 @@ impl AST {
         }
     }
 
+    /// Finds the first node with an `id` attribute matching `id_value`.
+    ///
+    /// Performs a depth-first traversal of the entire tree.
+    /// Returns `None` if no matching node is found.
     pub fn find_by_id(&self, id_value: &str) -> Option<NodeId> {
         let mut found = None;
         self.find_by_id_recursive(id_value, &mut found);
@@ -264,6 +340,10 @@ impl AST {
         }
     }
 
+    /// Finds all element nodes matching the given [`ElementType`].
+    ///
+    /// Performs a depth-first traversal of the entire tree.
+    /// Returns an empty vector if no matches are found.
     pub fn find_by_type(&self, element_type: crate::element::ElementType) -> Vec<NodeId> {
         let mut result = Vec::new();
         self.find_by_type_recursive(element_type, &mut result);
@@ -299,6 +379,9 @@ impl AST {
         }
     }
 
+    /// Finds all nodes matching the given predicate.
+    ///
+    /// Performs a depth-first traversal of the entire tree.
     pub fn find_all<F>(&self, predicate: F) -> Vec<NodeId>
     where
         F: Fn(&Node) -> bool,
@@ -374,6 +457,9 @@ impl AST {
         })
     }
 
+    /// Appends a child node to the end of the parent's children list.
+    ///
+    /// If the child already has a different parent, it is detached from that parent first.
     pub fn append_child(&mut self, parent_id: NodeId, child_id: NodeId) {
         let new_parent_id = {
             let child_node = self.nodes.get(child_id).expect("Child node must exist");
@@ -395,6 +481,9 @@ impl AST {
         }
     }
 
+    /// Prepends a child node to the beginning of the parent's children list.
+    ///
+    /// If the child already has a different parent, it is detached from that parent first.
     pub fn prepend_child(&mut self, parent_id: NodeId, child_id: NodeId) {
         let new_parent_id = {
             let child_node = self.nodes.get(child_id).expect("Child node must exist");
@@ -416,6 +505,10 @@ impl AST {
         }
     }
 
+    /// Inserts a child node at the given index in the parent's children list.
+    ///
+    /// If `index` exceeds the current children count, the child is appended to the end.
+    /// If the child already has a different parent, it is detached from that parent first.
     pub fn insert_child_at(&mut self, parent_id: NodeId, child_id: NodeId, index: usize) {
         let new_parent_id = {
             let child_node = self.nodes.get(child_id).expect("Child node must exist");
@@ -439,6 +532,9 @@ impl AST {
         }
     }
 
+    /// Removes the child node at the given index from the parent's children list.
+    ///
+    /// Returns the removed node, or `None` if the index is out of bounds.
     pub fn remove_child_at(&mut self, parent_id: NodeId, index: usize) -> Option<Node> {
         let child_id = {
             let children = self.get_children(parent_id)?;
@@ -451,6 +547,10 @@ impl AST {
         self.remove_node(child_id)
     }
 
+    /// Replaces the child node at `index` with `new_node`.
+    ///
+    /// The old node is removed from the arena. Panics if the parent is not an element
+    /// or the index is out of bounds.
     pub fn replace_child_at(&mut self, parent_id: NodeId, index: usize, new_node: Node) -> NodeId {
         let child_id = match self.get_children(parent_id) {
             Some(children) => {
@@ -479,6 +579,10 @@ impl AST {
         new_id
     }
 
+    /// Reorders the children of an element to match `new_order`.
+    ///
+    /// Children in `new_order` are moved to the element and their parent pointers updated.
+    /// Children not in `new_order` are orphaned (parent set to `None`).
     pub fn reorder_children(&mut self, parent_id: NodeId, new_order: &[NodeId]) {
         let orphaned: Vec<_> = {
             let children = self.get_children(parent_id).map_or(vec![], |c| c.clone());
@@ -503,6 +607,10 @@ impl AST {
         }
     }
 
+    /// Moves a child from `from_parent_id` to `to_parent_id` at `to_index`.
+    ///
+    /// If `to_index` is `None`, the child is appended to the end.
+    /// Returns the moved node, or `None` if the source index is out of bounds.
     pub fn move_child(
         &mut self,
         from_parent_id: NodeId,
@@ -534,6 +642,9 @@ impl AST {
         self.nodes.get(child_id).cloned()
     }
 
+    /// Swaps two children at indices `i` and `j` within the same parent.
+    ///
+    /// Panics if either index is out of bounds.
     pub fn swap_children(&mut self, parent_id: NodeId, i: usize, j: usize) {
         if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
             let len = element.children.len();
@@ -547,6 +658,10 @@ impl AST {
         }
     }
 
+    /// Moves a child one position forward (toward the end of the children list).
+    ///
+    /// This is equivalent to swapping with the next sibling.
+    /// A no-op if the child is already last or has no parent.
     pub fn move_forward(&mut self, child_id: NodeId) {
         let parent_id = {
             let node = self.nodes.get(child_id).expect("Child node must exist");
@@ -573,6 +688,10 @@ impl AST {
         }
     }
 
+    /// Moves a child one position backward (toward the start of the children list).
+    ///
+    /// This is equivalent to swapping with the previous sibling.
+    /// A no-op if the child is already first or has no parent.
     pub fn move_backward(&mut self, child_id: NodeId) {
         let parent_id = {
             let node = self.nodes.get(child_id).expect("Child node must exist");
@@ -606,12 +725,16 @@ impl AST {
             .position(|attr| attr.name() == name)
     }
 
+    /// Appends an attribute to an element's attribute list.
     pub fn add_attribute(&mut self, element_id: NodeId, attribute: Attribute) {
         if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
             element.attributes.push(attribute);
         }
     }
 
+    /// Sets an attribute on an element, replacing it if it already exists.
+    ///
+    /// If an attribute with the same name does not exist, it is appended to the end.
     pub fn set_attribute(&mut self, element_id: NodeId, attribute: Attribute) {
         let attr_name = attribute.name().to_string();
 
@@ -624,6 +747,7 @@ impl AST {
         }
     }
 
+    /// Gets a shared reference to an attribute by name, or `None` if not found.
     pub fn get_attribute(&self, element_id: NodeId, name: &str) -> Option<&Attribute> {
         let element = self.nodes.get(element_id)?;
         if let Node::Element(element) = element {
@@ -634,6 +758,7 @@ impl AST {
         }
     }
 
+    /// Gets a mutable reference to an attribute by name, or `None` if not found.
     pub fn get_attribute_mut(&mut self, element_id: NodeId, name: &str) -> Option<&mut Attribute> {
         if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
             Self::find_attribute_index(element, name)
@@ -643,6 +768,7 @@ impl AST {
         }
     }
 
+    /// Removes an attribute by name and returns it, or `None` if not found.
     pub fn remove_attribute(&mut self, element_id: NodeId, name: &str) -> Option<Attribute> {
         if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
             if let Some(index) = Self::find_attribute_index(element, name) {
@@ -655,6 +781,7 @@ impl AST {
         }
     }
 
+    /// Returns `true` if the element has an attribute with the given name.
     pub fn has_attribute(&self, element_id: NodeId, name: &str) -> bool {
         let element = match self.nodes.get(element_id) {
             Some(Node::Element(element)) => element,
@@ -663,6 +790,7 @@ impl AST {
         Self::find_attribute_index(element, name).is_some()
     }
 
+    /// Serializes an attribute's value to a string, or `None` if the attribute is not found.
     pub fn get_attribute_value_str(&self, element_id: NodeId, name: &str) -> Option<String> {
         let mut output = String::new();
         if let Some(attr) = self.get_attribute(element_id, name) {
@@ -675,6 +803,12 @@ impl AST {
         }
     }
 
+    /// Validates the entire AST tree.
+    ///
+    /// Checks parent pointer consistency and element child constraints
+    /// (via [`is_allowed_as_child`]).
+    ///
+    /// [`is_allowed_as_child`]: crate::element::Element::is_allowed_as_child
     pub fn validate(&self) -> Vec<ValidationIssue> {
         let mut issues = Vec::new();
 
@@ -736,6 +870,7 @@ impl AST {
         }
     }
 
+    /// Returns `true` if the element has no duplicate child references.
     pub fn validate_children_unique(&self, element_id: NodeId) -> bool {
         let Some(Node::Element(element)) = self.nodes.get(element_id) else {
             return false;
@@ -750,10 +885,12 @@ impl AST {
         true
     }
 
+    /// Returns the first root-level node ID, or `None` if there are no root nodes.
     pub fn find_root(&self) -> Option<NodeId> {
         self.children.first().copied()
     }
 
+    /// Returns `true` if the given node is an SVG root element.
     pub fn is_valid_root(&self, node_id: NodeId) -> bool {
         matches!(
             self.nodes.get(node_id),
@@ -761,6 +898,15 @@ impl AST {
         )
     }
 
+    /// Wraps a list of child nodes inside a new element.
+    ///
+    /// Creates a new element of `new_element_type`, moves the given `child_ids` into it,
+    /// and inserts the new element at the position of the first child in the parent.
+    ///
+    /// If the children span multiple parents, they are moved to the new element and
+    /// detached from their old parents. The new element is attached to `parent_id`.
+    ///
+    /// Returns the ID of the newly created wrapping element.
     pub fn wrap_children(
         &mut self,
         parent_id: NodeId,
@@ -819,15 +965,34 @@ impl AST {
     }
 }
 
+/// An issue found during AST validation.
+///
+/// Returned by [`AST::validate`] to report structural problems in the tree.
 #[derive(Debug, PartialEq, Clone)]
 pub enum ValidationIssue {
+    /// A node's parent pointer does not match its expected parent.
+    ///
+    /// Fields: `(node_id, expected_parent, actual_parent)`.
     ParentMismatch(NodeId, Option<NodeId>, Option<NodeId>),
+
+    /// An element contains a child type not allowed by SVG rules.
+    ///
+    /// Fields: `(parent_id, parent_type, child_id, child_type)`.
     ChildNotAllowed(Option<NodeId>, ElementType, NodeId, ElementType),
+
+    /// An element has duplicate child references.
+    ///
+    /// Fields: `(element_id, element_type)`.
     DuplicateChild(NodeId, ElementType),
+
+    /// A parent references a child node that does not exist in the arena.
+    ///
+    /// Fields: `(parent_id, missing_node_id)`.
     MissingNode(Option<NodeId>, NodeId),
 }
 
 impl ValidationIssue {
+    /// Returns a human-readable description of the validation issue.
     pub fn message(&self) -> String {
         match self {
             ValidationIssue::ParentMismatch(node_id, expected, actual) => {
