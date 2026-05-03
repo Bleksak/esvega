@@ -153,11 +153,11 @@ impl StateMachine {
 
                     let node_id = self.element_stack.last().unwrap();
 
-                 let Node::Element(en) = self.ast.nodes.get_mut(*node_id).unwrap() else {
-                    panic!("Node is supposed to be of type Element at this point");
-                };
+                    let Node::Element(en) = self.ast.nodes.get_mut(*node_id).unwrap() else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
 
-                en.attributes.push(attribute);
+                    en.attributes.push(attribute);
                 }
 
                 self.current_state = State::Text;
@@ -169,8 +169,7 @@ impl StateMachine {
                         _ => panic!("Node is supposed to be of type Element at this point"),
                     };
 
-                    let Node::Element(last_en) =
-                        self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
                     else {
                         panic!("Node is supposed to be of type Element at this point");
                     };
@@ -182,7 +181,7 @@ impl StateMachine {
                         );
                     }
 
-                   let parent_id = *last_element_id;
+                    let parent_id = *last_element_id;
                     let child_id = element_id;
                     {
                         last_en.children.push(child_id);
@@ -215,9 +214,8 @@ impl StateMachine {
                     _ => panic!("Node is supposed to be of type Element at this point"),
                 };
 
-               if let Some(last_element_id) = self.element_stack.last_mut() {
-                    let Node::Element(last_en) =
-                        self.ast.nodes.get_mut(*last_element_id).unwrap()
+                if let Some(last_element_id) = self.element_stack.last_mut() {
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
                     else {
                         panic!("Node is supposed to be of type Element at this point");
                     };
@@ -229,7 +227,7 @@ impl StateMachine {
                         );
                     }
 
-                   let parent_id = *last_element_id;
+                    let parent_id = *last_element_id;
                     let child_id = element_id;
                     {
                         last_en.children.push(child_id);
@@ -261,14 +259,14 @@ impl StateMachine {
                     parent: None,
                 }));
 
-           let last_element_id = self.element_stack.last().unwrap();
+                let last_element_id = self.element_stack.last().unwrap();
 
                 let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
                 else {
                     panic!("Node is supposed to be of type Element at this point");
                 };
 
-               let parent_id = *last_element_id;
+                let parent_id = *last_element_id;
                 let child_id = node_id;
                 {
                     last_en.children.push(child_id);
@@ -299,8 +297,7 @@ impl StateMachine {
                 }));
 
                 if let Some(last_element_id) = self.element_stack.last() {
-                    let Node::Element(last_en) =
-                        self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
                     else {
                         panic!("Node is supposed to be of type Element at this point");
                     };

@@ -16,12 +16,12 @@ cargo test -- --nocapture
 - **Parser** (`src/parser/`): `StateMachine` consumes tokens via `consume()`. Maintains `element_stack: Vec<NodeId>`. Handles tag open/close, attributes, and text nodes.
 - **AST** (`src/parser/ast.rs`): Arena-backed using `slotmap`. `Node` enum: `Text(TextNode)`, `Element(Element)`, `Comment(CommentNode)`, `CData(CDataNode)`. All wrapper structs (`TextNode`, `CommentNode`, `CDataNode`) carry `parent: Option<NodeId>`. `Element` also carries `parent: Option<NodeId>` for full tree navigation. `NodeId` defined via `new_key_type!`.
 - **Elements** (`src/element/`): `Element` struct holds `element_type`, `attributes: Vec<Attribute>`, `children: Vec<NodeId>`. Validation via `is_allowed_as_child()`.
-- **Attributes** (`src/element/attributes/`): Enums like `GradientUnits`, `ReferrerPolicy`, `ClipPathUnits`. Parsed via `TryFrom<&str>` / `FromStr`.
+- **Attributes** (`src/element/attributes/`): Enums like `GradientUnits`, `ReferrerPolicy`, `ClipPathUnits`. Parsed via `TryFrom<&str>` / `FromStr`. `Attribute::write()` and `write_attributes()` take an optional `parent_id: Option<NodeId>` parameter.
 - **SVG Types** (`src/svg/types/`): `Angle`, `Length`, `Number`, `Boolean`, `Url`.
 
 ## Conventions
 - **Parsing**: Use `memchr`/`memmem::find` for fast byte scanning in `src/lexer/`. Never use `std::str` methods on raw bytes.
-- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(...))`. Use `ast.insert_node()`, `ast.remove_node()`, `ast.replace_node()`, `ast.clone_node()`, `ast.find_by_id()`, `ast.find_by_type()`, `ast.find_all()` for editing. Parent pointers should be set when attaching nodes as children.
+- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(...))`. Use `ast.insert_node()`, `ast.remove_node(id, parent_id)`, `ast.replace_node()`, `ast.clone_node()`, `ast.find_by_id()`, `ast.find_by_type()`, `ast.find_all()` for editing. Parent pointers should be set when attaching nodes as children.
 - **Attributes**: Parse strings into typed enums using `str::parse::<T>()` or `TryFrom::try_from()`. Implement `Display`, `Default`, and `FromStr`/`TryFrom`.
 - **Rendering**: Use helper formatters from `src/element/attributes/shared.rs`: `write_semicolon_separated`, `write_space_separated`, `write_comma_separated`.
 - **Error Handling**: Parser panics on invalid input (`panic!("Parse error...")`). Do not use `Result` for parser state transitions.
@@ -65,3 +65,20 @@ If `caliber` is not found, read `.agents/skills/setup-caliber/SKILL.md` and foll
 Read `CALIBER_LEARNINGS.md` for patterns and anti-patterns learned from previous sessions.
 These are auto-extracted from real tool usage — treat them as project-specific rules.
 <!-- /caliber:managed:learnings -->
+
+<!-- caliber:managed:model-config -->
+## Model Configuration
+
+Recommended default: `claude-sonnet-4-6` with high effort (stronger reasoning; higher cost and latency than smaller models).
+Smaller/faster models trade quality for speed and cost — pick what fits the task.
+Pin your choice (`/model` in Claude Code, or `CALIBER_MODEL` when using Caliber with an API provider) so upstream default changes do not silently change behavior.
+
+<!-- /caliber:managed:model-config -->
+
+<!-- caliber:managed:sync -->
+## Context Sync
+
+This project uses [Caliber](https://github.com/caliber-ai-org/ai-setup) to keep AI agent configs in sync across Claude Code, Cursor, Copilot, and Codex.
+Configs update automatically before each commit via `caliber refresh`.
+If the pre-commit hook is not set up, read `.agents/skills/setup-caliber/SKILL.md` and follow the setup instructions.
+<!-- /caliber:managed:sync -->
