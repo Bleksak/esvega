@@ -708,6 +708,63 @@ impl AST {
             Some(Node::Element(element)) if element.element_type == ElementType::Svg
         )
     }
+
+    pub fn wrap_children(
+        &mut self,
+        parent_id: NodeId,
+        child_ids: &[NodeId],
+        new_element_type: ElementType,
+    ) -> NodeId {
+        let mut new_element = Element {
+            element_type: new_element_type,
+            attributes: vec![],
+            children: vec![],
+            parent: None,
+        };
+
+        let new_id = {
+            let node_id = self.nodes.insert(Node::Element(new_element));
+
+            for &child_id in child_ids {
+                let old_parent_id = {
+                    let child_node = self.nodes.get(child_id).expect("Child node must exist");
+                    child_node.parent_id()
+                };
+
+                if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+                    element.children.retain(|&cid| cid != child_id);
+                }
+
+                if let Some(Node::Element(element)) = self.nodes.get_mut(node_id) {
+                    element.children.push(child_id);
+                }
+
+                self.set_parent(child_id, Some(node_id));
+
+                if let Some(old_parent) = old_parent_id {
+                    if old_parent != parent_id {
+                        if let Some(Node::Element(element)) = self.nodes.get_mut(old_parent) {
+                            element.children.retain(|&cid| cid != child_id);
+                        }
+                    }
+                }
+            }
+
+            node_id
+        };
+
+        self.set_parent(new_id, Some(parent_id));
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            let insert_pos = child_ids
+                .first()
+                .and_then(|&cid| element.children.iter().position(|&id| id == cid))
+                .unwrap_or(element.children.len());
+            element.children.insert(insert_pos, new_id);
+        }
+
+        new_id
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -2127,5 +2184,179 @@ mod tests {
         if let Some(root_id) = root {
             assert!(ast.is_valid_root(root_id));
         }
+    }
+
+    #[test]
+    fn wrap_children_should_create_group() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let group_id = ast.wrap_children(svg_id, &[rect_id, circle_id], ElementType::G);
+
+        let group_node = ast.nodes.get(group_id).unwrap();
+        if let Node::Element(element) = group_node {
+            assert_eq!(element.element_type, ElementType::G);
+            assert_eq!(element.children.len(), 2);
+        }
+
+        let svg_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(svg_children, 1);
+
+        let group_parent = {
+            let group_node = ast.nodes.get(group_id).unwrap();
+            group_node.parent_id()
+        };
+        assert_eq!(group_parent, Some(svg_id));
+
+        let rect_parent = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(rect_parent, Some(group_id));
+
+        let circle_parent = {
+            let node = ast.nodes.get(circle_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(circle_parent, Some(group_id));
+    }
+
+    #[test]
+    fn wrap_children_should_insert_at_first_child_position() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let group_id = ast.wrap_children(svg_id, &[rect_id, circle_id], ElementType::G);
+
+        let first_child = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(first_child, group_id);
+    }
+
+    #[test]
+    fn wrap_children_with_single_child() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let group_id = ast.wrap_children(svg_id, &[rect_id], ElementType::G);
+
+        let group_children = {
+            let group_node = ast.nodes.get(group_id).unwrap();
+            if let Node::Element(element) = group_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(group_children, 1);
+
+        let svg_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(svg_children, 2);
+    }
+
+    #[test]
+    fn wrap_children_with_text_child() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let text_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let group_id = ast.wrap_children(svg_id, &[text_id], ElementType::G);
+
+        let group_children = {
+            let group_node = ast.nodes.get(group_id).unwrap();
+            if let Node::Element(element) = group_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(group_children, 1);
+
+        let first_group_child = {
+            let group_node = ast.nodes.get(group_id).unwrap();
+            if let Node::Element(element) = group_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(first_group_child, text_id);
+
+        let text_parent = {
+            let node = ast.nodes.get(text_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(text_parent, Some(group_id));
     }
 }
