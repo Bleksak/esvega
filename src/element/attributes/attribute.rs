@@ -339,6 +339,9 @@ pub enum Attribute {
     // Media attributes
     Decoding(Decoding),
     FetchPriority(FetchPriority),
+
+    // Data attributes
+    Data(String, String),
 }
 
 use super::filter::{MaskContentUnits, PatternContentUnits, PatternUnits};
@@ -752,6 +755,9 @@ impl TryFrom<(&String, &String)> for Attribute {
             "startOffset" => Ok(Attribute::StartOffset(value.parse()?)),
             "filterUnits" => Ok(Attribute::FilterUnits(value.parse()?)),
             "primitiveUnits" => Ok(Attribute::PrimitiveUnits(value.parse()?)),
+            _ if key.starts_with("data-") => {
+                Ok(Attribute::Data(key.to_string(), value.clone()))
+            }
             _ => {
                 return Err(());
             }
@@ -1026,6 +1032,7 @@ impl Attribute {
             Attribute::FilterUnits(_) => "filterUnits",
             Attribute::PrimitiveUnits(_) => "primitiveUnits",
             Attribute::Version(_) => "version",
+            Attribute::Data(name, _) => name,
         }
     }
 
@@ -1989,6 +1996,7 @@ impl Attribute {
             Attribute::FilterUnits(v) => write!(f, "=\"{}\"", v),
             Attribute::PrimitiveUnits(v) => write!(f, "=\"{}\"", v),
             Attribute::Version(v) => write!(f, "=\"{}\"", v),
+            Attribute::Data(_, value) => write!(f, "=\"{}\"", value),
         }
     }
 

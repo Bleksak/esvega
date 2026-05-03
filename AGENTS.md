@@ -35,6 +35,7 @@ cargo test -- --nocapture
 - `src/element/mod.rs` → `Element`
 - `src/element/attributes/mod.rs` → Attribute re-exports
 - `svg/*.md` → Reference specs for SVG element/attribute definitions
+- `EDITING_PLAN.md` → Editing plan and roadmap
 
 <!-- caliber:managed:pre-commit -->
 ## Before Committing

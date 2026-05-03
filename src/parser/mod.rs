@@ -368,3 +368,72 @@ impl<'input> Parser<'input> {
         Some(state_machine.ast)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::element::attributes::Attribute;
+    use crate::element::ElementType;
+    use crate::lexer::Input;
+    use crate::Parser;
+
+    #[test]
+    fn parse_data_attribute() {
+        let svg = r#"<rect data-test="value" x="10" y="10"/>"#;
+        let lexer = crate::Lexer::new(Input::new(svg.as_bytes()));
+        let ast = Parser::new(lexer).parse().unwrap();
+
+        let rects = ast.find_by_type(ElementType::Rect);
+        assert_eq!(rects.len(), 1);
+        let rect = rects[0];
+        let rect_node = ast.nodes.get(rect).unwrap();
+        let element = rect_node.as_element().unwrap();
+
+        assert_eq!(element.attributes.len(), 3);
+
+        let data_attr = &element.attributes[0];
+        assert!(matches!(data_attr, Attribute::Data(_, _)));
+
+        if let Attribute::Data(name, value) = data_attr {
+            assert_eq!(name, "data-test");
+            assert_eq!(value, "value");
+        } else {
+            panic!("Expected Data attribute");
+        }
+    }
+
+    #[test]
+    fn parse_multiple_data_attributes() {
+        let svg = r#"<rect data-foo="bar" data-baz="qux" data-foo-bar="baz-qux"/>"#;
+        let lexer = crate::Lexer::new(Input::new(svg.as_bytes()));
+        let ast = Parser::new(lexer).parse().unwrap();
+
+      let rects = ast.find_by_type(ElementType::Rect);
+        assert_eq!(rects.len(), 1);
+        let rect = rects[0];
+        let rect_node = ast.nodes.get(rect).unwrap();
+        let element = rect_node.as_element().unwrap();
+
+        assert_eq!(element.attributes.len(), 3);
+
+        if let Attribute::Data(name, value) = &element.attributes[0] {
+            assert_eq!(name, "data-foo");
+            assert_eq!(value, "bar");
+        } else {
+            panic!("Expected Data attribute at index 0");
+        }
+
+        if let Attribute::Data(name, value) = &element.attributes[1] {
+            assert_eq!(name, "data-baz");
+            assert_eq!(value, "qux");
+        } else {
+            panic!("Expected Data attribute at index 1");
+        }
+
+        if let Attribute::Data(name, value) = &element.attributes[2] {
+            assert_eq!(name, "data-foo-bar");
+            assert_eq!(value, "baz-qux");
+        } else {
+            panic!("Expected Data attribute at index 2");
+        }
+    }
+}
