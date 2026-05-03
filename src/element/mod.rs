@@ -15,6 +15,7 @@ pub struct Element {
     pub element_type: ElementType,
     pub attributes: Vec<Attribute>,
     pub children: Vec<NodeId>,
+    pub parent: Option<NodeId>,
 }
 
 impl Element {

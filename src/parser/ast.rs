@@ -8,25 +8,43 @@ new_key_type! {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+pub struct TextNode {
+    pub content: String,
+    pub parent: Option<NodeId>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct CommentNode {
+    pub content: String,
+    pub parent: Option<NodeId>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct CDataNode {
+    pub content: String,
+    pub parent: Option<NodeId>,
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub enum Node {
-    Text(String),
+    Text(TextNode),
     Element(Element),
-    Comment(String),
-    CData(String),
+    Comment(CommentNode),
+    CData(CDataNode),
 }
 
 impl Node {
     pub fn write_svg(&self, ast: &AST, f: &mut impl fmt::Write, indent: usize) -> fmt::Result {
         match self {
-            Node::Text(s) => {
+            Node::Text(text_node) => {
                 for _ in 0..indent {
                     write!(f, "  ")?;
                 }
-                write!(f, "{}\n", s)
+                write!(f, "{}\n", text_node.content)
             }
             Node::Element(element) => element.write_svg(ast, f, indent),
-            Node::Comment(comment) => write!(f, "<!-- {} -->", comment),
-            Node::CData(cdata) => write!(f, "<![CDATA[{}]]>", cdata),
+            Node::Comment(comment_node) => write!(f, "<!-- {} -->", comment_node.content),
+            Node::CData(cdata_node) => write!(f, "<![CDATA[{}]]>", cdata_node.content),
         }
     }
 }
