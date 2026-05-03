@@ -546,11 +546,89 @@ impl AST {
             element.children.swap(i, j);
         }
     }
+
+    fn find_attribute_index(element: &Element, name: &str) -> Option<usize> {
+        element
+            .attributes
+            .iter()
+            .position(|attr| attr.name() == name)
+    }
+
+    pub fn add_attribute(&mut self, element_id: NodeId, attribute: Attribute) {
+        if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
+            element.attributes.push(attribute);
+        }
+    }
+
+    pub fn set_attribute(&mut self, element_id: NodeId, attribute: Attribute) {
+        let attr_name = attribute.name().to_string();
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
+            if let Some(index) = Self::find_attribute_index(element, &attr_name) {
+                element.attributes[index] = attribute;
+            } else {
+                element.attributes.push(attribute);
+            }
+        }
+    }
+
+    pub fn get_attribute(&self, element_id: NodeId, name: &str) -> Option<&Attribute> {
+        let element = self.nodes.get(element_id)?;
+        if let Node::Element(element) = element {
+            Self::find_attribute_index(element, name)
+                .and_then(|index| element.attributes.get(index))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_attribute_mut(&mut self, element_id: NodeId, name: &str) -> Option<&mut Attribute> {
+        if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
+            Self::find_attribute_index(element, name)
+                .and_then(|index| element.attributes.get_mut(index))
+        } else {
+            None
+        }
+    }
+
+    pub fn remove_attribute(&mut self, element_id: NodeId, name: &str) -> Option<Attribute> {
+        if let Some(Node::Element(element)) = self.nodes.get_mut(element_id) {
+            if let Some(index) = Self::find_attribute_index(element, name) {
+                Some(element.attributes.remove(index))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn has_attribute(&self, element_id: NodeId, name: &str) -> bool {
+        let element = match self.nodes.get(element_id) {
+            Some(Node::Element(element)) => element,
+            _ => return false,
+        };
+        Self::find_attribute_index(element, name).is_some()
+    }
+
+    pub fn get_attribute_value_str(&self, element_id: NodeId, name: &str) -> Option<String> {
+        let mut output = String::new();
+        if let Some(attr) = self.get_attribute(element_id, name) {
+            attr.write_svg(&mut output).ok();
+        }
+        if output.is_empty() {
+            None
+        } else {
+            Some(output)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::element::attributes::Fill;
+    use crate::element::types::{Color, Paint, Percentage};
 
     fn make_element(element_type: ElementType) -> Element {
         Element {
@@ -1591,5 +1669,189 @@ mod tests {
         if let Node::Element(element) = rect_node {
             assert_eq!(element.children.len(), 1);
         }
+    }
+
+    #[test]
+    fn add_attribute_should_add_to_element() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+
+        ast.add_attribute(rect_id, Attribute::Id("my-rect".to_string()));
+
+        let has = ast.has_attribute(rect_id, "id");
+        assert!(has);
+    }
+
+    #[test]
+    fn set_attribute_should_replace_existing() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("old-id".to_string()));
+
+        ast.set_attribute(rect_id, Attribute::Id("new-id".to_string()));
+
+        let found = ast.find_by_id("new-id");
+        assert_eq!(found, Some(rect_id));
+    }
+
+    #[test]
+    fn set_attribute_should_add_if_not_exists() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        assert!(!ast.has_attribute(rect_id, "fill"));
+
+        ast.set_attribute(
+            rect_id,
+            Attribute::Fill(Fill::Paint(Paint::Color(Color::Rgb(255, 0, 0)))),
+        );
+
+        assert!(ast.has_attribute(rect_id, "fill"));
+    }
+
+    #[test]
+    fn get_attribute_should_return_matching() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("test-id".to_string()));
+
+        let attr = ast.get_attribute(rect_id, "id");
+        assert!(attr.is_some());
+        if let Some(Attribute::Id(val)) = attr {
+            assert_eq!(val, "test-id");
+        } else {
+            panic!("Expected Id attribute");
+        }
+    }
+
+    #[test]
+    fn get_attribute_should_return_none_for_missing() {
+        let ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        let attr = ast.get_attribute(rect_id, "nonexistent");
+        assert!(attr.is_none());
+    }
+
+    #[test]
+    fn get_attribute_mut_should_modify_value() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("old".to_string()));
+
+        if let Some(Attribute::Id(val)) = ast.get_attribute_mut(rect_id, "id") {
+            *val = "modified".to_string();
+        }
+
+        let attr = ast.get_attribute(rect_id, "id");
+        if let Some(Attribute::Id(val)) = attr {
+            assert_eq!(val, "modified");
+        } else {
+            panic!("Expected Id attribute");
+        }
+    }
+
+    #[test]
+    fn remove_attribute_should_delete_and_return() {
+        let mut ast = build_sample_svg();
+
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("to-remove".to_string()));
+        assert!(ast.has_attribute(rect_id, "id"));
+
+        let removed = ast.remove_attribute(rect_id, "id");
+        assert!(removed.is_some());
+        assert!(!ast.has_attribute(rect_id, "id"));
+    }
+
+    #[test]
+    fn remove_attribute_should_return_none_for_missing() {
+        let mut ast = build_sample_svg();
+        let rect_id = ast.children[0];
+
+        let removed = ast.remove_attribute(rect_id, "nonexistent");
+        assert!(removed.is_none());
+        assert!(!ast.has_attribute(rect_id, "nonexistent"));
+    }
+
+    #[test]
+    fn has_attribute_should_return_true_for_existing() {
+        let mut ast = build_sample_svg();
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("exists".to_string()));
+
+        assert!(ast.has_attribute(rect_id, "id"));
+    }
+
+    #[test]
+    fn has_attribute_should_return_false_for_missing() {
+        let ast = build_sample_svg();
+        let rect_id = ast.children[0];
+
+        assert!(!ast.has_attribute(rect_id, "opacity"));
+    }
+
+    #[test]
+    fn add_attribute_should_preserve_existing() {
+        let mut ast = build_sample_svg();
+        let rect_id = ast.children[0];
+        ast.add_attribute(rect_id, Attribute::Id("first".to_string()));
+
+        let initial_count = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            if let Node::Element(element) = node {
+                element.attributes.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.add_attribute(rect_id, Attribute::Class(vec!["class1".to_string()]));
+
+        let final_count = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            if let Node::Element(element) = node {
+                element.attributes.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(final_count, initial_count + 1);
+        assert!(ast.has_attribute(rect_id, "id"));
+        assert!(ast.has_attribute(rect_id, "class"));
+    }
+
+    #[test]
+    fn set_attribute_should_not_duplicate() {
+        let mut ast = build_sample_svg();
+        let rect_id = ast.children[0];
+        ast.set_attribute(rect_id, Attribute::Id("initial".to_string()));
+
+        let initial_count = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            if let Node::Element(element) = node {
+                element.attributes.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.set_attribute(rect_id, Attribute::Id("updated".to_string()));
+
+        let final_count = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            if let Node::Element(element) = node {
+                element.attributes.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(final_count, initial_count);
     }
 }
