@@ -14,7 +14,7 @@ cargo test -- --nocapture
 - **Entry**: `src/main.rs` → reads `410_2.svg` → `lexer::Lexer` → `parser::Parser` → `AST` → `to_svg()`
 - **Lexer** (`src/lexer/`): Byte-level scanner using `memchr::memmem::find`. Tracks mode in `src/lexer/mode.rs` (`Text`, `Markup`, `Quote`). Outputs `Token { kind, value, span }` from `src/token.rs`.
 - **Parser** (`src/parser/`): `StateMachine` consumes tokens via `consume()`. Maintains `element_stack: Vec<NodeId>`. Handles tag open/close, attributes, and text nodes.
-- **AST** (`src/parser/ast.rs`): Arena-backed using `slotmap`. `Node` enum: `Text(TextNode)`, `Element(Element)`, `Comment(String)`, `CData(String)`. `TextNode` carries `parent: Option<NodeId>`. `Element` carries `parent: Option<NodeId>` for tree navigation. `NodeId` defined via `new_key_type!`.
+- **AST** (`src/parser/ast.rs`): Arena-backed using `slotmap`. `Node` enum: `Text(TextNode)`, `Element(Element)`, `Comment(CommentNode)`, `CData(CDataNode)`. All wrapper structs (`TextNode`, `CommentNode`, `CDataNode`) carry `parent: Option<NodeId>`. `Element` also carries `parent: Option<NodeId>` for full tree navigation. `NodeId` defined via `new_key_type!`.
 - **Elements** (`src/element/`): `Element` struct holds `element_type`, `attributes: Vec<Attribute>`, `children: Vec<NodeId>`. Validation via `is_allowed_as_child()`.
 - **Attributes** (`src/element/attributes/`): Enums like `GradientUnits`, `ReferrerPolicy`, `ClipPathUnits`. Parsed via `TryFrom<&str>` / `FromStr`.
 - **SVG Types** (`src/svg/types/`): `Angle`, `Length`, `Number`, `Boolean`, `Url`.
