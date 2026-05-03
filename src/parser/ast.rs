@@ -547,6 +547,58 @@ impl AST {
         }
     }
 
+    pub fn move_forward(&mut self, child_id: NodeId) {
+        let parent_id = {
+            let node = self.nodes.get(child_id).expect("Child node must exist");
+            node.parent_id()
+        };
+
+        let parent = match parent_id {
+            Some(pid) => match self.nodes.get(pid) {
+                Some(Node::Element(element)) => element,
+                _ => return,
+            },
+            None => return,
+        };
+
+        let current_index = parent.children.iter().position(|&id| id == child_id);
+
+        let index = match current_index {
+            Some(idx) => idx,
+            None => return,
+        };
+
+        if index + 1 < parent.children.len() {
+            self.swap_children(parent_id.unwrap(), index, index + 1);
+        }
+    }
+
+    pub fn move_backward(&mut self, child_id: NodeId) {
+        let parent_id = {
+            let node = self.nodes.get(child_id).expect("Child node must exist");
+            node.parent_id()
+        };
+
+        let parent = match parent_id {
+            Some(pid) => match self.nodes.get(pid) {
+                Some(Node::Element(element)) => element,
+                _ => return,
+            },
+            None => return,
+        };
+
+        let current_index = parent.children.iter().position(|&id| id == child_id);
+
+        let index = match current_index {
+            Some(idx) => idx,
+            None => return,
+        };
+
+        if index > 0 {
+            self.swap_children(parent_id.unwrap(), index, index - 1);
+        }
+    }
+
     fn find_attribute_index(element: &Element, name: &str) -> Option<usize> {
         element
             .attributes
@@ -2358,5 +2410,153 @@ mod tests {
             node.parent_id()
         };
         assert_eq!(text_parent, Some(group_id));
+    }
+
+    #[test]
+    fn move_forward_should_swap_with_next_sibling() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.move_forward(rect_id);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children[0], circle_id);
+        assert_eq!(children[1], rect_id);
+    }
+
+    #[test]
+    fn move_backward_should_swap_with_prev_sibling() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.move_backward(circle_id);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children[0], circle_id);
+        assert_eq!(children[1], rect_id);
+    }
+
+    #[test]
+    fn move_forward_noop_at_end() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let original_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.move_forward(circle_id);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children, original_children);
+    }
+
+    #[test]
+    fn move_backward_noop_at_start() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let original_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.move_backward(rect_id);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children, original_children);
     }
 }
