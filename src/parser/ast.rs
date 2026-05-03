@@ -1,8 +1,4 @@
-use crate::{
-    Element,
-    element::attributes::Attribute,
-    element::ElementType,
-};
+use crate::{Element, element::ElementType, element::attributes::Attribute};
 use slotmap::{SlotMap, new_key_type};
 use std::fmt;
 
@@ -135,8 +131,8 @@ impl AST {
         };
         match parent_id {
             Some(pid) => {
-                if let Some(Node::Element(en)) = self.nodes.get_mut(pid) {
-                    en.children.retain(|&cid| cid != id);
+                if let Some(Node::Element(element)) = self.nodes.get_mut(pid) {
+                    element.children.retain(|&cid| cid != id);
                 }
             }
             None => {
@@ -163,9 +159,9 @@ impl AST {
         match parent_id {
             Some(pid) => {
                 self.set_parent(new_id, Some(pid));
-                if let Some(Node::Element(en)) = self.nodes.get_mut(pid) {
-                    en.children.retain(|&cid| cid != old_id);
-                    en.children.push(new_id);
+                if let Some(Node::Element(element)) = self.nodes.get_mut(pid) {
+                    element.children.retain(|&cid| cid != old_id);
+                    element.children.push(new_id);
                 }
             }
             None => {
@@ -185,9 +181,9 @@ impl AST {
 
     fn clone_subtree(&mut self, node: Node) -> NodeId {
         match node {
-            Node::Text(tn) => {
+            Node::Text(text) => {
                 let id = self.nodes.insert(Node::Text(TextNode {
-                    content: tn.content,
+                    content: text.content,
                     parent: None,
                 }));
                 id
@@ -205,24 +201,24 @@ impl AST {
                 for child_id in &e.children {
                     let child_node = self.nodes.get(*child_id).expect("Child must exist").clone();
                     let new_child_id = self.clone_subtree(child_node);
-                    if let Some(Node::Element(en)) = self.nodes.get_mut(id) {
-                        en.children.push(new_child_id);
+                    if let Some(Node::Element(element)) = self.nodes.get_mut(id) {
+                        element.children.push(new_child_id);
                     }
                     self.set_parent(new_child_id, Some(id));
                 }
 
                 id
             }
-            Node::Comment(cn) => {
+            Node::Comment(comment) => {
                 let id = self.nodes.insert(Node::Comment(CommentNode {
-                    content: cn.content,
+                    content: comment.content,
                     parent: None,
                 }));
                 id
             }
-            Node::CData(cdn) => {
+            Node::CData(cdata) => {
                 let id = self.nodes.insert(Node::CData(CDataNode {
-                    content: cdn.content,
+                    content: cdata.content,
                     parent: None,
                 }));
                 id
@@ -274,7 +270,11 @@ impl AST {
         result
     }
 
-    fn find_by_type_recursive(&self, element_type: crate::element::ElementType, result: &mut Vec<NodeId>) {
+    fn find_by_type_recursive(
+        &self,
+        element_type: crate::element::ElementType,
+        result: &mut Vec<NodeId>,
+    ) {
         for node_id in &self.children {
             self.check_type_recursive(element_type, result, *node_id);
         }
@@ -340,17 +340,210 @@ impl AST {
     }
 
     fn set_parent(&mut self, id: NodeId, parent: Option<NodeId>) {
-        if let Some(Node::Text(tn)) = self.nodes.get_mut(id) {
-            tn.parent = parent;
+        if let Some(Node::Text(text)) = self.nodes.get_mut(id) {
+            text.parent = parent;
         }
-        if let Some(Node::Element(en)) = self.nodes.get_mut(id) {
-            en.parent = parent;
+        if let Some(Node::Element(element)) = self.nodes.get_mut(id) {
+            element.parent = parent;
         }
-        if let Some(Node::Comment(cn)) = self.nodes.get_mut(id) {
-            cn.parent = parent;
+        if let Some(Node::Comment(comment)) = self.nodes.get_mut(id) {
+            comment.parent = parent;
         }
-        if let Some(Node::CData(cdn)) = self.nodes.get_mut(id) {
-            cdn.parent = parent;
+        if let Some(Node::CData(cdata)) = self.nodes.get_mut(id) {
+            cdata.parent = parent;
+        }
+    }
+
+    fn get_children(&self, id: NodeId) -> Option<&Vec<NodeId>> {
+        self.nodes.get(id).and_then(|n| {
+            if let Node::Element(e) = n {
+                Some(&e.children)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn get_children_mut(&mut self, id: NodeId) -> Option<&mut Vec<NodeId>> {
+        self.nodes.get_mut(id).and_then(|n| {
+            if let Node::Element(e) = n {
+                Some(&mut e.children)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn append_child(&mut self, parent_id: NodeId, child_id: NodeId) {
+        let new_parent_id = {
+            let child_node = self.nodes.get(child_id).expect("Child node must exist");
+            child_node.parent_id()
+        };
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            element.children.push(child_id);
+        }
+
+        self.set_parent(child_id, Some(parent_id));
+
+        if let Some(old_parent) = new_parent_id {
+            if old_parent != parent_id {
+                if let Some(Node::Element(element)) = self.nodes.get_mut(old_parent) {
+                    element.children.retain(|&cid| cid != child_id);
+                }
+            }
+        }
+    }
+
+    pub fn prepend_child(&mut self, parent_id: NodeId, child_id: NodeId) {
+        let new_parent_id = {
+            let child_node = self.nodes.get(child_id).expect("Child node must exist");
+            child_node.parent_id()
+        };
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            element.children.insert(0, child_id);
+        }
+
+        self.set_parent(child_id, Some(parent_id));
+
+        if let Some(old_parent) = new_parent_id {
+            if old_parent != parent_id {
+                if let Some(Node::Element(element)) = self.nodes.get_mut(old_parent) {
+                    element.children.retain(|&cid| cid != child_id);
+                }
+            }
+        }
+    }
+
+    pub fn insert_child_at(&mut self, parent_id: NodeId, child_id: NodeId, index: usize) {
+        let new_parent_id = {
+            let child_node = self.nodes.get(child_id).expect("Child node must exist");
+            child_node.parent_id()
+        };
+
+        let clamped = index.min(self.get_children(parent_id).map_or(0, |c| c.len()));
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            element.children.insert(clamped, child_id);
+        }
+
+        self.set_parent(child_id, Some(parent_id));
+
+        if let Some(old_parent) = new_parent_id {
+            if old_parent != parent_id {
+                if let Some(Node::Element(element)) = self.nodes.get_mut(old_parent) {
+                    element.children.retain(|&cid| cid != child_id);
+                }
+            }
+        }
+    }
+
+    pub fn remove_child_at(&mut self, parent_id: NodeId, index: usize) -> Option<Node> {
+        let child_id = {
+            let children = self.get_children(parent_id)?;
+            if index >= children.len() {
+                return None;
+            }
+            children[index]
+        };
+
+        self.remove_node(child_id)
+    }
+
+    pub fn replace_child_at(&mut self, parent_id: NodeId, index: usize, new_node: Node) -> NodeId {
+        let child_id = match self.get_children(parent_id) {
+            Some(children) => {
+                if index >= children.len() {
+                    panic!(
+                        "Index {} out of bounds (children count: {})",
+                        index,
+                        children.len()
+                    );
+                }
+                children[index]
+            }
+            None => panic!("Parent node is not an element"),
+        };
+
+        let new_id = self.nodes.insert(new_node);
+
+        self.set_parent(new_id, Some(parent_id));
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            element.children[index] = new_id;
+        }
+
+        self.nodes.remove(child_id);
+
+        new_id
+    }
+
+    pub fn reorder_children(&mut self, parent_id: NodeId, new_order: &[NodeId]) {
+        let orphaned: Vec<_> = {
+            let children = self.get_children(parent_id).map_or(vec![], |c| c.clone());
+            children
+                .into_iter()
+                .filter(|cid| !new_order.contains(cid))
+                .collect()
+        };
+
+        for child_id in orphaned {
+            if let Some(Node::Element(element)) = self.nodes.get_mut(child_id) {
+                element.parent = None;
+            }
+        }
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            element.children = new_order.to_vec();
+        }
+
+        for &child_id in new_order {
+            self.set_parent(child_id, Some(parent_id));
+        }
+    }
+
+    pub fn move_child(
+        &mut self,
+        from_parent_id: NodeId,
+        to_parent_id: NodeId,
+        from_index: usize,
+        to_index: Option<usize>,
+    ) -> Option<Node> {
+        let child_id = {
+            let children = self.get_children(from_parent_id)?;
+            if from_index >= children.len() {
+                return None;
+            }
+            children[from_index]
+        };
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(from_parent_id) {
+            element.children.remove(from_index);
+        }
+
+        self.set_parent(child_id, Some(to_parent_id));
+
+        let target_len = self.get_children(to_parent_id).map_or(0, |c| c.len());
+        let to_idx = to_index.unwrap_or(target_len).min(target_len);
+
+        if let Some(Node::Element(element)) = self.nodes.get_mut(to_parent_id) {
+            element.children.insert(to_idx, child_id);
+        }
+
+        self.nodes.get(child_id).cloned()
+    }
+
+    pub fn swap_children(&mut self, parent_id: NodeId, i: usize, j: usize) {
+        if let Some(Node::Element(element)) = self.nodes.get_mut(parent_id) {
+            let len = element.children.len();
+            if i >= len || j >= len {
+                panic!(
+                    "Index out of bounds (children count: {}, i: {}, j: {})",
+                    len, i, j
+                );
+            }
+            element.children.swap(i, j);
         }
     }
 }
@@ -404,23 +597,23 @@ mod tests {
         let text = make_text("Hello");
         let text_id = ast.insert_node(Node::Text(text));
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(svg_id) {
-            en.children.push(rect_id);
-            en.children.push(circle_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.children.push(rect_id);
+            element.children.push(circle_id);
         }
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(circle_id) {
-            en.children.push(text_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(circle_id) {
+            element.children.push(text_id);
         }
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(rect_id) {
-            en.parent = Some(svg_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(rect_id) {
+            element.parent = Some(svg_id);
         }
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(circle_id) {
-            en.parent = Some(svg_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(circle_id) {
+            element.parent = Some(svg_id);
         }
-        if let Some(Node::Text(tn)) = ast.nodes.get_mut(text_id) {
-            tn.parent = Some(circle_id);
+        if let Some(Node::Text(text)) = ast.nodes.get_mut(text_id) {
+            text.parent = Some(circle_id);
         }
 
         ast.children.push(svg_id);
@@ -448,11 +641,11 @@ mod tests {
         let new_text = make_text("World");
         let new_id = ast.insert_node(Node::Text(new_text));
 
-        if let Some(Node::Text(tn)) = ast.nodes.get_mut(new_id) {
-            tn.parent = Some(svg_id);
+        if let Some(Node::Text(text)) = ast.nodes.get_mut(new_id) {
+            text.parent = Some(svg_id);
         }
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(svg_id) {
-            en.children.push(new_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.children.push(new_id);
         }
 
         let node = ast.get_node(new_id).unwrap();
@@ -466,8 +659,8 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
@@ -478,8 +671,8 @@ mod tests {
         assert!(ast.get_node(circle_id).is_none());
 
         let svg_node = ast.nodes.get(svg_id).unwrap();
-        if let Node::Element(en) = svg_node {
-            assert_eq!(en.children.len(), 1);
+        if let Node::Element(element) = svg_node {
+            assert_eq!(element.children.len(), 1);
         }
     }
 
@@ -502,8 +695,8 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
@@ -515,20 +708,20 @@ mod tests {
         assert!(matches!(cloned, Node::Element(e) if e.element_type == ElementType::Circle));
 
         let cloned_node = ast.get_node(cloned_id).unwrap();
-        if let Node::Element(en) = cloned_node {
-            assert_eq!(en.children.len(), 1);
+        if let Node::Element(element) = cloned_node {
+            assert_eq!(element.children.len(), 1);
         }
 
         let text_child_id = {
             let cloned_node = ast.get_node(cloned_id).unwrap();
-            if let Node::Element(en) = cloned_node {
-                en.children[0]
+            if let Node::Element(element) = cloned_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
         };
         let text_child = ast.get_node(text_child_id).unwrap();
-        assert!(matches!(text_child, Node::Text(tn) if tn.content == "Hello"));
+        assert!(matches!(text_child, Node::Text(text) if text.content == "Hello"));
 
         let text_parent = {
             let text_child = ast.get_node(text_child_id).unwrap();
@@ -544,15 +737,17 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
         };
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(circle_id) {
-            en.attributes.push(Attribute::Id("overlay".to_string()));
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(circle_id) {
+            element
+                .attributes
+                .push(Attribute::Id("overlay".to_string()));
         }
 
         let found = ast.find_by_id("overlay");
@@ -566,21 +761,21 @@ mod tests {
         assert!(found.is_none());
     }
 
-#[test]
+    #[test]
     fn find_by_type_should_find_all_matching_elements() {
         let mut ast = build_sample_svg();
 
         let svg_id = ast.children[0];
         let rect_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[0]
+            if let Node::Element(element) = svg_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
         };
-        if let Some(Node::Element(en)) = ast.nodes.get(rect_id) {
-            assert_eq!(en.element_type, ElementType::Rect);
+        if let Some(Node::Element(element)) = ast.nodes.get(rect_id) {
+            assert_eq!(element.element_type, ElementType::Rect);
         }
 
         let found = ast.find_by_type(ElementType::Rect);
@@ -624,8 +819,8 @@ mod tests {
         let svg_id = ast.children[0];
         let rect_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[0]
+            if let Node::Element(element) = svg_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
@@ -636,8 +831,8 @@ mod tests {
 
         let children_after = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children.len()
+            if let Node::Element(element) = svg_node {
+                element.children.len()
             } else {
                 panic!("not an element");
             }
@@ -658,15 +853,15 @@ mod tests {
         assert!(node.as_cdata().is_none());
 
         let svg_node = ast.nodes.get(svg_id).unwrap();
-        let circle_id = if let Node::Element(en) = svg_node {
-            en.children[1]
+        let circle_id = if let Node::Element(element) = svg_node {
+            element.children[1]
         } else {
             panic!("not an element");
         };
         let text_id = {
             let circle_node = ast.nodes.get(circle_id).unwrap();
-            if let Node::Element(en) = circle_node {
-                en.children[0]
+            if let Node::Element(element) = circle_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
@@ -683,23 +878,23 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
         };
         let text_id = {
             let circle_node = ast.nodes.get(circle_id).unwrap();
-            if let Node::Element(en) = circle_node {
-                en.children[0]
+            if let Node::Element(element) = circle_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
         };
 
-        if let Some(Node::Text(tn)) = ast.nodes.get_mut(text_id) {
-            tn.content = "Changed".to_string();
+        if let Some(Node::Text(text)) = ast.nodes.get_mut(text_id) {
+            text.content = "Changed".to_string();
         }
 
         let node = ast.get_node(text_id).unwrap();
@@ -712,13 +907,13 @@ mod tests {
 
         let rect_id = ast.children[0];
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(rect_id) {
-            en.element_type = ElementType::Circle;
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(rect_id) {
+            element.element_type = ElementType::Circle;
         }
 
         let node = ast.get_node(rect_id).unwrap();
-        if let Node::Element(en) = node {
-            assert_eq!(en.element_type, ElementType::Circle);
+        if let Node::Element(element) = node {
+            assert_eq!(element.element_type, ElementType::Circle);
         }
     }
 
@@ -729,8 +924,8 @@ mod tests {
         let svg_id = ast.children[0];
         let text_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
@@ -751,8 +946,8 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
@@ -763,16 +958,16 @@ mod tests {
 
         let circle_text_id = {
             let circle_node = ast.get_node(circle_id).unwrap();
-            if let Node::Element(en) = circle_node {
-                en.children[0]
+            if let Node::Element(element) = circle_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
         };
         let cloned_text_id = {
             let cloned_node = ast.get_node(cloned_id).unwrap();
-            if let Node::Element(en) = cloned_node {
-                en.children[0]
+            if let Node::Element(element) = cloned_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
@@ -788,15 +983,17 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
         };
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(circle_id) {
-            en.attributes.push(Attribute::Id("nested-circle".to_string()));
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(circle_id) {
+            element
+                .attributes
+                .push(Attribute::Id("nested-circle".to_string()));
         }
 
         let found = ast.find_by_id("nested-circle");
@@ -810,15 +1007,15 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
         };
 
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(circle_id) {
-            en.element_type = ElementType::Rect;
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(circle_id) {
+            element.element_type = ElementType::Rect;
         }
 
         let found = ast.find_by_type(ElementType::Rect);
@@ -832,27 +1029,27 @@ mod tests {
         let svg_id = ast.children[0];
         let circle_id = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children[1]
+            if let Node::Element(element) = svg_node {
+                element.children[1]
             } else {
                 panic!("not an element");
             }
         };
         let text_id = {
             let circle_node = ast.nodes.get(circle_id).unwrap();
-            if let Node::Element(en) = circle_node {
-                en.children[0]
+            if let Node::Element(element) = circle_node {
+                element.children[0]
             } else {
                 panic!("not an element");
             }
         };
 
         let removed = ast.remove_node(text_id).unwrap();
-        assert!(matches!(removed, Node::Text(tn) if tn.content == "Hello"));
+        assert!(matches!(removed, Node::Text(text) if text.content == "Hello"));
 
         let circle_node = ast.nodes.get(circle_id).unwrap();
-        if let Node::Element(en) = circle_node {
-            assert_eq!(en.children.len(), 0);
+        if let Node::Element(element) = circle_node {
+            assert_eq!(element.children.len(), 0);
         }
     }
 
@@ -861,8 +1058,8 @@ mod tests {
         let mut ast = build_sample_svg();
 
         let svg_id = ast.children[0];
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(svg_id) {
-            en.attributes.push(Attribute::Id("root".to_string()));
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.attributes.push(Attribute::Id("root".to_string()));
         }
 
         let output = ast.to_svg();
@@ -876,8 +1073,8 @@ mod tests {
         let svg_id = ast.children[0];
         let initial_count = {
             let svg_node = ast.nodes.get(svg_id).unwrap();
-            if let Node::Element(en) = svg_node {
-                en.children.len()
+            if let Node::Element(element) = svg_node {
+                element.children.len()
             } else {
                 panic!("not an element");
             }
@@ -885,18 +1082,18 @@ mod tests {
 
         let new_text = make_text("temp");
         let new_id = ast.insert_node(Node::Text(new_text));
-        if let Some(Node::Text(tn)) = ast.nodes.get_mut(new_id) {
-            tn.parent = Some(svg_id);
+        if let Some(Node::Text(text)) = ast.nodes.get_mut(new_id) {
+            text.parent = Some(svg_id);
         }
-        if let Some(Node::Element(en)) = ast.nodes.get_mut(svg_id) {
-            en.children.push(new_id);
+        if let Some(Node::Element(element)) = ast.nodes.get_mut(svg_id) {
+            element.children.push(new_id);
         }
 
         assert_eq!(
             {
                 let svg_node = ast.nodes.get(svg_id).unwrap();
-                if let Node::Element(en) = svg_node {
-                    en.children.len()
+                if let Node::Element(element) = svg_node {
+                    element.children.len()
                 } else {
                     panic!("not an element");
                 }
@@ -909,8 +1106,8 @@ mod tests {
         assert_eq!(
             {
                 let svg_node = ast.nodes.get(svg_id).unwrap();
-                if let Node::Element(en) = svg_node {
-                    en.children.len()
+                if let Node::Element(element) = svg_node {
+                    element.children.len()
                 } else {
                     panic!("not an element");
                 }
@@ -929,7 +1126,7 @@ mod tests {
         let cloned_id = ast.clone_node(comment_id);
         let cloned = ast.get_node(cloned_id).unwrap();
 
-        assert!(matches!(cloned, Node::Comment(cn) if cn.content == "This is a comment"));
+        assert!(matches!(cloned, Node::Comment(comment) if comment.content == "This is a comment"));
     }
 
     #[test]
@@ -942,6 +1139,457 @@ mod tests {
         let cloned_id = ast.clone_node(cdata_id);
         let cloned = ast.get_node(cloned_id).unwrap();
 
-        assert!(matches!(cloned, Node::CData(cn) if cn.content == "some data"));
+        assert!(matches!(cloned, Node::CData(cdata) if cdata.content == "some data"));
+    }
+
+    #[test]
+    fn append_child_should_add_to_end() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let initial_len = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let new_circle = make_element(ElementType::Circle);
+        let circle_id = ast.insert_node(Node::Element(new_circle));
+
+        ast.append_child(svg_id, circle_id);
+
+        let final_len = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(final_len, initial_len + 1);
+
+        let last_child = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[element.children.len() - 1]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(last_child, circle_id);
+
+        let circle_parent = {
+            let circle_node = ast.nodes.get(circle_id).unwrap();
+            circle_node.parent_id()
+        };
+        assert_eq!(circle_parent, Some(svg_id));
+    }
+
+    #[test]
+    fn prepend_child_should_add_to_beginning() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let initial_len = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let new_rect = make_element(ElementType::Rect);
+        let rect_id = ast.insert_node(Node::Element(new_rect));
+
+        ast.prepend_child(svg_id, rect_id);
+
+        let first_child = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(first_child, rect_id);
+
+        let rect_parent = {
+            let rect_node = ast.nodes.get(rect_id).unwrap();
+            rect_node.parent_id()
+        };
+        assert_eq!(rect_parent, Some(svg_id));
+    }
+
+    #[test]
+    fn insert_child_at_should_place_at_index() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+
+        let new_text = make_text("Middle");
+        let text_id = ast.insert_node(Node::Text(new_text));
+
+        ast.insert_child_at(svg_id, text_id, 1);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children.len(), 3);
+
+        let node = ast.get_node(children[1]).unwrap();
+        assert!(matches!(node, Node::Text(text) if text.content == "Middle"));
+    }
+
+    #[test]
+    fn insert_child_at_should_clamp_to_end() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+
+        let new_rect = make_element(ElementType::Rect);
+        let rect_id = ast.insert_node(Node::Element(new_rect));
+
+        ast.insert_child_at(svg_id, rect_id, 999);
+
+        let last_child = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[element.children.len() - 1]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(last_child, rect_id);
+    }
+
+    #[test]
+    fn remove_child_at_should_remove_and_update_parent() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let removed = ast.remove_child_at(svg_id, 0).unwrap();
+        assert!(matches!(removed, Node::Element(_)));
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(children, 1);
+
+        assert!(ast.get_node(rect_id).is_none());
+    }
+
+    #[test]
+    fn remove_child_at_should_return_none_for_out_of_bounds() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let removed = ast.remove_child_at(svg_id, 99);
+        assert!(removed.is_none());
+    }
+
+    #[test]
+    fn replace_child_at_should_swap_node() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let new_circle = make_element(ElementType::Circle);
+
+        let replaced_id = ast.replace_child_at(svg_id, 0, Node::Element(new_circle));
+
+        let new_child = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(new_child, replaced_id);
+
+        let replaced_node = ast.get_node(replaced_id).unwrap();
+        assert!(matches!(replaced_node, Node::Element(e) if e.element_type == ElementType::Circle));
+
+        let child_parent = {
+            let node = ast.nodes.get(replaced_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(child_parent, Some(svg_id));
+
+        assert!(ast.get_node(rect_id).is_none());
+    }
+
+    #[test]
+    fn replace_child_at_should_panic_for_out_of_bounds() {
+        let mut ast = build_sample_svg();
+        let svg_id = ast.children[0];
+
+        let new_rect = make_element(ElementType::Rect);
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = ast.replace_child_at(svg_id, 99, Node::Element(new_rect));
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reorder_children_should_rearrange_order() {
+        let ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let mut ast = build_sample_svg();
+        let reversed: Vec<_> = children.iter().rev().cloned().collect();
+        ast.reorder_children(svg_id, &reversed);
+
+        let new_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        for child_id in new_children.iter() {
+            let parent = {
+                let node = ast.nodes.get(*child_id).unwrap();
+                node.parent_id()
+            };
+            assert_eq!(parent, Some(svg_id));
+        }
+    }
+
+    #[test]
+    fn move_child_within_same_parent() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.move_child(svg_id, svg_id, 0, Some(1));
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children[0], circle_id);
+        assert_eq!(children[1], rect_id);
+    }
+
+    #[test]
+    fn move_child_between_parents() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        let moved = ast.move_child(svg_id, circle_id, 0, None);
+        assert!(moved.is_some());
+
+        let svg_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(svg_children, 1);
+
+        let circle_children = {
+            let circle_node = ast.nodes.get(circle_id).unwrap();
+            if let Node::Element(element) = circle_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(circle_children, 2);
+
+        let rect_parent = {
+            let node = ast.nodes.get(rect_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(rect_parent, Some(circle_id));
+    }
+
+    #[test]
+    fn swap_children_should_exchange_positions() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.swap_children(svg_id, 0, 1);
+
+        let children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.clone()
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        assert_eq!(children[0], circle_id);
+        assert_eq!(children[1], rect_id);
+    }
+
+    #[test]
+    fn swap_children_should_panic_for_out_of_bounds() {
+        let mut ast = build_sample_svg();
+        let svg_id = ast.children[0];
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ast.swap_children(svg_id, 0, 99);
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn append_child_should_move_from_different_parent() {
+        let mut ast = build_sample_svg();
+
+        let svg_id = ast.children[0];
+        let rect_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let circle_id = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children[1]
+            } else {
+                panic!("not an element");
+            }
+        };
+        let text_id = {
+            let circle_node = ast.nodes.get(circle_id).unwrap();
+            if let Node::Element(element) = circle_node {
+                element.children[0]
+            } else {
+                panic!("not an element");
+            }
+        };
+
+        ast.append_child(rect_id, text_id);
+
+        let text_parent = {
+            let node = ast.nodes.get(text_id).unwrap();
+            node.parent_id()
+        };
+        assert_eq!(text_parent, Some(rect_id));
+
+        let svg_children = {
+            let svg_node = ast.nodes.get(svg_id).unwrap();
+            if let Node::Element(element) = svg_node {
+                element.children.len()
+            } else {
+                panic!("not an element");
+            }
+        };
+        assert_eq!(svg_children, 2);
+
+        let rect_node = ast.nodes.get(rect_id).unwrap();
+        if let Node::Element(element) = rect_node {
+            assert_eq!(element.children.len(), 1);
+        }
     }
 }

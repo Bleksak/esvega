@@ -1,14 +1,12 @@
 use std::fmt;
 use std::str::FromStr;
 
-use super::shared::{
-    write_comma_separated, write_space_separated, write_semicolon_separated,
-};
+use super::shared::{write_comma_separated, write_semicolon_separated, write_space_separated};
 use super::{
     animation::{
         AnimationAccumulate, AnimationAdditive, AnimationAttributeType, AnimationRestart,
-        BeginEndValue, CalcMode, ClockValue, Decoding, DurValue, FeFuncType, KeyPoint, KeySpline,
-        LengthAdjust, Method, RepeatCount, Side, Spacing, FetchPriority,
+        BeginEndValue, CalcMode, ClockValue, Decoding, DurValue, FeFuncType, FetchPriority,
+        KeyPoint, KeySpline, LengthAdjust, Method, RepeatCount, Side, Spacing,
     },
     filter::{
         BlendMode, ChannelSelector, EdgeMode, FilterUnits, In, MaskUnits, Operator, PrimitiveUnits,
@@ -18,17 +16,17 @@ use super::{
         ClipPathUnits, CrossOrigin, GradientUnits, MarkerUnits, Orient, PreserveAspectRatio,
         SpreadMethod, StitchTiles, ViewBox,
     },
+    link_media::{ReferrerPolicy, RelType, Target},
+    path::{Path, Point},
     presentation::{
         AlignmentBaseline, BaselineShift, ClipPathValue, ClipRule, ColorInterpolation,
         ColorInterpolationFilter, CursorValue, Display, DominantBaseline, EllipsisRadius, Fill,
-        FillRule, FilterValue, FontSize, FontSizeAdjust, FontStyle, ImageRendering, LetterSpacing,
-        LightingColor, Marker, MaskType, Opacity, Overflow, PointerEvents, Rotate, ShapeRendering,
-        StopColor, StrokeLinecap, StrokeLinejoin, StrokeOpacity, TextAnchor, TextDirection,
-        TextOverflow, TextRendering, UnicodeBidi, Visibility, VectorEffect, WhiteSpace,
-        WordSpacing, WritingMode, LengthOrPercentageOrNumber,
+        FillRule, FilterValue, FontSize, FontSizeAdjust, FontStyle, ImageRendering,
+        LengthOrPercentageOrNumber, LetterSpacing, LightingColor, Marker, MaskType, Opacity,
+        Overflow, PointerEvents, Rotate, ShapeRendering, StopColor, StrokeLinecap, StrokeLinejoin,
+        StrokeOpacity, TextAnchor, TextDirection, TextOverflow, TextRendering, UnicodeBidi,
+        VectorEffect, Visibility, WhiteSpace, WordSpacing, WritingMode,
     },
-    path::{Path, Point},
-    link_media::{ReferrerPolicy, RelType, Target},
 };
 use crate::element::{
     ElementType,
@@ -248,9 +246,9 @@ pub enum Attribute {
     HrefLang(LanguageTag),
     InterestFor(String),
     Ping(Vec<Url>),
-  ReferrerPolicy(ReferrerPolicy),
-   Rel(Vec<RelType>),
-   Target(Target),
+    ReferrerPolicy(ReferrerPolicy),
+    Rel(Vec<RelType>),
+    Target(Target),
 
     // Marker attributes
     MarkerHeight(LengthOrPercentage),
@@ -361,7 +359,10 @@ impl TryFrom<(&String, &String)> for Attribute {
             }
             "id" => Ok(Attribute::Id(value.clone())),
             "class" => Ok(Attribute::Class(
-                value.split_whitespace().map(|class| class.to_string()).collect(),
+                value
+                    .split_whitespace()
+                    .map(|class| class.to_string())
+                    .collect(),
             )),
             "style" => Ok(Attribute::Style(value.clone())),
             "lang" => Ok(Attribute::Lang(value.parse()?)),
@@ -374,7 +375,10 @@ impl TryFrom<(&String, &String)> for Attribute {
                 Ok(Attribute::RequiredExtensions(extensions))
             }
             "systemLanguage" => Ok(Attribute::SystemLanguage(
-                value.split(',').map(|s| s.trim().parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(',')
+                    .map(|s| s.trim().parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "alignment-baseline" => Ok(Attribute::AlignmentBaseline(value.parse()?)),
             "baseline-shift" => Ok(Attribute::BaselineShift(value.parse()?)),
@@ -480,11 +484,17 @@ impl TryFrom<(&String, &String)> for Attribute {
             "attributeType" => Ok(Attribute::AttributeType(value.parse()?)),
             "attributeName" => Ok(Attribute::AttributeName(value.clone())),
             "begin" => Ok(Attribute::Begin(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "dur" => Ok(Attribute::Dur(value.parse()?)),
             "end" => Ok(Attribute::End(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "min" => Ok(Attribute::Min(value.parse()?)),
             "max" => Ok(Attribute::Max(value.parse()?)),
@@ -566,7 +576,10 @@ impl TryFrom<(&String, &String)> for Attribute {
             "onend" => Ok(Attribute::OnEnd(value.clone())),
             "onrepeat" => Ok(Attribute::OnRepeat(value.clone())),
             "keyPoints" => Ok(Attribute::KeyPoints(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "calcMode" => Ok(Attribute::CalcMode(value.parse()?)),
             "values" => Ok(Attribute::Values(
@@ -579,7 +592,10 @@ impl TryFrom<(&String, &String)> for Attribute {
                     .collect::<Result<_, _>>()?,
             )),
             "keySplines" => Ok(Attribute::KeySplines(
-                value.split(';').map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split(';')
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "from" => Ok(Attribute::From(value.clone())),
             "to" => Ok(Attribute::To(value.clone())),
@@ -587,13 +603,17 @@ impl TryFrom<(&String, &String)> for Attribute {
             "blur" => Ok(Attribute::FloodColor(value.parse()?)),
             "interestFor" => Ok(Attribute::InterestFor(value.clone())),
             "ping" => Ok(Attribute::Ping(
-                value.split_whitespace().map(|s| s.parse()).collect::<Result<_, _>>()?,
+                value
+                    .split_whitespace()
+                    .map(|s| s.parse())
+                    .collect::<Result<_, _>>()?,
             )),
             "referrerPolicy" => Ok(Attribute::ReferrerPolicy(
                 ReferrerPolicy::try_from(value.as_str()).map_err(|_| ())?,
             )),
             "rel" => Ok(Attribute::Rel(
-                value.split_whitespace()
+                value
+                    .split_whitespace()
                     .map(|s| s.parse::<RelType>().map_err(|_| ()))
                     .collect::<Result<_, _>>()?,
             )),
@@ -634,7 +654,10 @@ impl TryFrom<(&String, &String)> for Attribute {
             "kernelUnitLength" => {
                 let parts: Vec<&str> = value.split_whitespace().collect();
                 if parts.len() == 1 {
-                    Ok(Attribute::KernelUnitLength(parts[0].parse().map_err(|_| ())?, None))
+                    Ok(Attribute::KernelUnitLength(
+                        parts[0].parse().map_err(|_| ())?,
+                        None,
+                    ))
                 } else if parts.len() == 2 {
                     Ok(Attribute::KernelUnitLength(
                         parts[0].parse().map_err(|_| ())?,
@@ -655,7 +678,10 @@ impl TryFrom<(&String, &String)> for Attribute {
             "stdDeviation" => {
                 let parts: Vec<&str> = value.split_whitespace().collect();
                 if parts.len() == 1 {
-                    Ok(Attribute::StdDeviation(parts[0].parse().map_err(|_| ())?, None))
+                    Ok(Attribute::StdDeviation(
+                        parts[0].parse().map_err(|_| ())?,
+                        None,
+                    ))
                 } else if parts.len() == 2 {
                     Ok(Attribute::StdDeviation(
                         parts[0].parse().map_err(|_| ())?,
@@ -687,13 +713,14 @@ impl TryFrom<(&String, &String)> for Attribute {
             "pointsAtX" => Ok(Attribute::PointsAtX(value.parse().unwrap_or(0.0))),
             "pointsAtY" => Ok(Attribute::PointsAtY(value.parse().unwrap_or(0.0))),
             "pointsAtZ" => Ok(Attribute::PointsAtZ(value.parse().unwrap_or(0.0))),
-            "limitingConeAngle" => Ok(Attribute::LimitingConeAngle(
-                value.parse().unwrap_or(0.0),
-            )),
+            "limitingConeAngle" => Ok(Attribute::LimitingConeAngle(value.parse().unwrap_or(0.0))),
             "baseFrequency" => {
                 let parts: Vec<&str> = value.split_whitespace().collect();
                 if parts.len() == 1 {
-                    Ok(Attribute::BaseFrequency(parts[0].parse().map_err(|_| ())?, None))
+                    Ok(Attribute::BaseFrequency(
+                        parts[0].parse().map_err(|_| ())?,
+                        None,
+                    ))
                 } else if parts.len() == 2 {
                     Ok(Attribute::BaseFrequency(
                         parts[0].parse().map_err(|_| ())?,
@@ -1176,7 +1203,11 @@ impl Attribute {
         )
     }
 
-    pub fn allowed_in_element(&self, element_type: ElementType, _element: &crate::element::Element) -> bool {
+    pub fn allowed_in_element(
+        &self,
+        element_type: ElementType,
+        _element: &crate::element::Element,
+    ) -> bool {
         match element_type {
             ElementType::Animate => self.is_global(),
             ElementType::AnimateMotion => {
