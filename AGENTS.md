@@ -21,7 +21,7 @@ cargo test -- --nocapture
 
 ## Conventions
 - **Parsing**: Use `memchr`/`memmem::find` for fast byte scanning in `src/lexer/`. Never use `std::str` methods on raw bytes.
-- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(ElementNode { element, parent }))`. Never use raw indices or `Vec<usize>`. Parent pointers should be set when attaching nodes as children.
+- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(...))`. Use `ast.insert_node()`, `ast.remove_node()`, `ast.replace_node()`, `ast.clone_node()`, `ast.find_by_id()`, `ast.find_by_type()`, `ast.find_all()` for editing. Parent pointers should be set when attaching nodes as children.
 - **Attributes**: Parse strings into typed enums using `str::parse::<T>()` or `TryFrom::try_from()`. Implement `Display`, `Default`, and `FromStr`/`TryFrom`.
 - **Rendering**: Use helper formatters from `src/element/attributes/shared.rs`: `write_semicolon_separated`, `write_space_separated`, `write_comma_separated`.
 - **Error Handling**: Parser panics on invalid input (`panic!("Parse error...")`). Do not use `Result` for parser state transitions.
