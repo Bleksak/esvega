@@ -14,14 +14,14 @@ cargo test -- --nocapture
 - **Entry**: `src/main.rs` → reads `410_2.svg` → `lexer::Lexer` → `parser::Parser` → `AST` → `to_svg()`
 - **Lexer** (`src/lexer/`): Byte-level scanner using `memchr::memmem::find`. Tracks mode in `src/lexer/mode.rs` (`Text`, `Markup`, `Quote`). Outputs `Token { kind, value, span }` from `src/token.rs`.
 - **Parser** (`src/parser/`): `StateMachine` consumes tokens via `consume()`. Maintains `element_stack: Vec<NodeId>`. Handles tag open/close, attributes, and text nodes.
-- **AST** (`src/parser/ast.rs`): Arena-backed using `slotmap`. `Node` enum: `Text(String)`, `Element(Element)`, `Comment(String)`, `CData(String)`. `NodeId` defined via `new_key_type!`.
+- **AST** (`src/parser/ast.rs`): Arena-backed using `slotmap`. `Node` enum: `Text(TextNode)`, `Element(Element)`, `Comment(String)`, `CData(String)`. `TextNode` carries `parent: Option<NodeId>`. `Element` carries `parent: Option<NodeId>` for tree navigation. `NodeId` defined via `new_key_type!`.
 - **Elements** (`src/element/`): `Element` struct holds `element_type`, `attributes: Vec<Attribute>`, `children: Vec<NodeId>`. Validation via `is_allowed_as_child()`.
 - **Attributes** (`src/element/attributes/`): Enums like `GradientUnits`, `ReferrerPolicy`, `ClipPathUnits`. Parsed via `TryFrom<&str>` / `FromStr`.
 - **SVG Types** (`src/svg/types/`): `Angle`, `Length`, `Number`, `Boolean`, `Url`.
 
 ## Conventions
 - **Parsing**: Use `memchr`/`memmem::find` for fast byte scanning in `src/lexer/`. Never use `std::str` methods on raw bytes.
-- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(...))`. Never use raw indices or `Vec<usize>`.
+- **AST Nodes**: Always allocate via `self.ast.nodes.insert(Node::Element(ElementNode { element, parent }))`. Never use raw indices or `Vec<usize>`. Parent pointers should be set when attaching nodes as children.
 - **Attributes**: Parse strings into typed enums using `str::parse::<T>()` or `TryFrom::try_from()`. Implement `Display`, `Default`, and `FromStr`/`TryFrom`.
 - **Rendering**: Use helper formatters from `src/element/attributes/shared.rs`: `write_semicolon_separated`, `write_space_separated`, `write_comma_separated`.
 - **Error Handling**: Parser panics on invalid input (`panic!("Parse error...")`). Do not use `Result` for parser state transitions.
