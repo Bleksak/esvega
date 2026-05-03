@@ -2,6 +2,7 @@ mod element;
 mod lexer;
 mod parser;
 mod token;
+mod svg;
 
 use std::fs;
 
