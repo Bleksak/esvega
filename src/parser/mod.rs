@@ -1,5 +1,7 @@
+use std::fmt;
+
 use crate::{
-    Element,
+    Element, ElementType,
     parser::ast::{
         AST, CDataNode, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode,
         XmlDeclaration,
@@ -8,6 +10,59 @@ use crate::{
 };
 
 pub mod ast;
+
+/// An error produced while parsing an SVG document.
+#[derive(Debug)]
+pub enum ParseError {
+    /// A tag name that is not a recognized element.
+    InvalidElementName(String),
+    /// An attribute the current element does not accept.
+    InvalidAttribute(String),
+    /// A malformed `<?xml ... ?>` declaration.
+    MalformedXmlDeclaration(String),
+    /// End of input reached with elements still open.
+    UnexpectedEndOfInput(Vec<ElementType>),
+    /// A closing tag that does not match the innermost open element.
+    MismatchedClosingTag { expected: ElementType, found: String },
+    /// A closing tag with no matching open element.
+    UnexpectedClosingTag(String),
+    /// An element that is not permitted inside its parent.
+    DisallowedChild { child: ElementType, parent: ElementType },
+    /// Any other token/state combination that cannot form valid markup.
+    Unexpected(String),
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseError::InvalidElementName(name) => write!(f, "invalid element name: {name}"),
+            ParseError::InvalidAttribute(attr) => write!(f, "invalid attribute: {attr}"),
+            ParseError::MalformedXmlDeclaration(decl) => {
+                write!(f, "malformed XML declaration: <?{decl}?>")
+            }
+            ParseError::UnexpectedEndOfInput(unclosed) => {
+                let tags = unclosed
+                    .iter()
+                    .map(|t| format!("<{t}>"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "unexpected end of input: {tags} not closed")
+            }
+            ParseError::MismatchedClosingTag { expected, found } => {
+                write!(f, "mismatched closing tag: expected </{expected}>, found </{found}>")
+            }
+            ParseError::UnexpectedClosingTag(name) => {
+                write!(f, "unexpected closing tag </{name}>: no open element")
+            }
+            ParseError::DisallowedChild { child, parent } => {
+                write!(f, "<{child}> is not allowed as a child of <{parent}>")
+            }
+            ParseError::Unexpected(msg) => write!(f, "{msg}"),
+        }
+    }
+}
+
+impl std::error::Error for ParseError {}
 
 pub struct Parser<'input> {
     lexer: crate::lexer::Lexer<'input>,
@@ -37,17 +92,14 @@ struct StateMachine {
 }
 
 impl StateMachine {
-    fn consume(&mut self, token: Token) {
+    fn consume(&mut self, token: Token) -> Result<(), ParseError> {
         match (&self.current_state, token.kind) {
             (State::Text, TokenKind::LessThan) => {
                 self.current_state = State::TagOpen;
             }
             (State::TagOpen, TokenKind::Identifier) => {
                 let Ok(element_type) = token.value.parse() else {
-                    panic!(
-                        "Parse error, expected a valid element name, got: {}",
-                        &token.value
-                    );
+                    return Err(ParseError::InvalidElementName(token.value));
                 };
 
                 let element = Element {
@@ -73,7 +125,7 @@ impl StateMachine {
                 let attribute_value = "".to_string();
 
                 let Ok(attribute) = (&attribute_name, &attribute_value).try_into() else {
-                    panic!("Invalid attribute, got: {}", attribute_name);
+                    return Err(ParseError::InvalidAttribute(attribute_name));
                 };
 
                 let node_id = self.element_stack.last().unwrap();
@@ -92,7 +144,7 @@ impl StateMachine {
                 let attribute_value = "".to_string();
 
                 let Ok(attribute) = (&attribute_name, &attribute_value).try_into() else {
-                    panic!("Invalid attribute, got: {}", attribute_name);
+                    return Err(ParseError::InvalidAttribute(attribute_name));
                 };
 
                 let node_id = self.element_stack.last().unwrap();
@@ -116,10 +168,9 @@ impl StateMachine {
                 let attribute_value = token.value;
 
                 let Ok(attribute) = (&attribute_name, &attribute_value).try_into() else {
-                    panic!(
-                        "Invalid attribute, got: {}={}",
-                        attribute_name, attribute_value
-                    );
+                    return Err(ParseError::InvalidAttribute(format!(
+                        "{attribute_name}={attribute_value}"
+                    )));
                 };
 
                 let node_id = self.element_stack.last().unwrap();
@@ -151,7 +202,7 @@ impl StateMachine {
                     let attribute_value = "".to_string();
 
                     let Ok(attribute) = (&attribute_name, &attribute_value).try_into() else {
-                        panic!("Invalid attribute, got: {}", attribute_name);
+                        return Err(ParseError::InvalidAttribute(attribute_name));
                     };
 
                     let node_id = self.element_stack.last().unwrap();
@@ -178,10 +229,10 @@ impl StateMachine {
                     };
 
                     if !last_en.is_allowed_as_child(&child_type) {
-                        panic!(
-                            "<{}> is not allowed as a child of <{}>",
-                            child_type, last_en.element_type
-                        );
+                        return Err(ParseError::DisallowedChild {
+                            child: child_type,
+                            parent: last_en.element_type,
+                        });
                     }
 
                     let parent_id = *last_element_id;
@@ -199,16 +250,16 @@ impl StateMachine {
             }
             (State::TagClose, TokenKind::Identifier) => {
                 let Some(element_id) = self.element_stack.pop() else {
-                    panic!("Element stack is empty");
+                    return Err(ParseError::UnexpectedClosingTag(token.value));
                 };
 
                 let child_type = match self.ast.nodes.get(element_id).unwrap() {
                     Node::Element(e) => {
                         if e.element_type.as_str() != token.value {
-                            panic!(
-                                "Element stack does not match closing tag {} != {}",
-                                e.element_type, token.value
-                            );
+                            return Err(ParseError::MismatchedClosingTag {
+                                expected: e.element_type,
+                                found: token.value,
+                            });
                         }
                         e.element_type
                     }
@@ -222,10 +273,10 @@ impl StateMachine {
                     };
 
                     if !last_en.is_allowed_as_child(&child_type) {
-                        panic!(
-                            "<{}> is not allowed as a child of <{}>",
-                            child_type, last_en.element_type
-                        );
+                        return Err(ParseError::DisallowedChild {
+                            child: child_type,
+                            parent: last_en.element_type,
+                        });
                     }
 
                     let parent_id = *last_element_id;
@@ -246,11 +297,14 @@ impl StateMachine {
             (State::TagCloseName, TokenKind::SlashGreaterThan) => {
                 // TODO: This is not a self closing element, it has a typo, we should be able to
                 // parse this correctly, but we also need to emit a warning in the CLI
-                unimplemented!("Tag close name should not be followed by a slash");
+                return Err(ParseError::Unexpected(
+                    "closing tag must not end with '/>'".to_string(),
+                ));
             }
             (State::TagCloseName, TokenKind::Identifier) => {
-                // TODO: error
-                panic!("Unexpected identifier after tag close name");
+                return Err(ParseError::Unexpected(
+                    "unexpected identifier after closing tag name".to_string(),
+                ));
             }
             (State::Text, TokenKind::Text) => {
                 let node_id = self.ast.nodes.insert(Node::Text(TextNode {
@@ -281,10 +335,14 @@ impl StateMachine {
                 | TokenKind::Quote
                 | TokenKind::Equals,
             ) => {
-                unreachable!("Unexpected token after tag close name");
+                return Err(ParseError::Unexpected(
+                    "unexpected token in text content".to_string(),
+                ));
             }
             (State::TagCloseName, TokenKind::Literal) => {
-                unreachable!("Unexpected literal after tag close name");
+                return Err(ParseError::Unexpected(
+                    "unexpected literal after closing tag name".to_string(),
+                ));
             }
             (_, TokenKind::Comment) => {
                 let content = &token.value[4..token.value.len() - 3];
@@ -344,10 +402,10 @@ impl StateMachine {
 
                 if target.eq_ignore_ascii_case("xml") {
                     let Ok(declaration) = XmlDeclaration::parse(content) else {
-                        panic!("Parse error, malformed XML declaration: <?{}?>", content);
+                        return Err(ParseError::MalformedXmlDeclaration(content.to_string()));
                     };
                     self.ast.declaration = declaration;
-                    return;
+                    return Ok(());
                 }
 
                 let node_id =
@@ -372,39 +430,53 @@ impl StateMachine {
                 }
             }
             (State::TagOpen, TokenKind::LessThan | TokenKind::LessThanSlash) => {
-                panic!("Unexpected < after tag open (sequence <<) ");
+                return Err(ParseError::Unexpected(
+                    "unexpected '<' after tag open (sequence '<<')".to_string(),
+                ));
             }
             (_, TokenKind::Text) => {
-                unreachable!("Unexpected text token");
+                return Err(ParseError::Unexpected("unexpected text token".to_string()));
             }
             (State::TagOpen, TokenKind::GreaterThan | TokenKind::SlashGreaterThan) => {
-                panic!("Unexpected > after tag open (sequence <>) ");
+                return Err(ParseError::Unexpected(
+                    "unexpected '>' after tag open (sequence '<>')".to_string(),
+                ));
             }
             (_, TokenKind::Literal) => {
-                unreachable!("Unexpected literal token");
+                return Err(ParseError::Unexpected("unexpected literal token".to_string()));
             }
             (_, TokenKind::Quote) => {
-                unreachable!("Unexpected quote token");
+                return Err(ParseError::Unexpected("unexpected quote token".to_string()));
             }
             (_, TokenKind::LessThan | TokenKind::LessThanSlash) => {
-                unreachable!("Unexpected opening tag token");
+                return Err(ParseError::Unexpected(
+                    "unexpected opening tag token".to_string(),
+                ));
             }
             (_, TokenKind::Equals) => {
-                unreachable!("Unexpected equals token");
+                return Err(ParseError::Unexpected("unexpected equals token".to_string()));
             }
             (State::AttributeEquals, _) => {
-                unreachable!("Unexpected token after attribute equals");
+                return Err(ParseError::Unexpected(
+                    "unexpected token after attribute '='".to_string(),
+                ));
             }
             (
                 State::AttributeValueOpeningQuote | State::AttributeValue,
                 TokenKind::GreaterThan | TokenKind::SlashGreaterThan | TokenKind::Identifier,
             ) => {
-                unreachable!("Unexpected > after attribute value opening quote");
+                return Err(ParseError::Unexpected(
+                    "unexpected token inside attribute value".to_string(),
+                ));
             }
             (State::TagClose, TokenKind::GreaterThan | TokenKind::SlashGreaterThan) => {
-                panic!("unexpected > after a tag close (sequence </> or <> or even <//>)");
+                return Err(ParseError::Unexpected(
+                    "unexpected '>' after tag close (sequence '</>' or '<//>')".to_string(),
+                ));
             }
         }
+
+        Ok(())
     }
 }
 
@@ -413,17 +485,26 @@ impl<'input> Parser<'input> {
         Self { lexer }
     }
 
-    pub fn parse(&mut self) -> Option<ast::AST> {
+    pub fn parse(&mut self) -> Result<ast::AST, ParseError> {
         let mut state_machine = StateMachine::default();
 
         while let Some(token) = self.lexer.advance() {
-            state_machine.consume(token);
+            state_machine.consume(token)?;
         }
 
-        // TODO: make this an actual error
-        assert_eq!(state_machine.element_stack.len(), 0);
+        if !state_machine.element_stack.is_empty() {
+            let unclosed = state_machine
+                .element_stack
+                .iter()
+                .filter_map(|id| match state_machine.ast.nodes.get(*id) {
+                    Some(Node::Element(e)) => Some(e.element_type),
+                    _ => None,
+                })
+                .collect();
+            return Err(ParseError::UnexpectedEndOfInput(unclosed));
+        }
 
-        Some(state_machine.ast)
+        Ok(state_machine.ast)
     }
 }
 
@@ -463,10 +544,39 @@ mod tests {
         assert_eq!(ast.declaration, crate::parser::ast::XmlDeclaration::default());
     }
 
+    fn parse_err(svg: &str) -> crate::parser::ParseError {
+        let lexer = crate::Lexer::new(Input::new(svg.as_bytes()));
+        Parser::new(lexer).parse().unwrap_err()
+    }
+
     #[test]
-    #[should_panic(expected = "malformed XML declaration")]
-    fn malformed_xml_declaration_panics() {
-        parse(r#"<?xml version=?><svg xmlns="http://www.w3.org/2000/svg"/>"#);
+    fn malformed_xml_declaration_is_rejected() {
+        let err = parse_err(r#"<?xml version=?><svg xmlns="http://www.w3.org/2000/svg"/>"#);
+        assert!(matches!(err, crate::parser::ParseError::MalformedXmlDeclaration(_)));
+    }
+
+    #[test]
+    fn unclosed_tag_is_rejected() {
+        let err = parse_err(r#"<svg xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1""#);
+        assert!(matches!(err, crate::parser::ParseError::UnexpectedEndOfInput(_)));
+    }
+
+    #[test]
+    fn mismatched_closing_tag_is_rejected() {
+        let err = parse_err(r#"<svg xmlns="http://www.w3.org/2000/svg"><rect x="1"></circle></svg>"#);
+        assert!(matches!(err, crate::parser::ParseError::MismatchedClosingTag { .. }));
+    }
+
+    #[test]
+    fn stray_closing_tag_is_rejected() {
+        let err = parse_err(r#"</svg>"#);
+        assert!(matches!(err, crate::parser::ParseError::UnexpectedClosingTag(_)));
+    }
+
+    #[test]
+    fn garbage_input_is_rejected() {
+        let err = parse_err(r#"<<<>>> definitely not svg &&& %%%"#);
+        assert!(matches!(err, crate::parser::ParseError::InvalidElementName(_)));
     }
 
     #[test]
@@ -492,6 +602,35 @@ mod tests {
         } else {
             panic!("Expected Data attribute");
         }
+    }
+
+    #[test]
+    fn parse_namespaced_attribute() {
+        let ast = parse(
+            r#"<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg"/>"#,
+        );
+
+        let svgs = ast.find_by_type(ElementType::Svg);
+        assert_eq!(svgs.len(), 1);
+        let element = ast.nodes.get(svgs[0]).unwrap().as_element().unwrap();
+
+        let ns_attr = &element.attributes[0];
+        assert!(matches!(ns_attr, Attribute::Namespaced(_, _)));
+
+        if let Attribute::Namespaced(name, value) = ns_attr {
+            assert_eq!(name, "xmlns:dc");
+            assert_eq!(value, "http://purl.org/dc/elements/1.1/");
+        } else {
+            panic!("Expected Namespaced attribute");
+        }
+    }
+
+    #[test]
+    fn namespaced_attribute_round_trips() {
+        let svg =
+            r#"<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg"/>"#;
+        let ast = parse(svg);
+        assert!(ast.to_svg().contains(r#"xmlns:dc="http://purl.org/dc/elements/1.1/""#));
     }
 
     fn data_attr<'a>(ast: &'a crate::AST, name_expected: &str) -> &'a str {

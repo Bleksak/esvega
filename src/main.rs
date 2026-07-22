@@ -8,10 +8,13 @@ fn main() {
 
     let lexer = Lexer::new(Input::new(content.as_bytes()));
     let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
 
-    if let Some(ast) = ast {
-        print!("{}", ast.to_svg());
+    match parser.parse() {
+        Ok(ast) => print!("{}", ast.to_svg()),
+        Err(err) => {
+            eprintln!("error: {err}");
+            std::process::exit(1);
+        }
     }
 }
 

@@ -9,6 +9,7 @@ pub use element::Element;
 pub use element::ElementType;
 pub use lexer::{Input, Lexer};
 pub use parser::Parser;
+pub use parser::ParseError;
 pub use parser::ast::{
     AST, CDataNode, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode, XmlDeclaration,
 };

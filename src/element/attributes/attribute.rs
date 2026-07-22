@@ -342,6 +342,9 @@ pub enum Attribute {
 
     // Data attributes
     Data(String, String),
+
+    // Namespaced attributes (e.g. xmlns:dc, xlink:href, inkscape:label)
+    Namespaced(String, String),
 }
 
 use super::filter::{MaskContentUnits, PatternContentUnits, PatternUnits};
@@ -758,6 +761,9 @@ impl TryFrom<(&String, &String)> for Attribute {
             _ if key.starts_with("data-") => {
                 Ok(Attribute::Data(key.to_string(), value.clone()))
             }
+            _ if key.contains(':') => {
+                Ok(Attribute::Namespaced(key.to_string(), value.clone()))
+            }
             _ => {
                 return Err(());
             }
@@ -1033,6 +1039,7 @@ impl Attribute {
             Attribute::PrimitiveUnits(_) => "primitiveUnits",
             Attribute::Version(_) => "version",
             Attribute::Data(name, _) => name,
+            Attribute::Namespaced(name, _) => name,
         }
     }
 
@@ -1997,6 +2004,7 @@ impl Attribute {
             Attribute::PrimitiveUnits(v) => write!(f, "=\"{}\"", v),
             Attribute::Version(v) => write!(f, "=\"{}\"", v),
             Attribute::Data(_, value) => write!(f, "=\"{}\"", value),
+            Attribute::Namespaced(_, value) => write!(f, "=\"{}\"", value),
         }
     }
 
