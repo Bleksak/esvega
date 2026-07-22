@@ -2,12 +2,119 @@ use crate::{Element, element::ElementType, element::attributes::Attribute};
 use slotmap::{SlotMap, new_key_type};
 use std::fmt;
 
+/// The XML declaration of a document (`<?xml version="1.0" ...?>`).
+///
+/// Any pseudo-attribute omitted from the source falls back to [`Default`]:
+/// `version` `1.0`, `encoding` `UTF-8`, and no `standalone`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct XmlDeclaration {
+    /// The XML version (e.g. `1.0`).
+    pub version: String,
+    /// The character encoding (e.g. `UTF-8`).
+    pub encoding: String,
+    /// The `standalone` flag, or `None` when it is not declared.
+    pub standalone: Option<bool>,
+}
+
+impl Default for XmlDeclaration {
+    fn default() -> Self {
+        Self {
+            version: "1.0".to_string(),
+            encoding: "UTF-8".to_string(),
+            standalone: None,
+        }
+    }
+}
+
+impl fmt::Display for XmlDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "<?xml version=\"{}\" encoding=\"{}\"",
+            self.version, self.encoding
+        )?;
+
+        if let Some(standalone) = self.standalone {
+            write!(f, " standalone=\"{}\"", if standalone { "yes" } else { "no" })?;
+        }
+
+        write!(f, "?>")
+    }
+}
+
+impl XmlDeclaration {
+    /// Parses the body of an `<?xml ... ?>` declaration — the text between the
+    /// `<?` and `?>` delimiters, e.g. `xml version="1.0" encoding="UTF-8"`.
+    ///
+    /// The leading `xml` target is skipped and each `name="value"` pseudo-attribute
+    /// is read; any not present keeps its [`Default`] value. Returns `Err` if the
+    /// declaration is malformed — a pseudo-attribute without a quoted value, an
+    /// unterminated quote, an unknown name, or a `standalone` that is not
+    /// `yes`/`no`.
+    pub fn parse(body: &str) -> Result<Self, ()> {
+        let mut declaration = Self::default();
+
+        // Skip the target word (`xml`); what remains are the pseudo-attributes.
+        let attributes = body.trim_start();
+        let mut rest = match attributes.find(|c: char| c.is_ascii_whitespace()) {
+            Some(index) => &attributes[index..],
+            None => "",
+        };
+
+        loop {
+            rest = rest.trim_start();
+            if rest.is_empty() {
+                break;
+            }
+
+            let equals = rest.find('=').ok_or(())?;
+            let name = rest[..equals].trim();
+            if name.is_empty() {
+                return Err(());
+            }
+
+            let after = rest[equals + 1..].trim_start();
+            let Some(quote) = after.chars().next() else {
+                return Err(());
+            };
+            if quote != '"' && quote != '\'' {
+                return Err(());
+            }
+
+            let after = &after[1..];
+            let end = after.find(quote).ok_or(())?;
+            let value = &after[..end];
+
+            match name {
+                "version" => declaration.version = value.to_string(),
+                "encoding" => declaration.encoding = value.to_string(),
+                "standalone" => {
+                    declaration.standalone = Some(match value {
+                        "yes" => true,
+                        "no" => false,
+                        _ => return Err(()),
+                    });
+                }
+                _ => return Err(()),
+            }
+
+            rest = &after[end + 1..];
+        }
+
+        Ok(declaration)
+    }
+}
+
 /// Arena-backed AST for SVG documents.
 ///
 /// Stores all nodes (elements, text, comments, CDATA) in a `SlotMap` arena.
 /// Tracks root-level children in `children` and parent pointers on every node.
+/// An [`XmlDeclaration`] holds the document's `<?xml ...?>` prolog, defaulting
+/// to standard values when the source has none.
 #[derive(Debug, Default)]
 pub struct AST {
+    /// The document's XML declaration; defaults to [`XmlDeclaration::default`].
+    pub declaration: XmlDeclaration,
     /// Arena containing all nodes.
     pub nodes: SlotMap<NodeId, Node>,
     /// Root-level children of the AST.
@@ -167,6 +274,8 @@ impl AST {
     /// Serializes the entire AST to an SVG string.
     pub fn to_svg(&self) -> String {
         let mut s = String::new();
+        s.push_str(&self.declaration.to_string());
+        s.push('\n');
         for node_id in &self.children {
             let Some(node) = self.nodes.get(*node_id) else {
                 continue;

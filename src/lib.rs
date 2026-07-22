@@ -8,6 +8,8 @@ pub use element::Element;
 pub use element::ElementType;
 pub use lexer::{Input, Lexer};
 pub use parser::Parser;
-pub use parser::ast::{AST, CDataNode, CommentNode, Node, NodeId, TextNode};
+pub use parser::ast::{
+    AST, CDataNode, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode, XmlDeclaration,
+};
 pub use token::Token;
 pub use token::TokenKind;

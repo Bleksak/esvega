@@ -1,6 +1,6 @@
 use crate::{
     Element,
-    parser::ast::{AST, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode},
+    parser::ast::{AST, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode, XmlDeclaration},
     token::{Token, TokenKind},
 };
 
@@ -306,14 +306,31 @@ impl StateMachine {
                 }
             }
             (_, TokenKind::ProcessingInstruction) => {
-                let content = token.value[2..token.value.len() - 2].to_string();
-                let node_id = self
-                    .ast
-                    .nodes
-                    .insert(Node::ProcessingInstruction(ProcessingInstructionNode {
-                        content,
-                        parent: None,
-                    }));
+                let content = &token.value[2..token.value.len() - 2];
+
+                // The `<?xml ...?>` prolog is promoted to a structured declaration
+                // on the AST; every other processing instruction becomes a node.
+                let target = content
+                    .trim_start()
+                    .split(|c: char| c.is_ascii_whitespace())
+                    .next()
+                    .unwrap_or("");
+
+                if target.eq_ignore_ascii_case("xml") {
+                    let Ok(declaration) = XmlDeclaration::parse(content) else {
+                        panic!("Parse error, malformed XML declaration: <?{}?>", content);
+                    };
+                    self.ast.declaration = declaration;
+                    return;
+                }
+
+                let node_id =
+                    self.ast
+                        .nodes
+                        .insert(Node::ProcessingInstruction(ProcessingInstructionNode {
+                            content: content.to_string(),
+                            parent: None,
+                        }));
 
                 if let Some(last_element_id) = self.element_stack.last() {
                     let parent_id = *last_element_id;
@@ -390,6 +407,41 @@ mod tests {
     use crate::element::ElementType;
     use crate::lexer::Input;
     use crate::Parser;
+
+    fn parse(svg: &str) -> crate::AST {
+        let lexer = crate::Lexer::new(Input::new(svg.as_bytes()));
+        Parser::new(lexer).parse().unwrap()
+    }
+
+    #[test]
+    fn xml_declaration_defaults_missing_fields() {
+        let ast = parse(r#"<?xml version="1.1"?><svg xmlns="http://www.w3.org/2000/svg"/>"#);
+
+        assert_eq!(ast.declaration.version, "1.1");
+        assert_eq!(ast.declaration.encoding, "UTF-8"); // defaulted
+        assert_eq!(ast.declaration.standalone, None); // defaulted
+    }
+
+    #[test]
+    fn xml_declaration_parses_standalone() {
+        let ast = parse(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg"/>"#,
+        );
+
+        assert_eq!(ast.declaration.standalone, Some(false));
+    }
+
+    #[test]
+    fn absent_xml_declaration_uses_defaults() {
+        let ast = parse(r#"<svg xmlns="http://www.w3.org/2000/svg"/>"#);
+        assert_eq!(ast.declaration, crate::parser::ast::XmlDeclaration::default());
+    }
+
+    #[test]
+    #[should_panic(expected = "malformed XML declaration")]
+    fn malformed_xml_declaration_panics() {
+        parse(r#"<?xml version=?><svg xmlns="http://www.w3.org/2000/svg"/>"#);
+    }
 
     #[test]
     fn parse_data_attribute() {
