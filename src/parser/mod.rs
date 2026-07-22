@@ -312,18 +312,19 @@ impl StateMachine {
                     parent: None,
                 }));
 
-                let last_element_id = self.element_stack.last().unwrap();
-
-                let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
-                else {
-                    panic!("Node is supposed to be of type Element at this point");
-                };
-
-                let parent_id = *last_element_id;
-                let child_id = node_id;
-                last_en.children.push(child_id);
-                if let Some(Node::Text(tn)) = self.ast.nodes.get_mut(child_id) {
-                    tn.parent = Some(parent_id);
+                if let Some(last_element_id) = self.element_stack.last() {
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+                    let parent_id = *last_element_id;
+                    let child_id = node_id;
+                    last_en.children.push(child_id);
+                    if let Some(Node::Text(tn)) = self.ast.nodes.get_mut(child_id) {
+                        tn.parent = Some(parent_id);
+                    }
+                } else {
+                    self.ast.children.push(node_id);
                 }
             }
             (
@@ -577,6 +578,17 @@ mod tests {
     fn garbage_input_is_rejected() {
         let err = parse_err(r#"<<<>>> definitely not svg &&& %%%"#);
         assert!(matches!(err, crate::parser::ParseError::InvalidElementName(_)));
+    }
+
+    #[test]
+    fn leading_text_before_root_is_kept_as_top_level_node() {
+        let ast = parse(r#"hello<svg xmlns="http://www.w3.org/2000/svg"/>"#);
+
+        let leading = ast.nodes.get(ast.children[0]).unwrap();
+        assert!(matches!(
+            leading,
+            crate::parser::ast::Node::Text(t) if t.content == "hello" && t.parent.is_none()
+        ));
     }
 
     #[test]
