@@ -208,6 +208,18 @@ impl<'input> Lexer<'input> {
                 return Some(self.token(TokenKind::Comment, token_start..self.input.offset));
             }
 
+            if self.input.is_at(b"<![CDATA[", false) {
+                self.input.consume_until(b"]]>", false);
+
+                if !self.input.is_at(b"]]>", false) {
+                    // TODO: Error - unterminated CDATA section
+                    return None;
+                }
+                self.input.consume(3);
+
+                return Some(self.token(TokenKind::CData, token_start..self.input.offset));
+            }
+
             if self.input.is_at(b"<!DOCTYPE", true) {
                 self.input.consume_until(b">", false);
 

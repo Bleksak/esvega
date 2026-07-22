@@ -1,6 +1,9 @@
 use crate::{
     Element,
-    parser::ast::{AST, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode, XmlDeclaration},
+    parser::ast::{
+        AST, CDataNode, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode,
+        XmlDeclaration,
+    },
     token::{Token, TokenKind},
 };
 
@@ -299,6 +302,29 @@ impl StateMachine {
                     let child_id = node_id;
                     last_en.children.push(child_id);
                     if let Some(Node::Comment(cn)) = self.ast.nodes.get_mut(child_id) {
+                        cn.parent = Some(parent_id);
+                    }
+                } else {
+                    self.ast.children.push(node_id);
+                }
+            }
+            (_, TokenKind::CData) => {
+                // strip the `<![CDATA[` (9 bytes) prefix and `]]>` (3 bytes) suffix
+                let content = &token.value[9..token.value.len() - 3];
+                let node_id = self.ast.nodes.insert(Node::CData(CDataNode {
+                    content: content.to_string(),
+                    parent: None,
+                }));
+
+                if let Some(last_element_id) = self.element_stack.last() {
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(*last_element_id).unwrap()
+                    else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+                    let parent_id = *last_element_id;
+                    let child_id = node_id;
+                    last_en.children.push(child_id);
+                    if let Some(Node::CData(cn)) = self.ast.nodes.get_mut(child_id) {
                         cn.parent = Some(parent_id);
                     }
                 } else {
