@@ -189,7 +189,8 @@ impl Node {
                 for _ in 0..indent {
                     write!(f, "  ")?;
                 }
-                write!(f, "{}\n", text_node.content)
+                crate::entities::encode_into(f, &text_node.content)?;
+                write!(f, "\n")
             }
             Node::Element(element) => element.write_svg(ast, f, indent),
             Node::Comment(comment_node) => write!(f, "<!-- {} -->", comment_node.content),

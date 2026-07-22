@@ -2002,6 +2002,20 @@ impl Attribute {
 
     pub fn write_svg(&self, f: &mut impl fmt::Write) -> fmt::Result {
         write!(f, "{}", self.name())?;
-        self.write_value(f)
+
+        // `write_value` always emits `="<value>"`. Buffer it, then re-encode the
+        // inner value so any reserved characters — present in free-text values or
+        // produced by entity-decoding on parse — become valid XML references.
+        let mut buffer = String::new();
+        self.write_value(&mut buffer)?;
+
+        let value = buffer
+            .strip_prefix("=\"")
+            .and_then(|rest| rest.strip_suffix('"'))
+            .expect("write_value always emits an =\"...\" pair");
+
+        write!(f, "=\"")?;
+        crate::entities::encode_into(f, value)?;
+        write!(f, "\"")
     }
 }

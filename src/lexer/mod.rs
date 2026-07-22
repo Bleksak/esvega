@@ -5,7 +5,7 @@
 //!
 //! - **Text**: Scanning for `<` delimiters that mark transitions into markup.
 //! - **Markup**: Parsing element names, attributes, and closing delimiters.
-//! - **Quote**: Parsing quoted attribute values with backslash escaping.
+//! - **Quote**: Parsing quoted attribute values, decoding XML entities.
 //!
 //! # Example
 //!
@@ -27,6 +27,7 @@ use memchr::memchr;
 use memchr::memmem::find;
 
 use crate::{
+    entities,
     lexer::mode::LexerMode,
     token::{Token, TokenKind},
 };
@@ -160,7 +161,7 @@ impl<'a> Input<'a> {
 ///
 /// - **Text**: Scans for `<` delimiters, emitting text content between tags.
 /// - **Markup**: Parses element names, attribute names, `=` signs, and `>` delimiters.
-/// - **Quote**: Handles quoted attribute values, including backslash-escaped quotes.
+/// - **Quote**: Handles quoted attribute values, decoding XML entity references.
 ///
 /// Comments (`<!-- ... -->`) are scanned inline regardless of mode.
 ///
@@ -250,29 +251,32 @@ impl<'input> Lexer<'input> {
             }
 
             match self.mode {
-                LexerMode::Quote => {
+                LexerMode::Quote(delimiter) => {
                     // this emits the ending quote and sets the mode back to markup
-                    if self.input.is_at(b"\"", false) {
+                    if self.input.is_at(&[delimiter], false) {
                         self.input.consume(1);
                         self.mode = LexerMode::Markup;
 
                         return Some(self.token(TokenKind::Quote, token_start..self.input.offset));
                     }
-                    loop {
-                        self.input.consume_until(b"\"", false);
-                        if !self.input.is_at(b"\"", false) {
-                            // TODO: Error
-                            return None;
-                        }
 
-                        if self.input.bytes[self.input.offset - 1] != b'\\' {
-                            break;
-                        }
+                    // XML has no in-value delimiter escaping: the closing quote always
+                    // terminates the value. A literal quote is written as an entity
+                    // (`&quot;` / `&apos;`), so we scan to the delimiter and decode.
+                    let raw = self.input.consume_until(&[delimiter], false);
 
-                        self.input.consume(1);
+                    if !self.input.is_at(&[delimiter], false) {
+                        // TODO: Error - unterminated attribute value
+                        return None;
                     }
 
-                    return Some(self.token(TokenKind::Literal, token_start..self.input.offset));
+                    let value = entities::decode(raw);
+
+                    return Some(Token {
+                        kind: TokenKind::Literal,
+                        value,
+                        span: token_start..self.input.offset,
+                    });
                 }
                 LexerMode::Markup => {
                     if self.input.is_at(b">", false) {
@@ -309,10 +313,11 @@ impl<'input> Lexer<'input> {
                             );
                         }
                         _ => {
-                            // here we will find attribute values inside of quotes, we need to be able
-                            // to handle escaped quotes as proper values
-                            if self.input.is_at(b"\"", false) {
-                                self.mode = LexerMode::Quote;
+                            // Attribute values may be delimited by `"` or `'`; the
+                            // chosen delimiter is carried in the Quote mode so the
+                            // matching closer can be found.
+                            if byte == b'"' || byte == b'\'' {
+                                self.mode = LexerMode::Quote(byte);
                                 self.input.consume(1);
                                 return Some(
                                     self.token(TokenKind::Quote, token_start..self.input.offset),
@@ -363,8 +368,12 @@ impl<'input> Lexer<'input> {
                     }
 
                     // here we just consume until eof or LessThan sign
-                    self.input.consume_until(b"<", false);
-                    return Some(self.token(TokenKind::Text, token_start..self.input.offset));
+                    let raw = self.input.consume_until(b"<", false);
+                    return Some(Token {
+                        kind: TokenKind::Text,
+                        value: entities::decode(raw),
+                        span: token_start..self.input.offset,
+                    });
                 }
             }
         }

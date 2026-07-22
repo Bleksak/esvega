@@ -1,4 +1,5 @@
 pub mod element;
+pub mod entities;
 pub mod lexer;
 pub mod parser;
 pub mod svg;

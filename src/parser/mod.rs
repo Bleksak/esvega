@@ -494,6 +494,76 @@ mod tests {
         }
     }
 
+    fn data_attr<'a>(ast: &'a crate::AST, name_expected: &str) -> &'a str {
+        let rects = ast.find_by_type(ElementType::Rect);
+        let element = ast.nodes.get(rects[0]).unwrap().as_element().unwrap();
+
+        match &element.attributes[0] {
+            Attribute::Data(name, value) => {
+                assert_eq!(name, name_expected);
+                value
+            }
+            _ => panic!("Expected Data attribute"),
+        }
+    }
+
+    #[test]
+    fn predefined_entities_in_attribute_value_are_decoded() {
+        let ast = parse(r#"<rect data-label="a &amp; b &lt; c &gt; d &quot;e&quot; &apos;f&apos;"/>"#);
+        assert_eq!(data_attr(&ast, "data-label"), r#"a & b < c > d "e" 'f'"#);
+    }
+
+    #[test]
+    fn numeric_character_references_are_decoded() {
+        // &#169; is ©, &#xA9; is © as well, &#960; is π.
+        let ast = parse(r#"<rect data-glyph="&#169; &#xA9; &#960;"/>"#);
+        assert_eq!(data_attr(&ast, "data-glyph"), "\u{A9} \u{A9} \u{3C0}");
+    }
+
+    #[test]
+    fn single_quoted_attribute_values_are_supported() {
+        let ast = parse(r#"<rect data-label='hello &amp; "world"'/>"#);
+        assert_eq!(data_attr(&ast, "data-label"), r#"hello & "world""#);
+    }
+
+    #[test]
+    fn unrecognized_entities_pass_through_verbatim() {
+        let ast = parse(r#"<rect data-raw="a &bogus; b & c"/>"#);
+        assert_eq!(data_attr(&ast, "data-raw"), "a &bogus; b & c");
+    }
+
+    #[test]
+    fn entities_in_text_content_are_decoded() {
+        let ast = parse(r#"<text>5 &lt; 10 &amp;&amp; 10 &gt; 5</text>"#);
+        let texts = ast.find_by_type(ElementType::Text);
+        let element = ast.nodes.get(texts[0]).unwrap().as_element().unwrap();
+        let child = ast.nodes.get(element.children[0]).unwrap();
+        assert_eq!(child.as_text().unwrap(), "5 < 10 && 10 > 5");
+    }
+
+    #[test]
+    fn reserved_characters_are_re_encoded_on_serialize() {
+        // Parse decodes the entities; to_svg must escape them back so the output
+        // is valid XML and round-trips.
+        let ast = parse(r#"<text data-note="a &amp; b &lt; &quot;c&quot;">5 &lt; 10 &amp; ok</text>"#);
+        let svg = ast.to_svg();
+
+        assert!(
+            svg.contains(r#"data-note="a &amp; b &lt; &quot;c&quot;""#),
+            "attribute value not re-encoded: {svg}"
+        );
+        assert!(svg.contains("5 &lt; 10 &amp; ok"), "text not re-encoded: {svg}");
+    }
+
+    #[test]
+    fn bogus_entity_becomes_valid_xml_on_serialize() {
+        // An unrecognized `&bogus;` decodes verbatim, then serializes as a valid,
+        // escaped `&amp;bogus;` — so the previously-lenient pass-through is safe.
+        let ast = parse(r#"<rect data-raw="a &bogus; b"/>"#);
+        let svg = ast.to_svg();
+        assert!(svg.contains(r#"data-raw="a &amp;bogus; b""#), "got: {svg}");
+    }
+
     #[test]
     fn parse_multiple_data_attributes() {
         let svg = r#"<rect data-foo="bar" data-baz="qux" data-foo-bar="baz-qux"/>"#;

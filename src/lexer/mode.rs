@@ -14,6 +14,8 @@ pub enum LexerMode {
     Markup,
     /// Scanning a quoted attribute value.
     ///
-    /// Looks for the closing quote `"`, handling backslash escapes.
-    Quote,
+    /// Carries the opening delimiter byte (`"` or `'`) so the matching closing
+    /// quote can be found. XML character/entity references inside the value are
+    /// decoded when the literal is emitted.
+    Quote(u8),
 }
