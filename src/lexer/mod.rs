@@ -191,7 +191,7 @@ impl<'input> Lexer<'input> {
     pub fn advance(&mut self) -> Option<Token> {
         self.input.consume_whitespace();
 
-        let token_start = self.input.offset;
+        let mut token_start = self.input.offset;
 
         while !self.input.has_reached_eof() {
             let byte = self.input.bytes[self.input.offset];
@@ -206,6 +206,21 @@ impl<'input> Lexer<'input> {
                 self.input.consume(3);
 
                 return Some(self.token(TokenKind::Comment, token_start..self.input.offset));
+            }
+
+            if self.input.is_at(b"<!DOCTYPE", true) {
+                self.input.consume_until(b">", false);
+
+                if !self.input.is_at(b">", false) {
+                    // TODO: Error - unterminated doctype
+                    return None;
+                }
+                self.input.consume(1);
+
+                // Drop the DOCTYPE entirely; it never reaches the parser.
+                self.input.consume_whitespace();
+                token_start = self.input.offset;
+                continue;
             }
 
             if self.input.is_at(b"<?", false) {
