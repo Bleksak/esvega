@@ -46,10 +46,20 @@ pub struct CDataNode {
     pub parent: Option<NodeId>,
 }
 
+/// A processing instruction or XML declaration node (`<? ... ?>`) in the SVG tree.
+#[derive(Clone, PartialEq, Debug)]
+pub struct ProcessingInstructionNode {
+    /// The instruction content (without `<?` / `?>` delimiters).
+    pub content: String,
+    /// Parent node ID, or `None` for root-level processing instructions.
+    pub parent: Option<NodeId>,
+}
+
 /// A node in the SVG AST.
 ///
-/// Wraps one of four variants: an [`Element`], [`TextNode`], [`CommentNode`],
-/// or [`CDataNode`]. Each variant carries a parent pointer.
+/// Wraps one of five variants: an [`Element`], [`TextNode`], [`CommentNode`],
+/// [`CDataNode`], or [`ProcessingInstructionNode`]. Each variant carries a
+/// parent pointer.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Node {
     /// A text node containing character data.
@@ -60,6 +70,8 @@ pub enum Node {
     Comment(CommentNode),
     /// A CDATA section node.
     CData(CDataNode),
+    /// A processing instruction or XML declaration node.
+    ProcessingInstruction(ProcessingInstructionNode),
 }
 
 impl Node {
@@ -75,6 +87,7 @@ impl Node {
             Node::Element(element) => element.write_svg(ast, f, indent),
             Node::Comment(comment_node) => write!(f, "<!-- {} -->", comment_node.content),
             Node::CData(cdata_node) => write!(f, "<![CDATA[{}]]>", cdata_node.content),
+            Node::ProcessingInstruction(pi_node) => write!(f, "<?{}?>", pi_node.content),
         }
     }
 
@@ -133,6 +146,7 @@ impl Node {
             Node::Element(e) => e.parent,
             Node::Comment(c) => c.parent,
             Node::CData(c) => c.parent,
+            Node::ProcessingInstruction(p) => p.parent,
         }
     }
 }
@@ -185,6 +199,7 @@ impl AST {
             Node::Element(e) => e.parent,
             Node::Comment(c) => c.parent,
             Node::CData(c) => c.parent,
+            Node::ProcessingInstruction(p) => p.parent,
         };
         match parent_id {
             Some(pid) => {
@@ -291,6 +306,13 @@ impl AST {
             Node::CData(cdata) => {
                 let id = self.nodes.insert(Node::CData(CDataNode {
                     content: cdata.content,
+                    parent: None,
+                }));
+                id
+            }
+            Node::ProcessingInstruction(pi) => {
+                let id = self.nodes.insert(Node::ProcessingInstruction(ProcessingInstructionNode {
+                    content: pi.content,
                     parent: None,
                 }));
                 id
@@ -434,6 +456,9 @@ impl AST {
         }
         if let Some(Node::CData(cdata)) = self.nodes.get_mut(id) {
             cdata.parent = parent;
+        }
+        if let Some(Node::ProcessingInstruction(pi)) = self.nodes.get_mut(id) {
+            pi.parent = parent;
         }
     }
 

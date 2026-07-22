@@ -23,6 +23,8 @@ pub enum TokenKind {
     Equals,
     /// A complete comment (`<!-- ... -->`).
     Comment,
+    /// A complete processing instruction or XML declaration (`<? ... ?>`).
+    ProcessingInstruction,
     /// Text content between tags.
     Text,
 }

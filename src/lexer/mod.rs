@@ -208,6 +208,20 @@ impl<'input> Lexer<'input> {
                 return Some(self.token(TokenKind::Comment, token_start..self.input.offset));
             }
 
+            if self.input.is_at(b"<?", false) {
+                self.input.consume_until(b"?>", false);
+
+                if !self.input.is_at(b"?>", false) {
+                    // TODO: Error - unterminated processing instruction
+                    return None;
+                }
+                self.input.consume(2);
+
+                return Some(
+                    self.token(TokenKind::ProcessingInstruction, token_start..self.input.offset),
+                );
+            }
+
             match self.mode {
                 LexerMode::Quote => {
                     // this emits the ending quote and sets the mode back to markup

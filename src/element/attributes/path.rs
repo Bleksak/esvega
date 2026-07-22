@@ -360,22 +360,39 @@ impl fmt::Display for PathType {
 }
 
 impl PathType {
-    fn split_left_rest(input: &str) -> Result<(&str, &str), ()> {
-        input.split_once(',').ok_or(())
+    /// Skips leading coordinate separators: ASCII whitespace and commas.
+    fn skip_separators(input: &str) -> &str {
+        input.trim_start_matches(|c: char| c.is_ascii_whitespace() || c == ',')
     }
 
-    fn split_eos(input: &str) -> (&str, &str) {
-        let split_index = input
-            .find(|c: char| c.is_ascii_alphabetic() && !matches!(c, '.' | '+' | '-' | 'e' | 'E'))
-            .unwrap_or(input.len());
-        let (left, rest) = input.split_at(split_index);
+    /// Reads a single number from the front of `input`, skipping any leading
+    /// separators first.
+    ///
+    /// A number ends at the next separator (whitespace or comma) or the next
+    /// command letter. `e`/`E` are not treated as command letters so scientific
+    /// notation stays intact. Returns the number and the remaining input with
+    /// the number and its trailing separators consumed.
+    fn split_left_rest(input: &str) -> Result<(&str, &str), ()> {
+        let input = Self::skip_separators(input);
 
-        (left, rest)
+        let end = input
+            .find(|c: char| {
+                c.is_ascii_whitespace() || c == ',' || (c.is_ascii_alphabetic() && c != 'e' && c != 'E')
+            })
+            .unwrap_or(input.len());
+
+        if end == 0 {
+            return Err(());
+        }
+
+        let (number, rest) = input.split_at(end);
+
+        Ok((number, Self::skip_separators(rest)))
     }
 
     fn split_left_right_rest(input: &str) -> Result<(&str, &str, &str), ()> {
         let (left, rest) = Self::split_left_rest(input)?;
-        let (right, rest) = Self::split_eos(rest);
+        let (right, rest) = Self::split_left_rest(rest)?;
 
         Ok((left, right, rest))
     }
@@ -433,7 +450,7 @@ impl PathType {
                 ))
             }
             'H' => {
-                let (left, rest) = Self::split_eos(rest);
+                let (left, rest) = Self::split_left_rest(rest)?;
 
                 Ok((
                     PathType::LineTo(LineTo::HorizontalAbsolute(vec![Number::from_str(left)?])),
@@ -441,7 +458,7 @@ impl PathType {
                 ))
             }
             'h' => {
-                let (left, rest) = Self::split_eos(rest);
+                let (left, rest) = Self::split_left_rest(rest)?;
 
                 Ok((
                     PathType::LineTo(LineTo::HorizontalRelative(vec![Number::from_str(left)?])),
@@ -449,7 +466,7 @@ impl PathType {
                 ))
             }
             'V' => {
-                let (left, rest) = Self::split_eos(rest);
+                let (left, rest) = Self::split_left_rest(rest)?;
 
                 Ok((
                     PathType::LineTo(LineTo::VerticalAbsolute(vec![Number::from_str(left)?])),
@@ -457,7 +474,7 @@ impl PathType {
                 ))
             }
             'v' => {
-                let (left, rest) = Self::split_eos(rest);
+                let (left, rest) = Self::split_left_rest(rest)?;
 
                 Ok((
                     PathType::LineTo(LineTo::VerticalRelative(vec![Number::from_str(left)?])),
@@ -832,16 +849,20 @@ impl FromStr for Path {
     type Err = ();
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let replaced = input.replace(' ', "");
-        let mut input = replaced.as_str();
+        let mut input = input.trim();
 
         let mut result = vec![];
 
         while !input.is_empty() {
-            if let Ok((path_type, new_input)) = PathType::parse(&input) {
-                result.push(path_type);
-                input = new_input;
+            let (path_type, rest) = PathType::parse(input)?;
+
+            // Guard against a non-advancing parse to guarantee termination.
+            if rest.len() >= input.len() {
+                return Err(());
             }
+
+            result.push(path_type);
+            input = rest.trim_start();
         }
 
         Ok(Self(result))

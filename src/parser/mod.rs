@@ -1,6 +1,6 @@
 use crate::{
     Element,
-    parser::ast::{AST, CommentNode, Node, NodeId, TextNode},
+    parser::ast::{AST, CommentNode, Node, NodeId, ProcessingInstructionNode, TextNode},
     token::{Token, TokenKind},
 };
 
@@ -183,9 +183,7 @@ impl StateMachine {
 
                     let parent_id = *last_element_id;
                     let child_id = element_id;
-                    {
-                        last_en.children.push(child_id);
-                    }
+                    last_en.children.push(child_id);
                     if let Some(Node::Element(en)) = self.ast.nodes.get_mut(child_id) {
                         en.parent = Some(parent_id);
                     }
@@ -229,9 +227,7 @@ impl StateMachine {
 
                     let parent_id = *last_element_id;
                     let child_id = element_id;
-                    {
-                        last_en.children.push(child_id);
-                    }
+                    last_en.children.push(child_id);
                     if let Some(Node::Element(en)) = self.ast.nodes.get_mut(child_id) {
                         en.parent = Some(parent_id);
                     }
@@ -268,9 +264,7 @@ impl StateMachine {
 
                 let parent_id = *last_element_id;
                 let child_id = node_id;
-                {
-                    last_en.children.push(child_id);
-                }
+                last_en.children.push(child_id);
                 if let Some(Node::Text(tn)) = self.ast.nodes.get_mut(child_id) {
                     tn.parent = Some(parent_id);
                 }
@@ -303,11 +297,32 @@ impl StateMachine {
                     };
                     let parent_id = *last_element_id;
                     let child_id = node_id;
-                    {
-                        last_en.children.push(child_id);
-                    }
+                    last_en.children.push(child_id);
                     if let Some(Node::Comment(cn)) = self.ast.nodes.get_mut(child_id) {
                         cn.parent = Some(parent_id);
+                    }
+                } else {
+                    self.ast.children.push(node_id);
+                }
+            }
+            (_, TokenKind::ProcessingInstruction) => {
+                let content = token.value[2..token.value.len() - 2].to_string();
+                let node_id = self
+                    .ast
+                    .nodes
+                    .insert(Node::ProcessingInstruction(ProcessingInstructionNode {
+                        content,
+                        parent: None,
+                    }));
+
+                if let Some(last_element_id) = self.element_stack.last() {
+                    let parent_id = *last_element_id;
+                    let Node::Element(last_en) = self.ast.nodes.get_mut(parent_id).unwrap() else {
+                        panic!("Node is supposed to be of type Element at this point");
+                    };
+                    last_en.children.push(node_id);
+                    if let Some(Node::ProcessingInstruction(pn)) = self.ast.nodes.get_mut(node_id) {
+                        pn.parent = Some(parent_id);
                     }
                 } else {
                     self.ast.children.push(node_id);
