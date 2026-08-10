@@ -168,21 +168,7 @@ impl FromStr for Length {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(absolute) = AbsoluteLength::from_str(s) {
-            return Ok(Length::Absolute(absolute));
-        }
-
-        if let Ok(relative) = RelativeLengths::from_str(s) {
-            return Ok(Length::Relative(relative));
-        }
-
-        if s.chars().all(|c| c.is_ascii_digit() || c == '-') {
-            return Ok(Length::Absolute(AbsoluteLength::Px(
-                s.parse::<f64>().map_err(|_| ())?,
-            )));
-        }
-
-        return Err(());
+        Self::try_from(s)
     }
 }
 
@@ -1421,5 +1407,29 @@ impl FromStr for FontWeight {
             _ if s.eq_ignore_ascii_case("lighter") => Ok(Self::Lighter),
             _ => Ok(Self::Number(s.parse().map_err(|_| ())?)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn length_round_trips_px() {
+        let length = Length::from_str("36px").expect("36px parses");
+        assert_eq!(length.to_string(), "36px");
+
+        let bare = Length::from_str("36").expect("36 parses");
+        assert_eq!(bare.to_string(), "36px");
+    }
+
+    #[test]
+    fn length_parses_other_units() {
+        let cm = Length::from_str("2cm").expect("2cm parses");
+        assert_eq!(cm.to_string(), "2cm");
+
+        let em = Length::from_str("1.5em").expect("1.5em parses");
+        assert_eq!(em.to_string(), "1.5em");
     }
 }
