@@ -111,7 +111,7 @@ impl XmlDeclaration {
 /// Tracks root-level children in `children` and parent pointers on every node.
 /// An [`XmlDeclaration`] holds the document's `<?xml ...?>` prolog, defaulting
 /// to standard values when the source has none.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct AST {
     /// The document's XML declaration; defaults to [`XmlDeclaration::default`].
     pub declaration: XmlDeclaration,
